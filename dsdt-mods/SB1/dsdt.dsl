@@ -1,5 +1,5 @@
-Firmware Error (ACPI): Could not resolve symbol [^GFX0.CLID], AE_NOT_FOUND (20200528/dswload-495)
-Firmware Error (ACPI): Could not resolve symbol [^GFX0.CLID], AE_NOT_FOUND (20200528/dswload2-479)
+// Firmware Error (ACPI): Could not resolve symbol [^GFX0.CLID], AE_NOT_FOUND (20200528/dswload-495)
+// Firmware Error (ACPI): Could not resolve symbol [^GFX0.CLID], AE_NOT_FOUND (20200528/dswload2-479)
 /*
  * Intel ACPI Component Architecture
  * AML/ASL+ Disassembler version 20200528 (64-bit version)
@@ -20,7 +20,7 @@ Firmware Error (ACPI): Could not resolve symbol [^GFX0.CLID], AE_NOT_FOUND (2020
  *     Compiler ID      "INTL"
  *     Compiler Version 0x20160422 (538313762)
  */
-DefinitionBlock ("", "DSDT", 2, "MSFT  ", "MSFT    ", 0x00000000)
+DefinitionBlock ("", "DSDT", 2, "MSFT  ", "MSFT    ", 0x00000001)
 {
     External (_GPE.AL6F, MethodObj)    // 0 Arguments
     External (_GPE.HLVT, MethodObj)    // 0 Arguments
