@@ -742,11 +742,13 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 	if (ret < 0)
 		return ret;
 
-	ret = clk_prepare_enable(ov7251->xclk);
-	if (ret < 0) {
-		dev_err(ov7251->dev, "clk prepare enable failed\n");
-		ov7251_regulators_disable(ov7251);
-		return ret;
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		ret = clk_prepare_enable(ov7251->xclk);
+		if (ret < 0) {
+			dev_err(ov7251->dev, "clk prepare enable failed\n");
+			ov7251_regulators_disable(ov7251);
+			return ret;
+		}
 	}
 
 	gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
@@ -761,7 +763,8 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 
 static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
-	clk_disable_unprepare(ov7251->xclk);
+	if (!is_acpi_node(dev_fwnode(ov7251->dev)))
+		clk_disable_unprepare(ov7251->xclk);
 	gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
 	ov7251_regulators_disable(ov7251);
 }
@@ -1286,11 +1289,13 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	/* get system clock (xclk) */
-	ov7251->xclk = devm_clk_get(dev, "xclk");
-	if (IS_ERR(ov7251->xclk)) {
-		dev_err(dev, "could not get xclk");
-		return PTR_ERR(ov7251->xclk);
+	if (!is_acpi_node(endpoint)) {
+		/* get system clock (xclk) */
+		ov7251->xclk = devm_clk_get(dev, "xclk");
+		if (IS_ERR(ov7251->xclk)) {
+			dev_err(dev, "could not get xclk");
+			return PTR_ERR(ov7251->xclk);
+		}
 	}
 
 	ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
@@ -1307,10 +1312,12 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
-	if (ret) {
-		dev_err(dev, "could not set xclk frequency\n");
-		return ret;
+	if (!is_acpi_node(endpoint)) {
+		ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
+		if (ret) {
+			dev_err(dev, "could not set xclk frequency\n");
+			return ret;
+		}
 	}
 
 	ov7251->io_regulator = devm_regulator_get(dev, "vdddo");
