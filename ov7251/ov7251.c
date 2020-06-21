@@ -92,7 +92,9 @@ struct ov7251 {
 	struct mutex lock; /* lock to protect power state, ctrls and mode */
 	bool power_on;
 
-	struct gpio_desc *enable_gpio;
+	/* SB1 has two GPIO pins */
+	struct gpio_desc *enable_gpio_0;
+	struct gpio_desc *enable_gpio_1;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -751,7 +753,8 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 		}
 	}
 
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
+	gpiod_set_value_cansleep(ov7251->enable_gpio_0, 1);
+	gpiod_set_value_cansleep(ov7251->enable_gpio_1, 1);
 
 	/* wait at least 65536 external clock cycles */
 	wait_us = DIV_ROUND_UP(65536 * 1000,
@@ -765,7 +768,8 @@ static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
 	if (!is_acpi_node(dev_fwnode(ov7251->dev)))
 		clk_disable_unprepare(ov7251->xclk);
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
+	gpiod_set_value_cansleep(ov7251->enable_gpio_0, 0);
+	gpiod_set_value_cansleep(ov7251->enable_gpio_1, 0);
 	ov7251_regulators_disable(ov7251);
 }
 
@@ -1338,10 +1342,16 @@ static int ov7251_probe(struct i2c_client *client)
 		return PTR_ERR(ov7251->analog_regulator);
 	}
 
-	ov7251->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov7251->enable_gpio)) {
-		dev_err(dev, "cannot get enable gpio\n");
-		return PTR_ERR(ov7251->enable_gpio);
+	ov7251->enable_gpio_0 = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(ov7251->enable_gpio_0)) {
+		dev_err(dev, "cannot get enable gpio enable_gpio_0\n");
+		return PTR_ERR(ov7251->enable_gpio_0);
+	}
+
+	ov7251->enable_gpio_1 = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(ov7251->enable_gpio_1)) {
+		dev_err(dev, "cannot get enable gpio enable_gpio_1\n");
+		return PTR_ERR(ov7251->enable_gpio_1);
 	}
 
 	mutex_init(&ov7251->lock);
