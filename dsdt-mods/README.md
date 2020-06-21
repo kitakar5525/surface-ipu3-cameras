@@ -2,7 +2,7 @@
 
 Take a look at ArchWiki [1] for compiling and overriding DSDT.
 
-Here is the one-liner:
+Excerpt:
 ```bash
 # compile
 iasl -tc dsdt.dsl
