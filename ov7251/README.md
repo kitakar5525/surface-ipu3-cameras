@@ -9,7 +9,9 @@ make
 #### loading the module
 
 ```bash
-sudo modprobe -r ov7251 # unload if already loaded
+sudo modprobe ipu3_imgu
+sudo modprobe ipu3_cio2
+sleep 1
 sudo insmod ov7251.ko
 ```
 
@@ -32,11 +34,28 @@ Available cameras:
 ```
 Not sure what's missing...
 
-#### can't unload driver
+#### unloading the driver
 
+Unloading works with the following:
 ```bash
-$ sudo rmmod ov7251
-rmmod: ERROR: Module ov7251 is in use
+sudo modprobe -r ipu3_imgu
+sudo modprobe -r ipu3_cio2
+sudo rmmod ov7251
+```
+
+However, when I try to load the driver again, it fails to initialize:
+```bash
+kern  :warn  : [  109.816300] ipu3_imgu: module is from the staging directory, the quality is unknown, you have been warned.
+kern  :info  : [  109.819506] ipu3-imgu 0000:00:05.0: device 0x1919 (rev: 0x1)
+kern  :info  : [  109.819567] ipu3-imgu 0000:00:05.0: physical base address 0x00000000a1000000, 4194304 bytes
+kern  :info  : [  109.901598] ipu3-imgu 0000:00:05.0: loaded firmware version irci_irci_ecr-master_20161208_0213_20170112_1500, 17 binaries, 1212984 bytes
+kern  :info  : [  109.988233] ipu3-cio2 0000:00:14.3: device 0x9d32 (rev: 0x1)
+kern  :warn  : [  111.055095] ov7251 i2c-INT347E:00: supply vdddo not found, using dummy regulator
+kern  :warn  : [  111.055112] ov7251 i2c-INT347E:00: supply vddd not found, using dummy regulator
+kern  :warn  : [  111.055121] ov7251 i2c-INT347E:00: supply vdda not found, using dummy regulator
+kern  :info  : [  111.055167] ov7251 i2c-INT347E:00: Dependent platform device found: INT3472:02
+kern  :err   : [  111.055199] ov7251 i2c-INT347E:00: cannot get enable gpio enable_gpio_0
+kern  :warn  : [  111.063189] ov7251: probe of i2c-INT347E:00 failed with error -16
 ```
 
 #### References
