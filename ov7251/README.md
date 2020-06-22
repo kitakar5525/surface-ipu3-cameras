@@ -13,7 +13,7 @@ sudo modprobe -r ov7251 # unload if already loaded
 sudo insmod ov7251.ko
 ```
 
-#### Current status
+#### Current state
 
 This driver needs connection to IPU3. Currently, I'm trying to do so by overriding DSDT table.
 With overriding DSDT, this driver loads without error:
@@ -31,6 +31,13 @@ $ sudo cam -l
 Available cameras:
 ```
 Not sure what's missing...
+
+#### can't unload driver
+
+```bash
+$ sudo rmmod ov7251
+rmmod: ERROR: Module ov7251 is in use
+```
 
 #### References
 
