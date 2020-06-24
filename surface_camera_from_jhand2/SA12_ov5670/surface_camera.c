@@ -149,7 +149,7 @@ out:
 static void __exit surface_camera_exit(void)
 {
 	camera.cio2->dev.fwnode = ERR_PTR(-ENODEV);
-	camera.ov5693->dev.fwnode->secondary = ERR_PTR(-ENODEV);
+	i2c_unregister_device(camera.ov5693);
 	surface_camera_unregister_nodes();
 }
 
