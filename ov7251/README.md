@@ -26,13 +26,12 @@ kern  :warn  : [   44.204489] ov7251 i2c-INT347E:00: supply vdda not found, usin
 kern  :info  : [   44.204542] ov7251 i2c-INT347E:00: Dependent platform device found: INT3472:02
 kern  :info  : [   44.209302] ov7251 i2c-INT347E:00: OV7251 revision 7 (1F) detected at address 0x60
 ```
-However, the driver doesn't get listed by libcamera:
+and libcamera detect the sensor, but not working saying that format is incompatible with IPU3:
 ```bash
-$ sudo cam -l
-[0:37:08.337418547] [7527]  INFO Camera camera_manager.cpp:283 libcamera v0.0.0+1478-1023107b
+[0:00:46.727329081] [2619]  INFO Camera camera_manager.cpp:283 libcamera v0.0.0+1483-c3ed943c
+[0:00:46.735207399] [2620] ERROR IPU3 ipu3.cpp:1455 Sensor ov7251 8-0060 has not format compatible with the IPU3
 Available cameras:
 ```
-Not sure what's missing...
 
 #### unloading the driver
 
