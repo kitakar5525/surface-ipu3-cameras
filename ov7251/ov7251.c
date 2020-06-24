@@ -1553,6 +1553,10 @@ static int ov7251_remove(struct i2c_client *client)
 
 	v4l2_async_unregister_subdev(&ov7251->sd);
 	media_entity_cleanup(&ov7251->sd.entity);
+	if (ov7251->enable_gpio_0)
+		gpiod_put(ov7251->enable_gpio_0);
+	if (ov7251->enable_gpio_1)
+		gpiod_put(ov7251->enable_gpio_1);
 	v4l2_ctrl_handler_free(&ov7251->ctrls);
 	mutex_destroy(&ov7251->lock);
 
