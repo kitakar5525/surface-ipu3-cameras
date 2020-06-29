@@ -905,7 +905,7 @@ static int ov7251_enum_mbus_code(struct v4l2_subdev *sd,
 	if (code->index > 0)
 		return -EINVAL;
 
-	code->code = MEDIA_BUS_FMT_Y10_1X10;
+	code->code = MEDIA_BUS_FMT_SGRBG10_1X10;
 
 	return 0;
 }
@@ -914,7 +914,7 @@ static int ov7251_enum_frame_size(struct v4l2_subdev *subdev,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	if (fse->code != MEDIA_BUS_FMT_Y10_1X10)
+	if (fse->code != MEDIA_BUS_FMT_SGRBG10_1X10)
 		return -EINVAL;
 
 	if (fse->index >= ARRAY_SIZE(ov7251_mode_info_data))
@@ -1082,7 +1082,7 @@ static int ov7251_set_format(struct v4l2_subdev *sd,
 					   format->which);
 	__format->width = __crop->width;
 	__format->height = __crop->height;
-	__format->code = MEDIA_BUS_FMT_Y10_1X10;
+	__format->code = MEDIA_BUS_FMT_SGRBG10_1X10;
 	__format->field = V4L2_FIELD_NONE;
 	__format->colorspace = V4L2_COLORSPACE_SRGB;
 	__format->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(__format->colorspace);
