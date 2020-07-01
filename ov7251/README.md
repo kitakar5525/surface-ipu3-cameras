@@ -26,11 +26,27 @@ kern  :warn  : [   44.204489] ov7251 i2c-INT347E:00: supply vdda not found, usin
 kern  :info  : [   44.204542] ov7251 i2c-INT347E:00: Dependent platform device found: INT3472:02
 kern  :info  : [   44.209302] ov7251 i2c-INT347E:00: OV7251 revision 7 (1F) detected at address 0x60
 ```
-and libcamera detect the sensor, but not working saying that format is incompatible with IPU3:
+
+Now, libcamera detects and lists ov7251 as "Available cameras" when using `MEDIA_BUS_FMT_SGRBG10_1X10` as code instead of `MEDIA_BUS_FMT_Y10_1X10` (which is the default of the original ov7251):
 ```bash
-[0:00:46.727329081] [2619]  INFO Camera camera_manager.cpp:283 libcamera v0.0.0+1483-c3ed943c
-[0:00:46.735207399] [2620] ERROR IPU3 ipu3.cpp:1455 Sensor ov7251 8-0060 has not format compatible with the IPU3
+[0:01:53.858230371] [4344]  INFO Camera camera_manager.cpp:283 libcamera v0.0.0+1547-e7aa92a8
+[0:01:53.869909334] [4345]  INFO IPU3 ipu3.cpp:825 Registered Camera[0] "ov5693 7-0036" connected to CSI-2 receiver 1
+[0:01:53.870838496] [4345]  INFO IPU3 ipu3.cpp:825 Registered Camera[1] "ov7251 8-0060" connected to CSI-2 receiver 2
 Available cameras:
+1: ov5693 7-0036
+2: ov7251 8-0060
+```
+
+However, it's not usable yet.
+```bash
+❯ sudo cam -c2 -C
+[0:12:44.492671995] [6343]  INFO Camera camera_manager.cpp:283 libcamera v0.0.0+1547-e7aa92a8
+[0:12:44.501870222] [6344]  INFO IPU3 ipu3.cpp:825 Registered Camera[0] "ov5693 7-0036" connected to CSI-2 receiver 1
+[0:12:44.502650007] [6344]  INFO IPU3 ipu3.cpp:825 Registered Camera[1] "ov7251 8-0060" connected to CSI-2 receiver 2
+Using camera ov7251 8-0060
+[0:12:44.503297452] [6343]  INFO Camera camera.cpp:770 configuring streams: (0) 640x480-NV12
+[0:12:44.503547214] [6344] ERROR MediaDevice media_device.cpp:802 /dev/media1[ipu3-imgu]: Failed to setup link: Invalid argument
+Failed to configure camera
 ```
 
 #### unloading the driver
