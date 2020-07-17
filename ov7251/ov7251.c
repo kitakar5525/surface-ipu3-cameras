@@ -1390,7 +1390,7 @@ static int ov7251_probe(struct i2c_client *client)
 		}
 	}
 
-	if (ret) {
+	if (!dep_dev) {
 		dev_err(ov7251->dev, "Error getting dependent platform device\n");
 		return ret;
 	}
