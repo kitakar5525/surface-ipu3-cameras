@@ -96,6 +96,9 @@ struct ov7251 {
 	/* SB1 has two GPIO pins */
 	struct gpio_desc *enable_gpio_0;
 	struct gpio_desc *enable_gpio_1;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -1265,17 +1268,69 @@ static int match_depend(struct device *dev, const void *data)
 	return (dev && dev->fwnode == data) ? 1 : 0;
 }
 
+static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(&client->dev);
+	struct acpi_handle_list dep_devices;
+	struct device *dep_dev;
+	int ret;
+	int i;
+
+	// Get dependent INT3472 device
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		printk("No dependent devices\n");
+		return -100;
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
+					 &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		printk("Failed to evaluate _DEP.\n");
+		return -ENODEV;
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device *device;
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			printk("Error reading _DEP device info\n");
+			return -ENODEV;
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+				!strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &device))
+				return -ENODEV;
+
+			dep_dev = bus_find_device(&platform_bus_type, NULL,
+					&device->fwnode, match_depend);
+			if (dep_dev) {
+				dev_info(&client->dev, "Dependent platform device found: %s\n",
+					dev_name(dep_dev));
+				break;
+			}
+		}
+	}
+
+	if (!dep_dev) {
+		dev_err(ov7251->dev, "Error getting dependent platform device\n");
+		return ret;
+	}
+	ov7251->dep_dev = dep_dev;
+
+	return ret;
+}
+
 static int ov7251_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct fwnode_handle *endpoint;
 	struct ov7251 *ov7251;
 	struct device *dep_dev;
-	struct acpi_handle *dev_handle = ACPI_HANDLE(&client->dev);
-	struct acpi_handle_list dep_devices;
 	u8 chip_id_high, chip_id_low, chip_rev;
 	int ret;
-	int i;
 
 	ov7251 = devm_kzalloc(dev, sizeof(struct ov7251), GFP_KERNEL);
 	if (!ov7251)
@@ -1352,55 +1407,12 @@ static int ov7251_probe(struct i2c_client *client)
 		return PTR_ERR(ov7251->analog_regulator);
 	}
 
-	// ret = get_dep_dev(ov7251, dep_dev);
-	// if (ret) {
-	// 	dev_err(dev, "cannot get dep_dev\n");
-	// 	return ret;
-	// }
-
-	// TODO: Refactor this into own function
-	// Get dependent INT3472 device
-	if (!acpi_has_method(dev_handle, "_DEP")) {
-		printk("No dependent devices\n");
-		return -100;
-	}
-
-	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
-					 &dep_devices);
-	if (ACPI_FAILURE(ret)) {
-		printk("Failed to evaluate _DEP.\n");
-		return -ENODEV;
-	}
-
-	for (i = 0; i < dep_devices.count; i++) {
-		struct acpi_device *device;
-		struct acpi_device_info *info;
-
-		ret = acpi_get_object_info(dep_devices.handles[i], &info);
-		if (ACPI_FAILURE(ret)) {
-			printk("Error reading _DEP device info\n");
-			return -ENODEV;
-		}
-
-		if (info->valid & ACPI_VALID_HID &&
-				!strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &device))
-				return -ENODEV;
-
-			dep_dev = bus_find_device(&platform_bus_type, NULL,
-					&device->fwnode, match_depend);
-			if (dep_dev) {
-				dev_info(&client->dev, "Dependent platform device found: %s\n",
-					dev_name(dep_dev));
-				break;
-			}
-		}
-	}
-
-	if (!dep_dev) {
-		dev_err(ov7251->dev, "Error getting dependent platform device\n");
+	ret = get_dep_dev(client, ov7251);
+	if (ret) {
+		dev_err(dev, "cannot get dep_dev\n");
 		return ret;
 	}
+	dep_dev = ov7251->dep_dev;
 
 	ov7251->enable_gpio_0 = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
 	if (IS_ERR(ov7251->enable_gpio_0)) {
