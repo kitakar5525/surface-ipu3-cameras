@@ -16872,37 +16872,6 @@ DefinitionBlock ("", "DSDT", 2, "MSFT  ", "MSFT    ", 0x00000001)
         }
     }
 
-    If ((CPPS >= 0x24))
-    {
-        Scope (_SB)
-        {
-            PowerResource (CAMP, 0x00, 0x0000)
-            {
-                Method (_STA, 0, NotSerialized)  // _STA: Status
-                {
-                    If ((GGOV (0x02030004) == One))
-                    {
-                        Return (One)
-                    }
-                    Else
-                    {
-                        Return (Zero)
-                    }
-                }
-
-                Method (_ON, 0, NotSerialized)  // _ON_: Power On
-                {
-                    ADBG ("CAMP: Camera rails ON in _ON method")
-                }
-
-                Method (_OFF, 0, NotSerialized)  // _OFF: Power Off
-                {
-                    ADBG ("CAMP: Camera rails ON in _OFF method")
-                }
-            }
-        }
-    }
-
     Scope (_SB.PCI0.I2C1)
     {
         Device (PA01)

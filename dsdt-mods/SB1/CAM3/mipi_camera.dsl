@@ -12,10 +12,6 @@ Scope (_SB.PCI0.I2C3)
         {
             SKC2
         })
-        Name (_PR0, Package (0x01)  // _PR0: Power Resources for D0
-        {
-            CAMP
-        })
         Name (_PLD, Package (0x01)  // _PLD: Physical Location of Device
         {
             ToPLD (
