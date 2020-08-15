@@ -11,7 +11,6 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -92,13 +91,6 @@ struct ov7251 {
 
 	struct mutex lock; /* lock to protect power state, ctrls and mode */
 	bool power_on;
-
-	/* SB1 has two GPIO pins */
-	struct gpio_desc *enable_gpio_0;
-	struct gpio_desc *enable_gpio_1;
-
-	/* dependent device (PMIC) */
-	struct device *dep_dev;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -757,9 +749,6 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 		}
 	}
 
-	gpiod_set_value_cansleep(ov7251->enable_gpio_0, 1);
-	gpiod_set_value_cansleep(ov7251->enable_gpio_1, 1);
-
 	/* wait at least 65536 external clock cycles */
 	wait_us = DIV_ROUND_UP(65536 * 1000,
 			       DIV_ROUND_UP(ov7251->xclk_freq, 1000));
@@ -772,8 +761,6 @@ static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
 	if (!is_acpi_node(dev_fwnode(ov7251->dev)))
 		clk_disable_unprepare(ov7251->xclk);
-	gpiod_set_value_cansleep(ov7251->enable_gpio_0, 0);
-	gpiod_set_value_cansleep(ov7251->enable_gpio_1, 0);
 	if (!is_acpi_node(dev_fwnode(ov7251->dev)))
 		ov7251_regulators_disable(ov7251);
 }
@@ -1264,72 +1251,11 @@ static const struct v4l2_subdev_ops ov7251_subdev_ops = {
 	.pad = &ov7251_subdev_pad_ops,
 };
 
-static int match_depend(struct device *dev, const void *data)
-{
-	return (dev && dev->fwnode == data) ? 1 : 0;
-}
-
-static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
-{
-	struct acpi_handle *dev_handle = ACPI_HANDLE(&client->dev);
-	struct acpi_handle_list dep_devices;
-	struct device *dep_dev;
-	int ret;
-	int i;
-
-	// Get dependent INT3472 device
-	if (!acpi_has_method(dev_handle, "_DEP")) {
-		printk("No dependent devices\n");
-		return -100;
-	}
-
-	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
-					 &dep_devices);
-	if (ACPI_FAILURE(ret)) {
-		printk("Failed to evaluate _DEP.\n");
-		return -ENODEV;
-	}
-
-	for (i = 0; i < dep_devices.count; i++) {
-		struct acpi_device *device;
-		struct acpi_device_info *info;
-
-		ret = acpi_get_object_info(dep_devices.handles[i], &info);
-		if (ACPI_FAILURE(ret)) {
-			printk("Error reading _DEP device info\n");
-			return -ENODEV;
-		}
-
-		if (info->valid & ACPI_VALID_HID &&
-				!strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &device))
-				return -ENODEV;
-
-			dep_dev = bus_find_device(&platform_bus_type, NULL,
-					&device->fwnode, match_depend);
-			if (dep_dev) {
-				dev_info(&client->dev, "Dependent platform device found: %s\n",
-					dev_name(dep_dev));
-				break;
-			}
-		}
-	}
-
-	if (!dep_dev) {
-		dev_err(ov7251->dev, "Error getting dependent platform device\n");
-		return ret;
-	}
-	ov7251->dep_dev = dep_dev;
-
-	return ret;
-}
-
 static int ov7251_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct fwnode_handle *endpoint;
 	struct ov7251 *ov7251;
-	struct device *dep_dev;
 	u8 chip_id_high, chip_id_low, chip_rev;
 	int ret;
 
@@ -1404,25 +1330,6 @@ static int ov7251_probe(struct i2c_client *client)
 			dev_err(dev, "cannot get analog regulator\n");
 			return PTR_ERR(ov7251->analog_regulator);
 		}
-	}
-
-	ret = get_dep_dev(client, ov7251);
-	if (ret) {
-		dev_err(dev, "cannot get dep_dev\n");
-		return ret;
-	}
-	dep_dev = ov7251->dep_dev;
-
-	ov7251->enable_gpio_0 = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
-	if (IS_ERR(ov7251->enable_gpio_0)) {
-		dev_err(dev, "cannot get enable gpio enable_gpio_0\n");
-		return PTR_ERR(ov7251->enable_gpio_0);
-	}
-
-	ov7251->enable_gpio_1 = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
-	if (IS_ERR(ov7251->enable_gpio_1)) {
-		dev_err(dev, "cannot get enable gpio enable_gpio_1\n");
-		return PTR_ERR(ov7251->enable_gpio_1);
 	}
 
 	mutex_init(&ov7251->lock);
@@ -1564,10 +1471,6 @@ static int ov7251_remove(struct i2c_client *client)
 
 	v4l2_async_unregister_subdev(&ov7251->sd);
 	media_entity_cleanup(&ov7251->sd.entity);
-	if (ov7251->enable_gpio_0)
-		gpiod_put(ov7251->enable_gpio_0);
-	if (ov7251->enable_gpio_1)
-		gpiod_put(ov7251->enable_gpio_1);
 	v4l2_ctrl_handler_free(&ov7251->ctrls);
 	mutex_destroy(&ov7251->lock);
 
