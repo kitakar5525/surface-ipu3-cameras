@@ -9,3 +9,4 @@
 #include "CAM3/mipi_camera.dsl"
 
 #include "CIO2/ipu_endpoints.dsl"
+#include "CIO2/ipu_ports.dsl"
