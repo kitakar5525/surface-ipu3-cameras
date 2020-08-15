@@ -61,6 +61,9 @@ Scope (_SB.PCI0.I2C2)
             Return (0x0F)
         }
 
+		Name (_PR0, Package () { ^^I2C2.SKC1.OVFI })
+		Name (_PR3, Package () { ^^I2C2.SKC1.OVFI })
+
         Method (SSDB, 0, NotSerialized)
         {
             Name (PAR, Buffer (0x6C)
