@@ -37,7 +37,7 @@ Scope (_SB.PCI0.I2C3.CAMR)
                 Package() { 360000000 }
             },
             Package () { "remote-endpoint",
-                Package() { \_SB.PCI0.CIO2, 0, 0 }
+                // Package() { \_SB.PCI0.CIO2, 0, 0 }
             },
         }
     })
