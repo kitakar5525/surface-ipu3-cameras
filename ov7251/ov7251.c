@@ -1285,26 +1285,26 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
+	ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
+					&ov7251->xclk_freq);
+	if (ret) {
+		dev_err(dev, "could not get xclk frequency\n");
+		return ret;
+	}
+
+	/* external clock must be 24MHz, allow 1% tolerance */
+	if (ov7251->xclk_freq < 23760000 || ov7251->xclk_freq > 24240000) {
+		dev_err(dev, "external clock frequency %u is not supported\n",
+			ov7251->xclk_freq);
+		return -EINVAL;
+	}
+
 	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
 		/* get system clock (xclk) */
 		ov7251->xclk = devm_clk_get(dev, "xclk");
 		if (IS_ERR(ov7251->xclk)) {
 			dev_err(dev, "could not get xclk");
 			return PTR_ERR(ov7251->xclk);
-		}
-
-		ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
-						&ov7251->xclk_freq);
-		if (ret) {
-			dev_err(dev, "could not get xclk frequency\n");
-			return ret;
-		}
-
-		/* external clock must be 24MHz, allow 1% tolerance */
-		if (ov7251->xclk_freq < 23760000 || ov7251->xclk_freq > 24240000) {
-			dev_err(dev, "external clock frequency %u is not supported\n",
-				ov7251->xclk_freq);
-			return -EINVAL;
 		}
 
 		ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
