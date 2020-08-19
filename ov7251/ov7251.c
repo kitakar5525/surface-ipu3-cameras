@@ -1358,6 +1358,13 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
+	ret = get_dep_dev(client, ov7251);
+	if (ret) {
+		dev_err(dev, "cannot get dep_dev\n");
+		return ret;
+	}
+	dep_dev = ov7251->dep_dev;
+
 	/* Try to get system clock (xclk). If failed, ignore xclk. */
 	ov7251->xclk = devm_clk_get(dev, "xclk");
 	if (IS_ERR(ov7251->xclk)) {
@@ -1408,13 +1415,6 @@ static int ov7251_probe(struct i2c_client *client)
 		dev_err(dev, "cannot get analog regulator\n");
 		return PTR_ERR(ov7251->analog_regulator);
 	}
-
-	ret = get_dep_dev(client, ov7251);
-	if (ret) {
-		dev_err(dev, "cannot get dep_dev\n");
-		return ret;
-	}
-	dep_dev = ov7251->dep_dev;
 
 	ov7251->enable_gpio_0 = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
 	if (IS_ERR(ov7251->enable_gpio_0)) {
