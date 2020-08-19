@@ -1366,7 +1366,7 @@ static int ov7251_probe(struct i2c_client *client)
 	dep_dev = ov7251->dep_dev;
 
 	/* Try to get system clock (xclk). If failed, ignore xclk. */
-	ov7251->xclk = devm_clk_get(dev, "xclk");
+	ov7251->xclk = devm_clk_get(dev, "tps68470-clk");
 	if (IS_ERR(ov7251->xclk)) {
 		dev_warn(dev, "could not get xclk");
 		ret = PTR_ERR(ov7251->xclk);
