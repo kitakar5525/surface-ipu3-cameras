@@ -37,7 +37,7 @@ Scope (_SB.PCI0.I2C2.CAMF)
                 Package() { 482400000 }
             },
             Package () { "remote-endpoint",
-                // Package() { \_SB.PCI0.CIO2, 1, 0 }
+                Package() { \_SB.PCI0.CIO2, 1, 0 }
             },
         }
     })
