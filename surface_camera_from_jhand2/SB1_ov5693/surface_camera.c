@@ -48,7 +48,7 @@ static const struct software_node nodes[] = {
 	{ "port0", &nodes[0] },
 	{ "endpoint0", &nodes[1], ov5693_props },
 	{ SURFACE_CIO2_HID },
-	{ "port0", &nodes[3] },
+	{ "port1", &nodes[3] },
 	{ "endpoint0", &nodes[4], cio2_props },
 	{ }
 };
