@@ -40,6 +40,7 @@ static const struct property_entry ov2680_props[] = {
 };
 
 static const struct property_entry cio2_props[] = {
+	PROPERTY_ENTRY_U32_ARRAY("data-lanes", cam1_data_lanes),
 	PROPERTY_ENTRY_REF("remote-endpoint", &nodes[SWNODE_OV2680_ENDPOINT0]),
 	{ }
 };
