@@ -18,7 +18,7 @@
  *     Compiler ID      "ACPI"
  *     Compiler Version 0x00040000 (262144)
  */
-DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000001)
+DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
 {
     /*
      * iASL Warning: There were 17 external control methods found during
