@@ -11,6 +11,10 @@ Scope (_SB.PCI0)
             {
                 Name (SBUF, ResourceTemplate ()
                 {
+                    I2cSerialBusV2 (0x0048, ControllerInitiated, 0x00061A80,
+                        AddressingMode7Bit, "\\_SB.PCI0.I2C2",
+                        0x00, ResourceConsumer, , Exclusive,
+                        )
                     GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
                         "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer, ,
                         )
