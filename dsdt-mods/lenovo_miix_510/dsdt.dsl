@@ -38420,7 +38420,10 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
 
     Scope (_SB)
     {
-        Mutex (MWMI, 0x00)
+        Method (WMI1, 0, NotSerialized)
+        {
+            Mutex (MWMI, 0x00)
+        }
 
         Device (WMI4)
         {
@@ -38480,7 +38483,7 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
             })
             Method (WQAD, 1, NotSerialized)
             {
-                Acquire (^^MWMI, 0xFFFF)
+                Acquire (^^WMI1.MWMI, 0xFFFF)
                 Local0 = PSAG (Arg0)
                 Local1 = DerefOf (ITEM [Local0])
                 Local2 = DerefOf (Local1 [Zero])
@@ -38489,7 +38492,7 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
                 Local5 = BATD (Local2, Local3)
                 Concatenate (Local4, ",", Local6)
                 Concatenate (Local6, Local5, Local7)
-                Release (^^MWMI)
+                Release (^^WMI1.MWMI)
                 Return (Local7)
             }
 
