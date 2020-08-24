@@ -239,6 +239,9 @@ struct ov5693_device {
 	u8 type;
 	bool vcm_update;
 	enum vcm_type vcm;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 enum ov5693_tok_type {
