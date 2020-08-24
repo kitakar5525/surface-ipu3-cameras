@@ -4,6 +4,7 @@
 #include <linux/acpi.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/pci.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <media/v4l2-ctrls.h>
@@ -2496,10 +2497,12 @@ void *get_dep_dev(struct device *dev)
 			if (acpi_bus_get_device(dep_devices.handles[i], &device))
 				return ERR_PTR(-ENODEV);
 
-			dep_dev = bus_find_device(&platform_bus_type, NULL,
+			/* FIXME: For Acer Switch Alpha 12, use pci_bus_type because
+			 * platform_bus_type doesn't work. */
+			dep_dev = bus_find_device(&pci_bus_type, NULL,
 					&device->fwnode, match_depend);
 			if (dep_dev) {
-				dev_info(dev, "Dependent platform device found: %s\n",
+				dev_info(dev, "Dependent device found: %s\n",
 					dev_name(dep_dev));
 				break;
 			}
@@ -2507,7 +2510,7 @@ void *get_dep_dev(struct device *dev)
 	}
 
 	if (!dep_dev) {
-		dev_err(dev, "Error getting dependent platform device\n");
+		dev_err(dev, "Error getting dependent device\n");
 		return ERR_PTR(-EINVAL);
 	}
 
