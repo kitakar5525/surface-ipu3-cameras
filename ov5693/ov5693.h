@@ -300,6 +300,10 @@ struct ov5693_device {
 
 	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	bool regulator_enabled;
+
+	struct clk *xvclk;
+	u32 xvclk_freq;
+	bool clk_enabled;
 };
 
 enum ov5693_tok_type {
