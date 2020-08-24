@@ -193,6 +193,7 @@ struct ov5693_device {
 
 	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	struct ov5693_resolution *curr_mode;
+	struct clk *xvclk;
 };
 
 enum ov5693_tok_type {
