@@ -1495,38 +1495,38 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 
 static int ov5693_probe(struct i2c_client *client)
 {
-	struct ov5693_device *dev;
+	struct ov5693_device *ov5693;
 	int ret = 0;
 
-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-	if (!dev)
+	ov5693 = kzalloc(sizeof(*ov5693), GFP_KERNEL);
+	if (!ov5693)
 		return -ENOMEM;
 
-	mutex_init(&dev->input_lock);
+	mutex_init(&ov5693->input_lock);
 
-	v4l2_i2c_subdev_init(&dev->sd, client, &ov5693_ops);
+	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 
-	ret = ov5693_s_config(&dev->sd, client->irq);
+	ret = ov5693_s_config(&ov5693->sd, client->irq);
 	if (ret)
 		goto out_free;
 
-	dev->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
-	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
-	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
+	ov5693->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 
-	ret = ov5693_init_controls(dev);
+	ret = ov5693_init_controls(ov5693);
 	if (ret)
 		ov5693_remove(client);
 
-	ret = media_entity_pads_init(&dev->sd.entity, 1, &dev->pad);
+	ret = media_entity_pads_init(&ov5693->sd.entity, 1, &ov5693->pad);
 	if (ret)
 		ov5693_remove(client);
 
 	return ret;
 out_free:
-	v4l2_device_unregister_subdev(&dev->sd);
-	kfree(dev);
+	v4l2_device_unregister_subdev(&ov5693->sd);
+	kfree(ov5693);
 	return ret;
 }
 
