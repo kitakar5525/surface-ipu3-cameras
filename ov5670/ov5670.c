@@ -1838,6 +1838,12 @@ struct ov5670 {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. Surface devices have three gpio pins.
+	 * TODO: do not hard-code that there are three, for the other devices? */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2063,17 +2069,65 @@ static const struct v4l2_ctrl_ops ov5670_ctrl_ops = {
 	.s_ctrl = ov5670_set_ctrl,
 };
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov5670 *ov5670)
+{
+	struct device *dep_dev = ov5670->dep_dev;
+
+	ov5670->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(ov5670->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	ov5670->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(ov5670->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	ov5670->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(ov5670->led_gpio)) {
+		dev_err(dep_dev, "Couldn't get GPIO LED\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov5670 *ov5670)
+{
+	gpiod_put(ov5670->xshutdn);
+	gpiod_put(ov5670->pwdnb);
+	gpiod_put(ov5670->led_gpio);
+}
+
+/* Controls GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov5670 *ov5670 = to_ov5670(sd);
+
+	gpiod_set_value_cansleep(ov5670->xshutdn, flag);
+	gpiod_set_value_cansleep(ov5670->pwdnb, flag);
+	gpiod_set_value_cansleep(ov5670->led_gpio, flag);
+
+	return 0;
+}
+
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
+	int ret;
+
 	/* turn on */
 	if (flag) {
-		/* TODO: to be added */
+		ret = gpio_crs_ctrl(sd, flag);
 	}
 
 	/* turn off in reverse order */
-	/* TODO: to be added */
+	ret = gpio_crs_ctrl(sd, flag);
 
-	return 0;
+	return ret;
 }
 
 static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
@@ -2647,6 +2701,12 @@ static int ov5670_probe(struct i2c_client *client)
 	}
 	dep_dev = ov5670->dep_dev;
 
+	ret = gpio_crs_get(ov5670);
+	if (ret) {
+		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+		return ret;
+	}
+
 	/* Initialize subdev */
 	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
 
@@ -2708,7 +2768,7 @@ static int ov5670_probe(struct i2c_client *client)
 	/* turn off sensor, after probed */
 	ret = power_down(&ov5670->sd);
 	if (ret)
-		dev_info(&client->dev, "ov5693 power-off err.\n");
+		dev_info(&client->dev, "ov5670 power-off err.\n");
 
 	return 0;
 
@@ -2731,6 +2791,8 @@ static int ov5670_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov5670 *ov5670 = to_ov5670(sd);
+
+	gpio_crs_put(ov5670);
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
