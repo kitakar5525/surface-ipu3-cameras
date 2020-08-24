@@ -954,14 +954,57 @@ static int ov5693_init(struct v4l2_subdev *sd)
 	return 0;
 }
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov5693_device *ov5693)
+{
+	struct device *dep_dev = ov5693->dep_dev;
+
+	ov5693->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(ov5693->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	ov5693->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(ov5693->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	ov5693->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(ov5693->led_gpio)) {
+		dev_err(dep_dev, "Couldn't get GPIO LED\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov5693_device *ov5693)
+{
+	gpiod_put(ov5693->xshutdn);
+	gpiod_put(ov5693->pwdnb);
+	gpiod_put(ov5693->led_gpio);
+}
+
+/* Controls GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+
+	gpiod_set_value_cansleep(ov5693->xshutdn, flag);
+	gpiod_set_value_cansleep(ov5693->pwdnb, flag);
+	gpiod_set_value_cansleep(ov5693->led_gpio, flag);
+
+	return 0;
+}
+
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
 	int ret;
 
-	/* TODO: enable/disable power here using gpio_ctrl */
-
-	/* TODO: return useful value */
-	ret=0;
+	ret = gpio_crs_ctrl(sd, flag);
 
 	return ret;
 }
@@ -1452,6 +1495,8 @@ static int ov5693_remove(struct i2c_client *client)
 
 	dev_dbg(&client->dev, "ov5693_remove...\n");
 
+	gpio_crs_put(ov5693);
+
 	v4l2_device_unregister_subdev(sd);
 
 	media_entity_cleanup(&ov5693->sd.entity);
@@ -1543,6 +1588,12 @@ static int ov5693_probe(struct i2c_client *client)
 		return ret;
 	}
 	dep_dev = ov5693->dep_dev;
+
+	ret = gpio_crs_get(ov5693);
+	if (ret) {
+		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+		return ret;
+	}
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 

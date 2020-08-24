@@ -242,6 +242,12 @@ struct ov5693_device {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. Surface devices have three gpio pins.
+	 * TODO: do not hard-code that there are three, for the other devices? */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 enum ov5693_tok_type {
