@@ -300,11 +300,11 @@ static int ov5693_start_streaming(struct ov5693_device *dev)
 	// registers are volatile. I guess the CHIP ID is non-volatile
 	// though...
 	// Some of these registers seem to be set in global settings?
-	ret = ov5693_write_reg_array(client, ov5693_pll_config);
-	if (ret) {
-		dev_err(&client->dev, "%s failed to set pll config\n", __func__);
-		return ret;
-	}
+	/*ret = ov5693_write_reg_array(client, ov5693_pll_config);*/
+	/*if (ret) {*/
+		/*dev_err(&client->dev, "%s failed to set pll config\n", __func__);*/
+		/*return ret;*/
+	/*}*/
 
 	/* Apply default values of current mode */
 	ret = ov5693_write_reg_array(client, dev->curr_mode->regs);
@@ -326,8 +326,6 @@ static int ov5693_start_streaming(struct ov5693_device *dev)
 		dev_err(&client->dev, "Failed to get stream\n");
 		return ret;
 	}
-
-	printk("========== Mode: %hu\n", stream);
 
 	return 0;
 }
@@ -512,11 +510,16 @@ static int __ov5693_power_on(struct ov5693_device *ov5693)
 		return -EINVAL;
 	}
 
+	gpiod_set_value_cansleep(ov5693->xshutdn, 0);
+	gpiod_set_value_cansleep(ov5693->pwdnb, 0);
+
 	ret = regulator_bulk_enable(OV5693_NUM_SUPPLIES, ov5693->supplies);
 	if (ret) {
 		dev_err(&client->dev, "Failed to enable regulators\n");
 		return ret;
 	}
+
+	gpiod_set_value_cansleep(ov5693->xshutdn, 0);
 
 	/* according to DS, at least 5ms is needed between DOVDD and PWDN */
 	/* add this delay time to 10~11ms*/
@@ -556,10 +559,10 @@ static int ov5693_remove(struct i2c_client *client)
 }
 
 // TODO: Put these in header?
-#define OV5693_PIXEL_RATE			(45 * 1000 * 1000 * 4)
-#define OV5693_LINK_FREQ_420MHZ		420000000
+#define OV5693_LINK_FREQ_19MHZ		19200000
+#define OV5693_PIXEL_RATE			(OV5693_LINK_FREQ_19MHZ * 2 * 2) / 10
 static const s64 link_freq_menu_items[] = {
-	OV5693_LINK_FREQ_420MHZ
+	OV5693_LINK_FREQ_19MHZ
 };
 
 /**
