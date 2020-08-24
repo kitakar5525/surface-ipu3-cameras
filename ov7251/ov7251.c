@@ -1268,9 +1268,9 @@ static int match_depend(struct device *dev, const void *data)
 	return (dev && dev->fwnode == data) ? 1 : 0;
 }
 
-static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
+void *get_dep_dev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(&client->dev);
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
 	struct acpi_handle_list dep_devices;
 	struct device *dep_dev;
 	int ret;
@@ -1279,14 +1279,14 @@ static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
 	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		printk("No dependent devices\n");
-		return -100;
+		return ERR_PTR(-ENODEV);
 	}
 
 	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
 					 &dep_devices);
 	if (ACPI_FAILURE(ret)) {
 		printk("Failed to evaluate _DEP.\n");
-		return -ENODEV;
+		return ERR_PTR(-ENODEV);
 	}
 
 	for (i = 0; i < dep_devices.count; i++) {
@@ -1296,18 +1296,18 @@ static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
 		ret = acpi_get_object_info(dep_devices.handles[i], &info);
 		if (ACPI_FAILURE(ret)) {
 			printk("Error reading _DEP device info\n");
-			return -ENODEV;
+			return ERR_PTR(-ENODEV);
 		}
 
 		if (info->valid & ACPI_VALID_HID &&
 				!strcmp(info->hardware_id.string, "INT3472")) {
 			if (acpi_bus_get_device(dep_devices.handles[i], &device))
-				return -ENODEV;
+				return ERR_PTR(-ENODEV);
 
 			dep_dev = bus_find_device(&platform_bus_type, NULL,
 					&device->fwnode, match_depend);
 			if (dep_dev) {
-				dev_info(&client->dev, "Dependent platform device found: %s\n",
+				dev_info(dev, "Dependent platform device found: %s\n",
 					dev_name(dep_dev));
 				break;
 			}
@@ -1315,12 +1315,11 @@ static int get_dep_dev(struct i2c_client *client, struct ov7251 *ov7251)
 	}
 
 	if (!dep_dev) {
-		dev_err(ov7251->dev, "Error getting dependent platform device\n");
-		return ret;
+		dev_err(dev, "Error getting dependent platform device\n");
+		return ERR_PTR(-EINVAL);
 	}
-	ov7251->dep_dev = dep_dev;
 
-	return ret;
+	return dep_dev;
 }
 
 static int ov7251_probe(struct i2c_client *client)
@@ -1358,9 +1357,10 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	ret = get_dep_dev(client, ov7251);
-	if (ret) {
-		dev_err(dev, "cannot get dep_dev\n");
+	ov7251->dep_dev = get_dep_dev(&client->dev);
+	if (IS_ERR(dep_dev)) {
+		ret = PTR_ERR(dep_dev);
+		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
 		return ret;
 	}
 	dep_dev = ov7251->dep_dev;
