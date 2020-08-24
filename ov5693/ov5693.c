@@ -1470,6 +1470,9 @@ static int ov5693_probe(struct i2c_client *client)
 	if (!ov5693)
 		return -ENOMEM;
 
+	ov5693->i2c_client = client;
+	ov5693->dev = &client->dev;
+
 	mutex_init(&ov5693->input_lock);
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);

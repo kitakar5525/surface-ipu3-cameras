@@ -218,6 +218,8 @@ enum vcm_type {
  * ov5693 device structure.
  */
 struct ov5693_device {
+	struct i2c_client *i2c_client;
+	struct device *dev;
 	struct v4l2_subdev sd;
 	struct media_pad pad;
 	struct v4l2_mbus_framefmt format;
