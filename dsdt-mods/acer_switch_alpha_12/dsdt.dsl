@@ -18,7 +18,7 @@
  *     Compiler ID      "1025"
  *     Compiler Version 0x00040000 (262144)
  */
-DefinitionBlock ("", "DSDT", 2, "ACRSYS", "ACRPRDCT", 0x00000000)
+DefinitionBlock ("", "DSDT", 2, "ACRSYS", "ACRPRDCT", 0x00000001)
 {
     /*
      * iASL Warning: There were 19 external control methods found during
