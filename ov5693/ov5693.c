@@ -1462,28 +1462,28 @@ static int ov5693_remove(struct i2c_client *client)
 
 static int ov5693_probe(struct i2c_client *client)
 {
-	struct ov5693_device *dev;
+	struct ov5693_device *ov5693;
 	int ret = 0;
 	unsigned int i;
 
-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-	if (!dev)
+	ov5693 = kzalloc(sizeof(*ov5693), GFP_KERNEL);
+	if (!ov5693)
 		return -ENOMEM;
 
-	mutex_init(&dev->input_lock);
+	mutex_init(&ov5693->input_lock);
 
-	v4l2_i2c_subdev_init(&dev->sd, client, &ov5693_ops);
+	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 
-	ret = ov5693_s_config(&dev->sd, client->irq);
+	ret = ov5693_s_config(&ov5693->sd, client->irq);
 	if (ret)
 		goto out_free;
 
-	dev->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
-	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
-	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
+	ov5693->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	ret =
-	    v4l2_ctrl_handler_init(&dev->ctrl_handler,
+	    v4l2_ctrl_handler_init(&ov5693->ctrl_handler,
 				   ARRAY_SIZE(ov5693_controls));
 	if (ret) {
 		ov5693_remove(client);
@@ -1491,26 +1491,26 @@ static int ov5693_probe(struct i2c_client *client)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(ov5693_controls); i++)
-		v4l2_ctrl_new_custom(&dev->ctrl_handler, &ov5693_controls[i],
+		v4l2_ctrl_new_custom(&ov5693->ctrl_handler, &ov5693_controls[i],
 				     NULL);
 
-	if (dev->ctrl_handler.error) {
+	if (ov5693->ctrl_handler.error) {
 		ov5693_remove(client);
-		return dev->ctrl_handler.error;
+		return ov5693->ctrl_handler.error;
 	}
 
 	/* Use same lock for controls as for everything else. */
-	dev->ctrl_handler.lock = &dev->input_lock;
-	dev->sd.ctrl_handler = &dev->ctrl_handler;
+	ov5693->ctrl_handler.lock = &ov5693->input_lock;
+	ov5693->sd.ctrl_handler = &ov5693->ctrl_handler;
 
-	ret = media_entity_pads_init(&dev->sd.entity, 1, &dev->pad);
+	ret = media_entity_pads_init(&ov5693->sd.entity, 1, &ov5693->pad);
 	if (ret)
 		ov5693_remove(client);
 
 	return ret;
 out_free:
-	v4l2_device_unregister_subdev(&dev->sd);
-	kfree(dev);
+	v4l2_device_unregister_subdev(&ov5693->sd);
+	kfree(ov5693);
 	return ret;
 }
 
