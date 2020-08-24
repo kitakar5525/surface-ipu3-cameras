@@ -4,6 +4,7 @@
 #include <linux/acpi.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
@@ -1832,6 +1833,9 @@ struct ov5670 {
 
 	/* Streaming on/off */
 	bool streaming;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2454,9 +2458,69 @@ static const struct v4l2_subdev_internal_ops ov5670_internal_ops = {
 	.open = ov5670_open,
 };
 
+static int match_depend(struct device *dev, const void *data)
+{
+	return (dev && dev->fwnode == data) ? 1 : 0;
+}
+
+static struct device *get_dep_dev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct device *dep_dev;
+	int ret;
+	int i;
+
+	// Get dependent INT3472 device
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		dev_err(dev, "No dependent devices\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device *device;
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			dev_err(dev, "Error reading _DEP device info\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+		    !strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &device))
+				return ERR_PTR(-ENODEV);
+
+			dep_dev = bus_find_device(&platform_bus_type, NULL,
+						  &device->fwnode, match_depend);
+			if (dep_dev) {
+				dev_info(dev,
+					 "Dependent platform device found: %s\n",
+					 dev_name(dep_dev));
+				break;
+			}
+		}
+	}
+
+	if (!dep_dev) {
+		dev_err(dev, "Error getting dependent platform device\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	return dep_dev;
+}
+
 static int ov5670_probe(struct i2c_client *client)
 {
 	struct ov5670 *ov5670;
+	struct device *dep_dev;
 	const char *err_msg;
 	u32 input_clk = 0;
 	int ret;
@@ -2474,6 +2538,14 @@ static int ov5670_probe(struct i2c_client *client)
 
 	/* Initialize subdev */
 	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
+
+	ov5670->dep_dev = get_dep_dev(&client->dev);
+	if (IS_ERR(ov5670->dep_dev)) {
+		ret = PTR_ERR(ov5670->dep_dev);
+		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+		return ret;
+	}
+	dep_dev = ov5670->dep_dev;
 
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
