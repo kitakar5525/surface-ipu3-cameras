@@ -214,6 +214,25 @@ enum vcm_type {
 	VCM_DW9714,
 };
 
+/* GPIOs provided by tps68470-gpio */
+static struct gpiod_lookup_table ov5693_pmic_gpios = {
+	.dev_id = "i2c-INT33BE:00",
+	.table = {
+		/* TODO: Not sure what exactly are needed. Just add all. */
+		GPIO_LOOKUP_IDX("tps68470-gpio", 0, "gpio.0", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 1, "gpio.1", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 2, "gpio.2", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 3, "gpio.3", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 4, "gpio.4", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 5, "gpio.5", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 6, "gpio.6", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 7, "s_enable", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 8, "s_idle", 0, GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("tps68470-gpio", 9, "s_resetn", 0, GPIO_ACTIVE_HIGH),
+		{ },
+	},
+};
+
 /*
  * ov5693 device structure.
  */
@@ -248,6 +267,19 @@ struct ov5693_device {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	/* GPIOs provided by tps68470-gpio */
+	/* TODO: Not sure what exactly are needed. Just add all. */
+	struct gpio_desc *gpio0;
+	struct gpio_desc *gpio1;
+	struct gpio_desc *gpio2;
+	struct gpio_desc *gpio3;
+	struct gpio_desc *gpio4;
+	struct gpio_desc *gpio5;
+	struct gpio_desc *gpio6;
+	struct gpio_desc *s_enable;
+	struct gpio_desc *s_idle;
+	struct gpio_desc *s_resetn;
 };
 
 enum ov5693_tok_type {
