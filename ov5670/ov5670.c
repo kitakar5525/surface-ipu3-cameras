@@ -2534,8 +2534,8 @@ static int ov5670_probe(struct i2c_client *client)
 	}
 
 	ov5670->dep_dev = get_dep_dev(&client->dev);
-	if (IS_ERR(dep_dev)) {
-		ret = PTR_ERR(dep_dev);
+	if (IS_ERR(ov5670->dep_dev)) {
+		ret = PTR_ERR(ov5670->dep_dev);
 		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
 		return ret;
 	}
