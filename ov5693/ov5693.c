@@ -1622,15 +1622,16 @@ static int ov5693_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	int index = fse->index;
-
-	if (index >= N_RES)
+	if (fse->index >= N_RES)
 		return -EINVAL;
 
-	fse->min_width = ov5693_res[index].width;
-	fse->min_height = ov5693_res[index].height;
-	fse->max_width = ov5693_res[index].width;
-	fse->max_height = ov5693_res[index].height;
+	if (fse->code != MEDIA_BUS_FMT_SGRBG10_1X10)
+		return -EINVAL;
+
+	fse->min_width = ov5693_res[fse->index].width;
+	fse->max_width = fse->min_width;
+	fse->min_height = ov5693_res[fse->index].height;
+	fse->max_height = fse->min_height;
 
 	return 0;
 }
