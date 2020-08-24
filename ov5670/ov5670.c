@@ -2,6 +2,7 @@
 // Copyright (c) 2017 Intel Corporation.
 
 #include <linux/acpi.h>
+#include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -2062,6 +2063,109 @@ static const struct v4l2_ctrl_ops ov5670_ctrl_ops = {
 	.s_ctrl = ov5670_set_ctrl,
 };
 
+static int power_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	/* turn on */
+	if (flag) {
+		/* TODO: to be added */
+	}
+
+	/* turn off in reverse order */
+	/* TODO: to be added */
+
+	return 0;
+}
+
+static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+
+	/* TODO: enable/disable GPIO here */
+
+	return 0;
+}
+
+static int __power_up(struct v4l2_subdev *sd)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	int ret;
+
+	/* power control */
+	ret = power_ctrl(sd, 1);
+	if (ret)
+		goto fail_power;
+
+	/* add some delay (10~11ms) */
+	usleep_range(10000, 11000);
+
+	/* gpio ctrl */
+	ret = gpio_ctrl(sd, 1);
+	if (ret) {
+		ret = gpio_ctrl(sd, 1);
+		if (ret)
+			goto fail_power;
+	}
+
+	/* add some delay (30~31ms) */
+	usleep_range(30000, 31000);
+
+	return 0;
+
+fail_power:
+	power_ctrl(sd, 0);
+	dev_err(&client->dev, "sensor power-up failed\n");
+
+	return ret;
+}
+
+static int power_down(struct v4l2_subdev *sd)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	int ret = 0;
+
+	/* gpio ctrl */
+	ret = gpio_ctrl(sd, 0);
+	if (ret) {
+		ret = gpio_ctrl(sd, 0);
+		if (ret)
+			dev_err(&client->dev, "gpio failed 2\n");
+	}
+
+	/* power control */
+	ret = power_ctrl(sd, 0);
+	if (ret)
+		dev_err(&client->dev, "vprog failed.\n");
+
+	return ret;
+}
+
+static int power_up(struct v4l2_subdev *sd)
+{
+	static const int retry_count = 4;
+	int i, ret;
+
+	for (i = 0; i < retry_count; i++) {
+		ret = __power_up(sd);
+		if (!ret)
+			return 0;
+
+		power_down(sd);
+	}
+	return ret;
+}
+
+static int ov5670_s_power(struct v4l2_subdev *sd, int on)
+{
+	int ret;
+
+	pr_info("%s: on %d\n", __func__, on);
+	if (on == 0)
+		return power_down(sd);
+
+	/* on != 0 */
+	ret = power_up(sd);
+	return ret;
+}
+
 /* Initialize control handlers */
 static int ov5670_init_controls(struct ov5670 *ov5670)
 {
@@ -2431,6 +2535,10 @@ static const struct v4l2_subdev_video_ops ov5670_video_ops = {
 	.s_stream = ov5670_set_stream,
 };
 
+static const struct v4l2_subdev_core_ops ov5670_core_ops = {
+	.s_power = ov5670_s_power,
+};
+
 static const struct v4l2_subdev_pad_ops ov5670_pad_ops = {
 	.enum_mbus_code = ov5670_enum_mbus_code,
 	.get_fmt = ov5670_get_pad_format,
@@ -2542,6 +2650,13 @@ static int ov5670_probe(struct i2c_client *client)
 	/* Initialize subdev */
 	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
 
+	ret = power_up(&ov5670->sd);
+	if (ret) {
+		err_msg = "ov5670 power-up err.";
+		power_down(&ov5670->sd);
+		goto error_print;
+	}
+
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
 	if (ret) {
@@ -2589,6 +2704,11 @@ static int ov5670_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_enable(&client->dev);
 	pm_runtime_idle(&client->dev);
+
+	/* turn off sensor, after probed */
+	ret = power_down(&ov5670->sd);
+	if (ret)
+		dev_info(&client->dev, "ov5693 power-off err.\n");
 
 	return 0;
 
