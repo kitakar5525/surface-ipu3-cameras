@@ -233,6 +233,23 @@ static struct gpiod_lookup_table ov5693_pmic_gpios = {
 	},
 };
 
+static const char * const ov5693_supply_names[] = {
+	/* dummy regulators */
+	// "dovdd",	/* Digital I/O power */
+	// "avdd",		/* Analog power */
+	// "dvdd",		/* Digital core power */
+
+	/* regulators provided by tps68470-regulator */
+	"CORE",
+	"ANA",
+	"VCM",
+	"VIO",
+	"VSIO",
+	"AUX1",
+	"AUX2",
+};
+#define OV5693_NUM_SUPPLIES ARRAY_SIZE(ov5693_supply_names)
+
 /*
  * ov5693 device structure.
  */
@@ -280,6 +297,9 @@ struct ov5693_device {
 	struct gpio_desc *s_enable;
 	struct gpio_desc *s_idle;
 	struct gpio_desc *s_resetn;
+
+	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
+	bool regulator_enabled;
 };
 
 enum ov5693_tok_type {

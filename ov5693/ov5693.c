@@ -34,6 +34,7 @@
 #include <linux/acpi.h>
 #include <linux/platform_device.h>
 #include <linux/gpio/machine.h>
+#include <linux/regulator/consumer.h>
 
 #include "ov5693.h"
 #include "ad5823.h"
@@ -1101,17 +1102,37 @@ static int gpio_pmic_ctrl(struct v4l2_subdev *sd, bool flag)
 	return 0;
 }
 
+/* Get regulators provided by tps68470-regulator */
+static int regulator_pmic_get(struct ov5693_device *ov5693)
+{
+	int i;
+
+	for (i = 0; i < OV5693_NUM_SUPPLIES; i++)
+		ov5693->supplies[i].supply = ov5693_supply_names[i];
+
+	return devm_regulator_bulk_get(ov5693->dev,
+				       OV5693_NUM_SUPPLIES,
+				       ov5693->supplies);
+}
+
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 	int ret;
 
 	/* turn on */
 	if (flag) {
 		ret = gpio_crs_ctrl(sd, flag);
 		ret = gpio_pmic_ctrl(sd, flag);
+		ret = regulator_bulk_enable(OV5693_NUM_SUPPLIES, ov5693->supplies);
+		ov5693->regulator_enabled = true;
 	}
 
 	/* turn off in reverse order */
+	if (ov5693->regulator_enabled) {
+		ret = regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
+		ov5693->regulator_enabled = false;
+	}
 	ret = gpio_pmic_ctrl(sd, flag);
 	ret = gpio_crs_ctrl(sd, flag);
 
@@ -1711,6 +1732,12 @@ static int ov5693_probe(struct i2c_client *client)
 		goto put_crs_gpio;
 	}
 
+	ret = regulator_pmic_get(ov5693);
+	if (ret) {
+		dev_err(&client->dev, "Failed to get power regulators\n");
+		goto put_pmic_gpio;
+	}
+
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 
 	ret = ov5693_s_config(&ov5693->sd, client->irq);
@@ -1751,6 +1778,8 @@ static int ov5693_probe(struct i2c_client *client)
 out_free:
 	v4l2_device_unregister_subdev(&ov5693->sd);
 	kfree(ov5693);
+put_pmic_gpio:
+	gpio_pmic_put(ov5693);
 put_crs_gpio:
 	gpiod_put(ov5693->xshutdn);
 	gpiod_put(ov5693->pwdnb);
