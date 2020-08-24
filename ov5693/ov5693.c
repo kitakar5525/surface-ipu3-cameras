@@ -1415,7 +1415,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 		fmt->height = ov5693_res[idx].height;
 	}
 
-	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	fmt->code = MEDIA_BUS_FMT_SGRBG10_1X10;
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
 		cfg->try_fmt = *fmt;
 		mutex_unlock(&dev->input_lock);
@@ -1486,7 +1486,7 @@ static int ov5693_get_fmt(struct v4l2_subdev *sd,
 
 	fmt->width = ov5693_res[dev->fmt_idx].width;
 	fmt->height = ov5693_res[dev->fmt_idx].height;
-	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	fmt->code = MEDIA_BUS_FMT_SGRBG10_1X10;
 
 	return 0;
 }
@@ -1614,7 +1614,7 @@ static int ov5693_enum_mbus_code(struct v4l2_subdev *sd,
 	if (code->index >= MAX_FMTS)
 		return -EINVAL;
 
-	code->code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	code->code = MEDIA_BUS_FMT_SGRBG10_1X10;
 	return 0;
 }
 
@@ -1791,7 +1791,7 @@ static int ov5693_probe(struct i2c_client *client)
 
 	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
-	ov5693->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
+	ov5693->format.code = MEDIA_BUS_FMT_SGRBG10_1X10;
 	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	ret =
 	    v4l2_ctrl_handler_init(&ov5693->ctrl_handler,
