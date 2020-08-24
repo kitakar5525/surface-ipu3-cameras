@@ -1447,15 +1447,15 @@ static const struct v4l2_subdev_ops ov5693_ops = {
 static int ov5693_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov5693_device *dev = to_ov5693_sensor(sd);
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 
 	dev_dbg(&client->dev, "ov5693_remove...\n");
 
 	v4l2_device_unregister_subdev(sd);
 
-	media_entity_cleanup(&dev->sd.entity);
-	v4l2_ctrl_handler_free(&dev->ctrl_handler);
-	kfree(dev);
+	media_entity_cleanup(&ov5693->sd.entity);
+	v4l2_ctrl_handler_free(&ov5693->ctrl_handler);
+	kfree(ov5693);
 
 	return 0;
 }
