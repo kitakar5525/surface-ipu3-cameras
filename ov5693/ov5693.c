@@ -1667,7 +1667,7 @@ static int ov5693_remove(struct i2c_client *client)
 	gpio_crs_put(ov5693);
 	gpio_pmic_put(ov5693);
 
-	v4l2_device_unregister_subdev(sd);
+	v4l2_async_unregister_subdev(sd);
 
 	media_entity_cleanup(&ov5693->sd.entity);
 	v4l2_ctrl_handler_free(&ov5693->ctrl_handler);
@@ -1818,10 +1818,18 @@ static int ov5693_probe(struct i2c_client *client)
 	if (ret)
 		ov5693_remove(client);
 
+	ret = v4l2_async_register_subdev_sensor_common(&ov5693->sd);
+	if (ret) {
+		dev_err(&client->dev, "failed to register V4L2 subdev: %d", ret);
+		goto media_entity_cleanup;
+	}
+
 	return ret;
 
+media_entity_cleanup:
+	media_entity_cleanup(&ov5693->sd.entity);
 out_free:
-	v4l2_device_unregister_subdev(&ov5693->sd);
+	v4l2_async_unregister_subdev(&ov5693->sd);
 	kfree(ov5693);
 disable_regulator:
 	regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
