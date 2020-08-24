@@ -74,6 +74,7 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
     External (_SB_.PCI0.PEG0.HPME, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (_SB_.PCI0.PEG1.HPME, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (_SB_.PCI0.PEG2.HPME, MethodObj)    // Warning: Unknown method, guessing 0 arguments
+    External (_SB_.PCI0.SAT0.SDSM, MethodObj)    // 4 Arguments    // Added manually after decompilation
     External (_SB_.PCI0.XHC_.DUAM, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (_SB_.PCI0.XHC_.RHUB.INIR, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (_SB_.TPM_.PTS_, MethodObj)    // Warning: Unknown method, guessing 1 arguments
@@ -113,7 +114,6 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
     External (PS0X, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (PS2X, MethodObj)    // Warning: Unknown method, guessing 0 arguments
     External (PS3X, MethodObj)    // Warning: Unknown method, guessing 0 arguments
-    External (SDSM, IntObj)
     External (SGGP, UnknownObj)
     External (SGMD, UnknownObj)
 
@@ -11347,11 +11347,7 @@ DefinitionBlock ("", "DSDT", 2, "LENOVO", "CB-01   ", 0x00000002)
 
                 If (CondRefOf (\_SB.PCI0.SAT0.SDSM))
                 {
-                    Return (SDSM) /* External reference */
-                    Arg0
-                    Arg1
-                    Arg2
-                    Arg3
+                    Return (SDSM (Arg0, Arg1, Arg2, Arg3))
                 }
 
                 Return (Zero)
