@@ -30,8 +30,6 @@
 #include <linux/v4l2-mediabus.h>
 #include <media/media-entity.h>
 
-#include "../../include/linux/atomisp_platform.h"
-
 /*
  * FIXME: non-preview resolutions are currently broken
  */
