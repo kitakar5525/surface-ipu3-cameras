@@ -1,0 +1,65 @@
+From d3f71aceb2d5692f5bf48e5eeeb9d7e18775ca38 Mon Sep 17 00:00:00 2001
+From: Tsuchiya Yuto <kitakar@gmail.com>
+Date: Thu, 9 Jul 2020 17:03:29 +0900
+Subject: [PATCH 1/3] media: ipu3-cio2: cio2_parse_firmware(): add debug print
+
+This commit adds debug output that shows sensor port availability.
+
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ drivers/media/pci/intel/ipu3/ipu3-cio2.c | 24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu3/ipu3-cio2.c b/drivers/media/pci/intel/ipu3/ipu3-cio2.c
+index 92f5eadf2c99f..7098cfad9417b 100644
+--- a/drivers/media/pci/intel/ipu3/ipu3-cio2.c
++++ b/drivers/media/pci/intel/ipu3/ipu3-cio2.c
+@@ -1491,12 +1491,21 @@ static int cio2_parse_firmware(struct cio2_device *cio2)
+ 			dev_fwnode(&cio2->pci_dev->dev), i, 0,
+ 			FWNODE_GRAPH_ENDPOINT_NEXT);
+ 
+-		if (!ep)
++		if (!ep) {
++			dev_info(&cio2->pci_dev->dev,
++				"%s(), endpoint not available for CIO2 port %d\n",
++				__func__, i);
+ 			continue;
++		}
+ 
+ 		ret = v4l2_fwnode_endpoint_parse(ep, &vep);
+-		if (ret)
++		if (ret) {
++			dev_info(&cio2->pci_dev->dev,
++				"%s(), v4l2_fwnode_endpoint_parse() failed for CIO2 port %d "
++				": (ret: %d)\n",
++				__func__, i, ret);
+ 			goto err_parse;
++		}
+ 
+ 		s_asd = kzalloc(sizeof(*s_asd), GFP_KERNEL);
+ 		if (!s_asd) {
+@@ -1509,11 +1518,20 @@ static int cio2_parse_firmware(struct cio2_device *cio2)
+ 
+ 		ret = v4l2_async_notifier_add_fwnode_remote_subdev(
+ 			&cio2->notifier, ep, &s_asd->asd);
+-		if (ret)
++		if (ret) {
++			dev_info(&cio2->pci_dev->dev,
++				"%s(), v4l2_async_notifier_add_fwnode_remote_subdev() failed "
++				"for CIO2 port %d : (ret: %d)\n",
++				__func__, i, ret);
+ 			goto err_parse;
++		}
+ 
+ 		fwnode_handle_put(ep);
+ 
++		dev_info(&cio2->pci_dev->dev,
++			"%s(), CIO2 port %d available: csi2.port: %d csi2.lanes: %d\n",
++			__func__, i, s_asd->csi2.port, s_asd->csi2.lanes);
++
+ 		continue;
+ 
+ err_parse:
+-- 
+2.27.0
+
