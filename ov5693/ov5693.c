@@ -1752,6 +1752,8 @@ static int ov5693_probe(struct i2c_client *client)
 
 	mutex_init(&ov5693->input_lock);
 
+	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
+
 	ov5693->dep_dev = get_dep_dev(&client->dev);
 	if (IS_ERR(ov5693->dep_dev)) {
 		ret = PTR_ERR(ov5693->dep_dev);
@@ -1783,8 +1785,6 @@ static int ov5693_probe(struct i2c_client *client)
 		dev_dbg(&client->dev, "Could not configure clock.\n");
 		goto disable_regulator;
 	}
-
-	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 
 	ret = ov5693_s_config(&ov5693->sd, client->irq);
 	if (ret)
