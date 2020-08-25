@@ -2916,6 +2916,9 @@ static int ov5670_probe(struct i2c_client *client)
 		goto error_print;
 	}
 
+	/* Initialize subdev */
+	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
+
 	ov5670->dep_dev = get_dep_dev(&client->dev);
 	if (IS_ERR(ov5670->dep_dev)) {
 		ret = PTR_ERR(ov5670->dep_dev);
@@ -2947,9 +2950,6 @@ static int ov5670_probe(struct i2c_client *client)
 		dev_dbg(&client->dev, "Could not configure clock.\n");
 		goto disable_regulator;
 	}
-
-	/* Initialize subdev */
-	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
 
 	ret = power_up(&ov5670->sd);
 	if (ret) {
