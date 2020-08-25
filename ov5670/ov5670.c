@@ -9,6 +9,7 @@
 #include <linux/pci.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/regulator/consumer.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
@@ -1835,6 +1836,23 @@ static struct gpiod_lookup_table ov5670_pmic_gpios = {
 	},
 };
 
+static const char * const ov5670_supply_names[] = {
+	/* dummy regulators */
+	// "dovdd",	/* Digital I/O power */
+	// "avdd",		/* Analog power */
+	// "dvdd",		/* Digital core power */
+
+	/* regulators provided by tps68470-regulator */
+	"CORE",
+	"ANA",
+	"VCM",
+	"VIO",
+	"VSIO",
+	"AUX1",
+	"AUX2",
+};
+#define OV5670_NUM_SUPPLIES ARRAY_SIZE(ov5670_supply_names)
+
 struct ov5670 {
 	struct v4l2_subdev sd;
 	struct media_pad pad;
@@ -1877,6 +1895,9 @@ struct ov5670 {
 	struct gpio_desc *s_enable;
 	struct gpio_desc *s_idle;
 	struct gpio_desc *s_resetn;
+
+	struct regulator_bulk_data supplies[OV5670_NUM_SUPPLIES];
+	bool regulator_enabled;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2250,17 +2271,38 @@ static int gpio_pmic_ctrl(struct v4l2_subdev *sd, bool flag)
 	return 0;
 }
 
+/* Get regulators provided by tps68470-regulator */
+static int regulator_pmic_get(struct ov5670 *ov5670)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
+	int i;
+
+	for (i = 0; i < OV5670_NUM_SUPPLIES; i++)
+		ov5670->supplies[i].supply = ov5670_supply_names[i];
+
+	return devm_regulator_bulk_get(&client->dev,
+				       OV5670_NUM_SUPPLIES,
+				       ov5670->supplies);
+}
+
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
+	struct ov5670 *ov5670 = to_ov5670(sd);
 	int ret;
 
 	/* turn on */
 	if (flag) {
 		ret = gpio_crs_ctrl(sd, flag);
 		ret = gpio_pmic_ctrl(sd, flag);
+		ret = regulator_bulk_enable(OV5670_NUM_SUPPLIES, ov5670->supplies);
+		ov5670->regulator_enabled = true;
 	}
 
 	/* turn off in reverse order */
+	if (ov5670->regulator_enabled) {
+		ret = regulator_bulk_disable(OV5670_NUM_SUPPLIES, ov5670->supplies);
+		ov5670->regulator_enabled = false;
+	}
 	ret = gpio_pmic_ctrl(sd, flag);
 	ret = gpio_crs_ctrl(sd, flag);
 
@@ -2850,6 +2892,12 @@ static int ov5670_probe(struct i2c_client *client)
 		goto put_crs_gpio;
 	}
 
+	ret = regulator_pmic_get(ov5670);
+	if (ret) {
+		dev_err(&client->dev, "Failed to get power regulators\n");
+		goto put_pmic_gpio;
+	}
+
 	/* Initialize subdev */
 	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
 
@@ -2923,6 +2971,9 @@ error_handler_free:
 
 error_mutex_destroy:
 	mutex_destroy(&ov5670->mutex);
+
+put_pmic_gpio:
+	gpio_pmic_put(ov5670);
 
 put_crs_gpio:
 	gpio_crs_put(ov5670);
