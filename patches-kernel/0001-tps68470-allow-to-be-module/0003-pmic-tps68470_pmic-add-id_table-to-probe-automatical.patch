@@ -1,0 +1,65 @@
+From ede8acf65e9b98128ef354014dc75d58aa170c44 Mon Sep 17 00:00:00 2001
+From: Tsuchiya Yuto <kitakar@gmail.com>
+Date: Tue, 25 Aug 2020 19:29:04 +0900
+Subject: [PATCH 3/3] pmic: tps68470_pmic add id_table to probe automatically
+ when built as module
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Note: to avoid the following warning:
+
+      CC [M]  drivers/acpi/pmic/tps68470_pmic.o
+    drivers/acpi/pmic/tps68470_pmic.c:459:4: warning: initializer-string for array of ‘char’ is too long
+      459 |  { "tps68470_pmic_opregion", 0 },
+          |    ^~~~~~~~~~~~~~~~~~~~~~~~
+    drivers/acpi/pmic/tps68470_pmic.c:459:4: note: (near initialization for ‘tps68470_pmic_id_table[0].name’)
+
+also changed name to tps68470_pmic_oprg in mfd/tps68470.c
+
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ drivers/acpi/pmic/tps68470_pmic.c | 7 +++++++
+ drivers/mfd/tps68470.c            | 2 +-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/pmic/tps68470_pmic.c b/drivers/acpi/pmic/tps68470_pmic.c
+index 49fb5662d6e2..e205ec9911a3 100644
+--- a/drivers/acpi/pmic/tps68470_pmic.c
++++ b/drivers/acpi/pmic/tps68470_pmic.c
+@@ -455,12 +455,19 @@ static int tps68470_pmic_opregion_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct platform_device_id tps68470_pmic_id_table[] = {
++	{ "tps68470_pmic_oprg", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(platform, tps68470_pmic_id_table);
++
+ static struct platform_driver tps68470_pmic_opregion_driver = {
+ 	.probe = tps68470_pmic_opregion_probe,
+ 	.remove = tps68470_pmic_opregion_remove,
+ 	.driver = {
+ 		.name = "tps68470_pmic_opregion",
+ 	},
++	.id_table = tps68470_pmic_id_table,
+ };
+ 
+ module_platform_driver(tps68470_pmic_opregion_driver)
+diff --git a/drivers/mfd/tps68470.c b/drivers/mfd/tps68470.c
+index 130a65c22132..853adef4f920 100644
+--- a/drivers/mfd/tps68470.c
++++ b/drivers/mfd/tps68470.c
+@@ -21,7 +21,7 @@
+ 
+ static const struct mfd_cell tps68470s[] = {
+ 	{ .name = "tps68470-gpio" },
+-	{ .name = "tps68470_pmic_opregion" },
++	{ .name = "tps68470_pmic_oprg" },
+ };
+ 
+ static const struct regmap_config tps68470_regmap_config = {
+-- 
+2.28.0
+
