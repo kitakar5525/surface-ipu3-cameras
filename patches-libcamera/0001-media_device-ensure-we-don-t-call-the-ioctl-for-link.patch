@@ -1,0 +1,44 @@
+From a6d394054facda3626d9c5f1b66a14fd69e38284 Mon Sep 17 00:00:00 2001
+From: Daniel Scally <djrscally@gmail.com>
+Date: Tue, 25 Aug 2020 20:43:40 +0900
+Subject: [PATCH] media_device: ensure we don't call the ioctl for links
+ flagged as immutable
+
+The errors along this line:
+
+	[0:05:04.496246145] [4012] ERROR MediaDevice media_device.cpp:802 /dev/media1[ipu3-imgu]: Failed to setup link: Invalid argument
+	Failed to configure camera
+
+Are because the program is trying to setup a media link that is flagged
+as immutable, and this is not allowed according to the documentation:
+
+	The only configurable property is the ENABLED link flag to
+	enable/disable a link. Links marked with the IMMUTABLE link
+	flag can not be enabled or disabled.
+
+If we check the flags set against the link to ensure we don't call the ioctl
+for links flagged as immutable, we move past that problem:
+
+(Patch from here:
+- https://github.com/linux-surface/linux-surface/issues/91#issuecomment-679124112)
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ src/libcamera/media_device.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libcamera/media_device.cpp b/src/libcamera/media_device.cpp
+index de18d57..007a45b 100644
+--- a/src/libcamera/media_device.cpp
++++ b/src/libcamera/media_device.cpp
+@@ -794,7 +794,7 @@ int MediaDevice::setupLink(const MediaLink *link, unsigned int flags)
+ 	linkDesc.sink.index = sink->index();
+ 	linkDesc.sink.flags = MEDIA_PAD_FL_SINK;
+ 
+-	linkDesc.flags = flags;
++	linkDesc.flags = flags | (link->flags() & MEDIA_LNK_FL_IMMUTABLE);
+ 
+ 	int ret = ioctl(fd_, MEDIA_IOC_SETUP_LINK, &linkDesc);
+ 	if (ret) {
+-- 
+2.28.0
+
