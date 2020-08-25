@@ -2,6 +2,7 @@
 // Copyright (c) 2017 Intel Corporation.
 
 #include <linux/acpi.h>
+#include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio/machine.h>
 #include <linux/i2c.h>
@@ -1898,6 +1899,10 @@ struct ov5670 {
 
 	struct regulator_bulk_data supplies[OV5670_NUM_SUPPLIES];
 	bool regulator_enabled;
+
+	struct clk *xvclk;
+	u32 xvclk_freq;
+	bool clk_enabled;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2285,6 +2290,39 @@ static int regulator_pmic_get(struct ov5670 *ov5670)
 				       ov5670->supplies);
 }
 
+/* Configure clock provided by tps68470-clk */
+static int ov5670_configure_clock(struct ov5670 *ov5670)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
+	u32 current_freq;
+	int ret;
+
+	ov5670->xvclk = devm_clk_get(&client->dev, "tps68470-clk");
+	if (IS_ERR(ov5670->xvclk)) {
+		dev_err(&client->dev, "xvclk clock missing or invalid.\n");
+		return PTR_ERR(ov5670->xvclk);
+	}
+
+	/* TODO: get this value from SSDB */
+	ov5670->xvclk_freq = 19200000;
+
+	ret = clk_set_rate(ov5670->xvclk, ov5670->xvclk_freq);
+	if (ret < 0) {
+		dev_err(&client->dev, "Error setting xvclk rate.\n");
+		return -EINVAL;
+	}
+
+	current_freq = clk_get_rate(ov5670->xvclk);
+	if (current_freq != ov5670->xvclk_freq) {
+		dev_err(&client->dev, "Couldn't set xvclk freq to %d Hz, "
+				 "current freq: %d Hz\n",
+				 ov5670->xvclk_freq, current_freq);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
 	struct ov5670 *ov5670 = to_ov5670(sd);
@@ -2296,9 +2334,15 @@ static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 		ret = gpio_pmic_ctrl(sd, flag);
 		ret = regulator_bulk_enable(OV5670_NUM_SUPPLIES, ov5670->supplies);
 		ov5670->regulator_enabled = true;
+		ret = clk_prepare_enable(ov5670->xvclk);
+		ov5670->clk_enabled = true;
 	}
 
 	/* turn off in reverse order */
+	if (ov5670->clk_enabled) {
+		clk_disable_unprepare(ov5670->xvclk);
+		ov5670->clk_enabled = false;
+	}
 	if (ov5670->regulator_enabled) {
 		ret = regulator_bulk_disable(OV5670_NUM_SUPPLIES, ov5670->supplies);
 		ov5670->regulator_enabled = false;
@@ -2898,6 +2942,12 @@ static int ov5670_probe(struct i2c_client *client)
 		goto put_pmic_gpio;
 	}
 
+	ret = ov5670_configure_clock(ov5670);
+	if (ret) {
+		dev_dbg(&client->dev, "Could not configure clock.\n");
+		goto disable_regulator;
+	}
+
 	/* Initialize subdev */
 	v4l2_i2c_subdev_init(&ov5670->sd, client, &ov5670_subdev_ops);
 
@@ -2971,6 +3021,9 @@ error_handler_free:
 
 error_mutex_destroy:
 	mutex_destroy(&ov5670->mutex);
+
+disable_regulator:
+	regulator_bulk_disable(OV5670_NUM_SUPPLIES, ov5670->supplies);
 
 put_pmic_gpio:
 	gpio_pmic_put(ov5670);
