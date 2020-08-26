@@ -16,8 +16,8 @@ make
 sudo insmod surface_camera.ko
 ```
 
-#### SB1_ov5693
+#### SB1_* dir
 
 Contrary to the prefixed name `SB1_`, the driver in the dir may work for
-all the Surface devices, provided that the port num the ov5693 sensor
-connected to is the same as SB1 (`port1`).
+all the Surface devices, provided that the port num the sensors connected
+to is the same as SB1 (I haven't check, but probably true).
