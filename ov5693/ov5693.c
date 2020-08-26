@@ -1837,9 +1837,7 @@ disable_regulator:
 put_pmic_gpio:
 	gpio_pmic_put(ov5693);
 put_crs_gpio:
-	gpiod_put(ov5693->xshutdn);
-	gpiod_put(ov5693->pwdnb);
-	gpiod_put(ov5693->led_gpio);
+	gpio_crs_put(ov5693);
 	return ret;
 }
 
