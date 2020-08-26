@@ -1682,11 +1682,13 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 	ov8865_power(sensor, false);
 	ov8865_reset(sensor, false);
 
-	ret = clk_prepare_enable(sensor->xclk);
-	if (ret) {
-		dev_err(&client->dev, "%s: failed to enable clock\n",
-			__func__);
-		return ret;
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ret = clk_prepare_enable(sensor->xclk);
+		if (ret) {
+			dev_err(&client->dev, "%s: failed to enable clock\n",
+				__func__);
+			return ret;
+		}
 	}
 
 	ov8865_power(sensor, true);
@@ -1705,15 +1707,19 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 
 err_power_off:
 	ov8865_power(sensor, false);
-	clk_disable_unprepare(sensor->xclk);
+	if (!is_acpi_node(dev_fwnode(&client->dev)))
+		clk_disable_unprepare(sensor->xclk);
 	return ret;
 }
 
 static void ov8865_set_power_off(struct ov8865_dev *sensor)
 {
+	struct i2c_client *client = sensor->i2c_client;
+
 	ov8865_power(sensor, false);
 	regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
-	clk_disable_unprepare(sensor->xclk);
+	if (!is_acpi_node(dev_fwnode(&client->dev)))
+		clk_disable_unprepare(sensor->xclk);
 }
 
 static int ov8865_set_power(struct ov8865_dev *sensor, bool on)
@@ -2436,19 +2442,25 @@ static int ov8865_probe(struct i2c_client *client)
 		return ret;
 	}
 
-	/* Get system clock (xclk). */
-	sensor->xclk = devm_clk_get(dev, "xclk");
-	if (IS_ERR(sensor->xclk)) {
-		dev_err(dev, "failed to get xclk\n");
-		return PTR_ERR(sensor->xclk);
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		/* Get system clock (xclk). */
+		sensor->xclk = devm_clk_get(dev, "xclk");
+		if (IS_ERR(sensor->xclk)) {
+			dev_err(dev, "failed to get xclk\n");
+			return PTR_ERR(sensor->xclk);
+		}
+
+		sensor->xclk_freq = clk_get_rate(sensor->xclk);
+		if (sensor->xclk_freq != 24000000) {
+			dev_err(dev, "xclk frequency out of range: %d Hz, it should be 24000000 Hz\n",
+				sensor->xclk_freq);
+			return -EINVAL;
+		}
+	} else {
+		/* TODO: read from SSDB */
+		sensor->xclk_freq = 19200000;
 	}
 
-	sensor->xclk_freq = clk_get_rate(sensor->xclk);
-	if (sensor->xclk_freq != 24000000) {
-		dev_err(dev, "xclk frequency out of range: %d Hz, it should be 24000000 Hz\n",
-			sensor->xclk_freq);
-		return -EINVAL;
-	}
 	/* Request optional power down pin. */
 	sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
 						    GPIOD_OUT_HIGH);
