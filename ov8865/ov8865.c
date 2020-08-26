@@ -5,6 +5,7 @@
  * Based on the ov5640 driver and an out of tree ov8865 driver by Allwinner.
  */
 
+#include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -2521,10 +2522,19 @@ static const struct of_device_id ov8865_dt_ids[] = {
 };
 MODULE_DEVICE_TABLE(of, ov8865_dt_ids);
 
+#ifdef CONFIG_ACPI
+static const struct acpi_device_id ov8865_acpi_ids[] = {
+	{"INT347A"},
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
+#endif
+
 static struct i2c_driver ov8865_i2c_driver = {
 	.driver	= {
 		 .name = "ov8865",
 		 .of_match_table = ov8865_dt_ids,
+		 .acpi_match_table = ACPI_PTR(ov8865_acpi_ids),
 	 },
 	 .id_table     = ov8865_id,
 	 .probe_new    = ov8865_probe,
