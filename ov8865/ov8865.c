@@ -1666,12 +1666,18 @@ static int ov8865_restore_mode(struct ov8865_dev *sensor)
 
 static void ov8865_power(struct ov8865_dev *sensor, bool enable)
 {
-	gpiod_set_value_cansleep(sensor->pwdn_gpio, enable ? 0 : 1);
+	struct i2c_client *client = sensor->i2c_client;
+
+	if (!is_acpi_node(dev_fwnode(&client->dev)))
+		gpiod_set_value_cansleep(sensor->pwdn_gpio, enable ? 0 : 1);
 }
 
 static void ov8865_reset(struct ov8865_dev *sensor, bool enable)
 {
-	gpiod_set_value_cansleep(sensor->reset_gpio, enable ? 0 : 1);
+	struct i2c_client *client = sensor->i2c_client;
+
+	if (!is_acpi_node(dev_fwnode(&client->dev)))
+		gpiod_set_value_cansleep(sensor->reset_gpio, enable ? 0 : 1);
 }
 
 static int ov8865_set_power_on(struct ov8865_dev *sensor)
@@ -2464,17 +2470,19 @@ static int ov8865_probe(struct i2c_client *client)
 		sensor->xclk_freq = 19200000;
 	}
 
-	/* Request optional power down pin. */
-	sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
-						    GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->pwdn_gpio))
-		return PTR_ERR(sensor->pwdn_gpio);
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		/* Request optional power down pin. */
+		sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
+								GPIOD_OUT_HIGH);
+		if (IS_ERR(sensor->pwdn_gpio))
+			return PTR_ERR(sensor->pwdn_gpio);
 
-	/* Request optional reset pin. */
-	sensor->reset_gpio = devm_gpiod_get_optional(dev, "reset",
-						     GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->reset_gpio))
-		return PTR_ERR(sensor->reset_gpio);
+		/* Request optional reset pin. */
+		sensor->reset_gpio = devm_gpiod_get_optional(dev, "reset",
+								GPIOD_OUT_HIGH);
+		if (IS_ERR(sensor->reset_gpio))
+			return PTR_ERR(sensor->reset_gpio);
+	}
 
 	v4l2_i2c_subdev_init(&sensor->sd, client, &ov8865_subdev_ops);
 	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
