@@ -1792,7 +1792,7 @@ static int ov5693_probe(struct i2c_client *client)
 
 	ret = ov5693_s_config(&ov5693->sd, client->irq);
 	if (ret)
-		goto out_free;
+		goto disable_regulator;
 
 	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
@@ -1833,15 +1833,15 @@ static int ov5693_probe(struct i2c_client *client)
 
 media_entity_cleanup:
 	media_entity_cleanup(&ov5693->sd.entity);
-out_free:
-	v4l2_async_unregister_subdev(&ov5693->sd);
-	kfree(ov5693);
 disable_regulator:
 	regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
 put_pmic_gpio:
 	gpio_pmic_put(ov5693);
 put_crs_gpio:
 	gpio_crs_put(ov5693);
+
+	v4l2_async_unregister_subdev(&ov5693->sd);
+	kfree(ov5693);
 	return ret;
 }
 
