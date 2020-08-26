@@ -1007,179 +1007,11 @@ static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
 	return 0;
 }
 
-/* Get GPIOs provided by tps68470-gpio */
-static int gpio_pmic_get(struct ov5693_device *ov5693)
-{
-	gpiod_add_lookup_table(&ov5693_pmic_gpios);
-
-	/* TODO_1: nicer way to get all GPIOs */
-	/* TODO_2: Not sure what exactly are needed. Just add all. */
-	ov5693->gpio0 = devm_gpiod_get_index(ov5693->dev, "gpio.0", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio0)) {
-		dev_err(ov5693->dev, "Error fetching gpio.0.\n");
-		goto fail;
-	}
-	ov5693->gpio1 = devm_gpiod_get_index(ov5693->dev, "gpio.1", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio1)) {
-		dev_err(ov5693->dev, "Error fetching gpio.1.\n");
-		goto fail;
-	}
-	ov5693->gpio2 = devm_gpiod_get_index(ov5693->dev, "gpio.2", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio2)) {
-		dev_err(ov5693->dev, "Error fetching gpio.2.\n");
-		goto fail;
-	}
-	ov5693->gpio3 = devm_gpiod_get_index(ov5693->dev, "gpio.3", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio3)) {
-		dev_err(ov5693->dev, "Error fetching gpio.3.\n");
-		goto fail;
-	}
-	ov5693->gpio4 = devm_gpiod_get_index(ov5693->dev, "gpio.4", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio4)) {
-		dev_err(ov5693->dev, "Error fetching gpio.4.\n");
-		goto fail;
-	}
-	ov5693->gpio5 = devm_gpiod_get_index(ov5693->dev, "gpio.5", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio5)) {
-		dev_err(ov5693->dev, "Error fetching gpio.5.\n");
-		goto fail;
-	}
-	ov5693->gpio6 = devm_gpiod_get_index(ov5693->dev, "gpio.6", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->gpio6)) {
-		dev_err(ov5693->dev, "Error fetching gpio.6.\n");
-		goto fail;
-	}
-	ov5693->s_enable = devm_gpiod_get_index(ov5693->dev, "s_enable", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->s_enable)) {
-		dev_err(ov5693->dev, "Error fetching s_enable.\n");
-		goto fail;
-	}
-	ov5693->s_idle = devm_gpiod_get_index(ov5693->dev, "s_idle", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->s_idle)) {
-		dev_err(ov5693->dev, "Error fetching s_idle.\n");
-		goto fail;
-	}
-	ov5693->s_resetn = devm_gpiod_get_index(ov5693->dev, "s_resetn", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5693->s_resetn)) {
-		dev_err(ov5693->dev, "Error fetching s_resetn.\n");
-		goto fail;
-	}
-
-	return 0;
-
-fail:
-	gpiod_remove_lookup_table(&ov5693_pmic_gpios);
-	return -EINVAL;
-}
-
-static void gpio_pmic_put(struct ov5693_device *ov5693)
-{
-	gpiod_put(ov5693->gpio0);
-	gpiod_put(ov5693->gpio1);
-	gpiod_put(ov5693->gpio2);
-	gpiod_put(ov5693->gpio3);
-	gpiod_put(ov5693->gpio4);
-	gpiod_put(ov5693->gpio5);
-	gpiod_put(ov5693->gpio6);
-	gpiod_put(ov5693->s_enable);
-	gpiod_put(ov5693->s_idle);
-	gpiod_put(ov5693->s_resetn);
-
-	gpiod_remove_lookup_table(&ov5693_pmic_gpios);
-}
-
-/* Controls GPIOs provided by tps68470-gpio */
-static int gpio_pmic_ctrl(struct v4l2_subdev *sd, bool flag)
-{
-	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
-
-	gpiod_set_value_cansleep(ov5693->gpio0, flag);
-	gpiod_set_value_cansleep(ov5693->gpio1, flag);
-	gpiod_set_value_cansleep(ov5693->gpio2, flag);
-	gpiod_set_value_cansleep(ov5693->gpio3, flag);
-	gpiod_set_value_cansleep(ov5693->gpio4, flag);
-	gpiod_set_value_cansleep(ov5693->gpio5, flag);
-	gpiod_set_value_cansleep(ov5693->gpio6, flag);
-	gpiod_set_value_cansleep(ov5693->s_enable, flag);
-	gpiod_set_value_cansleep(ov5693->s_idle, flag);
-	gpiod_set_value_cansleep(ov5693->s_resetn, flag);
-
-	return 0;
-}
-
-/* Get regulators provided by tps68470-regulator */
-static int regulator_pmic_get(struct ov5693_device *ov5693)
-{
-	int i;
-
-	for (i = 0; i < OV5693_NUM_SUPPLIES; i++)
-		ov5693->supplies[i].supply = ov5693_supply_names[i];
-
-	return devm_regulator_bulk_get(ov5693->dev,
-				       OV5693_NUM_SUPPLIES,
-				       ov5693->supplies);
-}
-
-/* Configure clock provided by tps68470-clk */
-static int ov5693_configure_clock(struct ov5693_device *ov5693)
-{
-	u32 current_freq;
-	int ret;
-
-	ov5693->xvclk = devm_clk_get(ov5693->dev, "tps68470-clk");
-	if (IS_ERR(ov5693->xvclk)) {
-		dev_err(ov5693->dev, "xvclk clock missing or invalid.\n");
-		return PTR_ERR(ov5693->xvclk);
-	}
-
-	/* TODO: get this value from SSDB */
-	ov5693->xvclk_freq = 19200000;
-
-	ret = clk_set_rate(ov5693->xvclk, ov5693->xvclk_freq);
-	if (ret < 0) {
-		dev_err(ov5693->dev, "Error setting xvclk rate.\n");
-		return -EINVAL;
-	}
-
-	current_freq = clk_get_rate(ov5693->xvclk);
-	if (current_freq != ov5693->xvclk_freq) {
-		dev_err(ov5693->dev, "Couldn't set xvclk freq to %d Hz, "
-				 "current freq: %d Hz\n",
-				 ov5693->xvclk_freq, current_freq);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
-	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
-	int ret;
 
-	/* turn on */
-	if (flag) {
-		ret = gpio_crs_ctrl(sd, flag);
-		ret = gpio_pmic_ctrl(sd, flag);
-		ret = regulator_bulk_enable(OV5693_NUM_SUPPLIES, ov5693->supplies);
-		ov5693->regulator_enabled = true;
-		ret = clk_prepare_enable(ov5693->xvclk);
-		ov5693->clk_enabled = true;
-	}
+	return gpio_crs_ctrl(sd, flag);
 
-	/* turn off in reverse order */
-	if (ov5693->clk_enabled) {
-		clk_disable_unprepare(ov5693->xvclk);
-		ov5693->clk_enabled = false;
-	}
-	if (ov5693->regulator_enabled) {
-		ret = regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
-		ov5693->regulator_enabled = false;
-	}
-	ret = gpio_pmic_ctrl(sd, flag);
-	ret = gpio_crs_ctrl(sd, flag);
-
-	return ret;
 }
 
 static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
@@ -1670,7 +1502,6 @@ static int ov5693_remove(struct i2c_client *client)
 	dev_dbg(&client->dev, "ov5693_remove...\n");
 
 	gpio_crs_put(ov5693);
-	gpio_pmic_put(ov5693);
 
 	v4l2_async_unregister_subdev(sd);
 
@@ -1772,27 +1603,9 @@ static int ov5693_probe(struct i2c_client *client)
 		return ret;
 	}
 
-	ret = gpio_pmic_get(ov5693);
-	if (ret) {
-		dev_err(dep_dev, "Failed to get PMIC GPIOs\n");
-		goto put_crs_gpio;
-	}
-
-	ret = regulator_pmic_get(ov5693);
-	if (ret) {
-		dev_err(&client->dev, "Failed to get power regulators\n");
-		goto put_pmic_gpio;
-	}
-
-	ret = ov5693_configure_clock(ov5693);
-	if (ret) {
-		dev_dbg(&client->dev, "Could not configure clock.\n");
-		goto disable_regulator;
-	}
-
 	ret = ov5693_s_config(&ov5693->sd, client->irq);
 	if (ret)
-		goto disable_regulator;
+		goto put_crs_gpio;
 
 	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
@@ -1833,10 +1646,6 @@ static int ov5693_probe(struct i2c_client *client)
 
 media_entity_cleanup:
 	media_entity_cleanup(&ov5693->sd.entity);
-disable_regulator:
-	regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
-put_pmic_gpio:
-	gpio_pmic_put(ov5693);
 put_crs_gpio:
 	gpio_crs_put(ov5693);
 
