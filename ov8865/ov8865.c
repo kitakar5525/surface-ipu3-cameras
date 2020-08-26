@@ -2604,34 +2604,42 @@ static int ov8865_probe(struct i2c_client *client)
 	sensor->current_mode = default_mode;
 	sensor->last_mode = default_mode;
 
-	/* Optional indication of physical rotation of sensor. */
-	ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
-				       &rotation);
-	if (!ret) {
-		switch (rotation) {
-		case 180:
-			sensor->upside_down = true;
-			/* fall through */
-		case 0:
-			break;
-		default:
-			dev_warn(dev, "%u degrees rotation is not supported, ignoring..\n",
-				 rotation);
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		/* Optional indication of physical rotation of sensor. */
+		ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
+						&rotation);
+		if (!ret) {
+			switch (rotation) {
+			case 180:
+				sensor->upside_down = true;
+				/* fall through */
+			case 0:
+				break;
+			default:
+				dev_warn(dev, "%u degrees rotation is not supported, ignoring..\n",
+					rotation);
+			}
 		}
+	} else {
+		/* TODO: read from fwnode or SSDB */
+		rotation = 180;
+		sensor->upside_down = true;
 	}
 
-	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(&client->dev),
-						  NULL);
-	if (!endpoint) {
-		dev_err(dev, "endpoint node not found\n");
-		return -EINVAL;
-	}
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(&client->dev),
+							NULL);
+		if (!endpoint) {
+			dev_err(dev, "endpoint node not found\n");
+			return -EINVAL;
+		}
 
-	ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
-	fwnode_handle_put(endpoint);
-	if (ret) {
-		dev_err(dev, "Could not parse endpoint\n");
-		return ret;
+		ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
+		fwnode_handle_put(endpoint);
+		if (ret) {
+			dev_err(dev, "Could not parse endpoint\n");
+			return ret;
+		}
 	}
 
 	/* For DT-based systems */
