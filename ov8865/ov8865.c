@@ -2437,18 +2437,20 @@ static int ov8865_probe(struct i2c_client *client)
 		}
 	}
 
-	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(&client->dev),
-						  NULL);
-	if (!endpoint) {
-		dev_err(dev, "endpoint node not found\n");
-		return -EINVAL;
-	}
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(&client->dev),
+							NULL);
+		if (!endpoint) {
+			dev_err(dev, "endpoint node not found\n");
+			return -EINVAL;
+		}
 
-	ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
-	fwnode_handle_put(endpoint);
-	if (ret) {
-		dev_err(dev, "Could not parse endpoint\n");
-		return ret;
+		ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
+		fwnode_handle_put(endpoint);
+		if (ret) {
+			dev_err(dev, "Could not parse endpoint\n");
+			return ret;
+		}
 	}
 
 	if (!is_acpi_node(dev_fwnode(&client->dev))) {
