@@ -2443,6 +2443,8 @@ static int ov8865_check_chip_id(struct ov8865_dev *sensor)
 		ret = -ENXIO;
 	}
 
+	dev_info(&client->dev, "ov8865 detected at address 0x%02x\n", client->addr);
+
 power_off:
 	ov8865_set_power_off(sensor);
 	return ret;
