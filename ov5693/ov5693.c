@@ -997,8 +997,12 @@ static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 
 	gpiod_set_value_cansleep(ov5693->xshutdn, flag);
+	/* Add some delay */
+	usleep_range(10000, 11000);
 	gpiod_set_value_cansleep(ov5693->pwdnb, flag);
+	usleep_range(10000, 11000);
 	gpiod_set_value_cansleep(ov5693->led_gpio, flag);
+	usleep_range(10000, 11000);
 
 	return 0;
 }
