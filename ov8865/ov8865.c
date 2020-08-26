@@ -1693,11 +1693,13 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 
 	ov8865_power(sensor, true);
 
-	ret = regulator_bulk_enable(OV8865_NUM_SUPPLIES, sensor->supplies);
-	if (ret) {
-		dev_err(&client->dev, "%s: failed to enable regulators\n",
-			__func__);
-		goto err_power_off;
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ret = regulator_bulk_enable(OV8865_NUM_SUPPLIES, sensor->supplies);
+		if (ret) {
+			dev_err(&client->dev, "%s: failed to enable regulators\n",
+				__func__);
+			goto err_power_off;
+		}
 	}
 
 	ov8865_reset(sensor, true);
@@ -1717,7 +1719,8 @@ static void ov8865_set_power_off(struct ov8865_dev *sensor)
 	struct i2c_client *client = sensor->i2c_client;
 
 	ov8865_power(sensor, false);
-	regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
+	if (!is_acpi_node(dev_fwnode(&client->dev)))
+		regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
 	if (!is_acpi_node(dev_fwnode(&client->dev)))
 		clk_disable_unprepare(sensor->xclk);
 }
@@ -2482,9 +2485,11 @@ static int ov8865_probe(struct i2c_client *client)
 	if (ret)
 		return ret;
 
-	ret = ov8865_get_regulators(sensor);
-	if (ret)
-		return ret;
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ret = ov8865_get_regulators(sensor);
+		if (ret)
+			return ret;
+	}
 
 	mutex_init(&sensor->lock);
 
