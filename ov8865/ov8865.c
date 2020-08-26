@@ -12,6 +12,7 @@
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
@@ -328,6 +329,9 @@ struct ov8865_dev {
 	struct ov8865_ctrls ctrls;
 
 	bool streaming;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 static inline struct ov8865_dev *to_ov8865_dev(struct v4l2_subdev *sd)
@@ -2383,11 +2387,71 @@ power_off:
 	return ret;
 }
 
+static int match_depend(struct device *dev, const void *data)
+{
+	return (dev && dev->fwnode == data) ? 1 : 0;
+}
+
+void *get_dep_dev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct device *dep_dev;
+	int ret;
+	int i;
+
+	// Get dependent INT3472 device
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		printk("No dependent devices\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
+					 &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		printk("Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device *device;
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			printk("Error reading _DEP device info\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+				!strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &device))
+				return ERR_PTR(-ENODEV);
+
+			dep_dev = bus_find_device(&platform_bus_type, NULL,
+					&device->fwnode, match_depend);
+			if (dep_dev) {
+				dev_info(dev, "Dependent platform device found: %s\n",
+					dev_name(dep_dev));
+				break;
+			}
+		}
+	}
+
+	if (!dep_dev) {
+		dev_err(dev, "Error getting dependent platform device\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	return dep_dev;
+}
+
 static int ov8865_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct fwnode_handle *endpoint;
 	struct ov8865_dev *sensor;
+	struct device *dep_dev;
 	const struct ov8865_mode_info *default_mode;
 	struct v4l2_mbus_framefmt *fmt;
 	u32 rotation;
@@ -2500,6 +2564,14 @@ static int ov8865_probe(struct i2c_client *client)
 		if (ret)
 			return ret;
 	}
+
+	sensor->dep_dev = get_dep_dev(&client->dev);
+	if (IS_ERR(sensor->dep_dev)) {
+		ret = PTR_ERR(sensor->dep_dev);
+		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+		return ret;
+	}
+	dep_dev = sensor->dep_dev;
 
 	mutex_init(&sensor->lock);
 
