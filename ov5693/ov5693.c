@@ -1250,8 +1250,8 @@ static int ov5693_detect(struct i2c_client *client)
 			      OV5693_SC_CMMN_SUB_ID, &high);
 	revision = (u8)high & 0x0f;
 
-	dev_dbg(&client->dev, "sensor_revision = 0x%x\n", revision);
-	dev_dbg(&client->dev, "detect ov5693 success\n");
+	dev_info(&client->dev, "sensor_revision = 0x%x\n", revision);
+	dev_info(&client->dev, "detect ov5693 success\n");
 	return 0;
 }
 
