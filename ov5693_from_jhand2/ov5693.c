@@ -174,7 +174,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 				      fmt->width, fmt->height);
 	fmt->width = mode->width;
 	fmt->height = mode->height;
-	fmt->code = MEDIA_BUS_FMT_SGRBG10_1X10;
+	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	fmt->field = V4L2_FIELD_NONE;
 
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
@@ -215,7 +215,7 @@ static int ov5693_get_fmt(struct v4l2_subdev *sd,
 	} else {
 		format->format.width = dev->curr_mode->width;
 		format->format.height = dev->curr_mode->height;
-		format->format.code = MEDIA_BUS_FMT_SGRBG10_1X10;
+		format->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 		format->format.field = V4L2_FIELD_NONE;
 	}
 
