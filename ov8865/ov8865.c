@@ -287,6 +287,12 @@ struct reg_value {
 	u32 delay_ms;
 };
 
+#define OV8865_LINK_FREQ_422MHZ			422400000
+
+static const s64 link_freq_menu_items[] = {
+	OV8865_LINK_FREQ_422MHZ
+};
+
 struct ov8865_mode_info {
 	enum ov8865_mode_id id;
 	u32 hact;
@@ -304,6 +310,7 @@ struct ov8865_ctrls {
 	struct v4l2_ctrl *gain;
 	struct v4l2_ctrl *hflip;
 	struct v4l2_ctrl *vflip;
+	struct v4l2_ctrl *link_freq;
 };
 
 struct ov8865_dev {
@@ -2197,6 +2204,10 @@ static int ov8865_init_controls(struct ov8865_dev *sensor)
 
 	v4l2_ctrl_handler_init(hdl, 32);
 	hdl->lock = &sensor->lock;
+	ctrls->link_freq = v4l2_ctrl_new_int_menu(hdl, ops, V4L2_CID_LINK_FREQ,
+					  0, 0, link_freq_menu_items);
+	if (ctrls->link_freq)
+		ctrls->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 	ctrls->pixel_rate = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_PIXEL_RATE,
 					      0, INT_MAX, 1,
 					      ov8865_calc_pixel_rate(sensor));
