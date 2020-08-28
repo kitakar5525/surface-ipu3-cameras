@@ -286,6 +286,51 @@ struct reg_value {
 	u32 delay_ms;
 };
 
+struct ov8865_reg_list {
+	u32 num_of_regs;
+	const struct reg_value *regs;
+};
+
+struct ov8865_link_freq_config {
+	u32 pixel_rate;
+	const struct ov8865_reg_list reg_list;
+};
+
+static const struct reg_value mipi_data_rate_840mbps[] = {
+	{0x0300, 0x04},
+	{0x0301, 0x00},
+	{0x0302, 0x84},
+	{0x0303, 0x00},
+	{0x0304, 0x03},
+	{0x0305, 0x01},
+	{0x0306, 0x01},
+	{0x030a, 0x00},
+	{0x030b, 0x00},
+	{0x030c, 0x00},
+	{0x030d, 0x26},
+	{0x030e, 0x00},
+	{0x030f, 0x06},
+	{0x0312, 0x01},
+	{0x3031, 0x0a},
+};
+
+#define OV8865_LINK_FREQ_422MHZ			422400000
+#define OV8865_LINK_FREQ_422MHZ_INDEX	0
+
+static const struct ov8865_link_freq_config link_freq_configs[] = {
+	{
+		.pixel_rate = (OV8865_LINK_FREQ_422MHZ * 2 * 2) / 10,
+		.reg_list = {
+			.num_of_regs = ARRAY_SIZE(mipi_data_rate_840mbps),
+			.regs = mipi_data_rate_840mbps,
+		}
+	}
+};
+
+static const s64 link_freq_menu_items[] = {
+	OV8865_LINK_FREQ_422MHZ
+};
+
 struct ov8865_mode_info {
 	enum ov8865_mode_id id;
 	u32 hact;
@@ -303,6 +348,7 @@ struct ov8865_ctrls {
 	struct v4l2_ctrl *gain;
 	struct v4l2_ctrl *hflip;
 	struct v4l2_ctrl *vflip;
+	struct v4l2_ctrl *link_freq;
 };
 
 struct ov8865_dev {
@@ -2197,6 +2243,10 @@ static int ov8865_init_controls(struct ov8865_dev *sensor)
 
 	v4l2_ctrl_handler_init(hdl, 32);
 	hdl->lock = &sensor->lock;
+	ctrls->link_freq = v4l2_ctrl_new_int_menu(hdl, ops, V4L2_CID_LINK_FREQ,
+					  0, 0, link_freq_menu_items);
+	if (ctrls->link_freq)
+		ctrls->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 	ctrls->pixel_rate = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_PIXEL_RATE,
 					      0, INT_MAX, 1,
 					      ov8865_calc_pixel_rate(sensor));
