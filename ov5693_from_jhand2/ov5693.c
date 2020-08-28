@@ -300,11 +300,11 @@ static int ov5693_start_streaming(struct ov5693_device *dev)
 	// registers are volatile. I guess the CHIP ID is non-volatile
 	// though...
 	// Some of these registers seem to be set in global settings?
-	/*ret = ov5693_write_reg_array(client, ov5693_pll_config);*/
-	/*if (ret) {*/
-		/*dev_err(&client->dev, "%s failed to set pll config\n", __func__);*/
-		/*return ret;*/
-	/*}*/
+	ret = ov5693_write_reg_array(client, ov5693_pll_config);
+	if (ret) {
+		dev_err(&client->dev, "%s failed to set pll config\n", __func__);
+		return ret;
+	}
 
 	/* Apply default values of current mode */
 	ret = ov5693_write_reg_array(client, dev->curr_mode->regs);
