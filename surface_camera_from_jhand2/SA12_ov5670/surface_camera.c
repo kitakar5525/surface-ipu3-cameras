@@ -31,6 +31,7 @@ static const struct software_node nodes[];
 u32 camf_data_lanes[2] = {1, 2};
 
 static const struct property_entry ov5670_props[] = {
+	PROPERTY_ENTRY_U32("clock-frequency", 19200000),
 	PROPERTY_ENTRY_U32("bus-type", 5), // D-PHY
 	PROPERTY_ENTRY_U32("clock-lanes", 0),
 	PROPERTY_ENTRY_U32_ARRAY("data-lanes", camf_data_lanes),
