@@ -1818,42 +1818,6 @@ static const struct ov5670_mode supported_modes[] = {
 	}
 };
 
-/* GPIOs provided by tps68470-gpio */
-static struct gpiod_lookup_table ov5670_pmic_gpios = {
-	.dev_id = "i2c-INT3479:00",
-	.table = {
-		/* TODO: Not sure what exactly are needed. Just add all. */
-		GPIO_LOOKUP_IDX("tps68470-gpio", 0, "gpio.0", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 1, "gpio.1", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 2, "gpio.2", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 3, "gpio.3", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 4, "gpio.4", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 5, "gpio.5", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 6, "gpio.6", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 7, "s_enable", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 8, "s_idle", 0, GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP_IDX("tps68470-gpio", 9, "s_resetn", 0, GPIO_ACTIVE_HIGH),
-		{ },
-	},
-};
-
-static const char * const ov5670_supply_names[] = {
-	/* dummy regulators */
-	// "dovdd",	/* Digital I/O power */
-	// "avdd",		/* Analog power */
-	// "dvdd",		/* Digital core power */
-
-	/* regulators provided by tps68470-regulator */
-	"CORE",
-	"ANA",
-	"VCM",
-	"VIO",
-	"VSIO",
-	"AUX1",
-	"AUX2",
-};
-#define OV5670_NUM_SUPPLIES ARRAY_SIZE(ov5670_supply_names)
-
 struct ov5670 {
 	struct v4l2_subdev sd;
 	struct media_pad pad;
@@ -1883,26 +1847,6 @@ struct ov5670 {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
-
-	/* GPIOs provided by tps68470-gpio */
-	/* TODO: Not sure what exactly are needed. Just add all. */
-	struct gpio_desc *gpio0;
-	struct gpio_desc *gpio1;
-	struct gpio_desc *gpio2;
-	struct gpio_desc *gpio3;
-	struct gpio_desc *gpio4;
-	struct gpio_desc *gpio5;
-	struct gpio_desc *gpio6;
-	struct gpio_desc *s_enable;
-	struct gpio_desc *s_idle;
-	struct gpio_desc *s_resetn;
-
-	struct regulator_bulk_data supplies[OV5670_NUM_SUPPLIES];
-	bool regulator_enabled;
-
-	struct clk *xvclk;
-	u32 xvclk_freq;
-	bool clk_enabled;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2174,183 +2118,9 @@ static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
 	return 0;
 }
 
-/* Get GPIOs provided by tps68470-gpio */
-static int gpio_pmic_get(struct ov5670 *ov5670)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
-
-	gpiod_add_lookup_table(&ov5670_pmic_gpios);
-
-	/* TODO_1: nicer way to get all GPIOs */
-	/* TODO_2: Not sure what exactly are needed. Just add all. */
-	ov5670->gpio0 = devm_gpiod_get_index(&client->dev, "gpio.0", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio0)) {
-		dev_err(&client->dev, "Error fetching gpio.0.\n");
-		goto fail;
-	}
-	ov5670->gpio1 = devm_gpiod_get_index(&client->dev, "gpio.1", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio1)) {
-		dev_err(&client->dev, "Error fetching gpio.1.\n");
-		goto fail;
-	}
-	ov5670->gpio2 = devm_gpiod_get_index(&client->dev, "gpio.2", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio2)) {
-		dev_err(&client->dev, "Error fetching gpio.2.\n");
-		goto fail;
-	}
-	ov5670->gpio3 = devm_gpiod_get_index(&client->dev, "gpio.3", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio3)) {
-		dev_err(&client->dev, "Error fetching gpio.3.\n");
-		goto fail;
-	}
-	ov5670->gpio4 = devm_gpiod_get_index(&client->dev, "gpio.4", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio4)) {
-		dev_err(&client->dev, "Error fetching gpio.4.\n");
-		goto fail;
-	}
-	ov5670->gpio5 = devm_gpiod_get_index(&client->dev, "gpio.5", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio5)) {
-		dev_err(&client->dev, "Error fetching gpio.5.\n");
-		goto fail;
-	}
-	ov5670->gpio6 = devm_gpiod_get_index(&client->dev, "gpio.6", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->gpio6)) {
-		dev_err(&client->dev, "Error fetching gpio.6.\n");
-		goto fail;
-	}
-	ov5670->s_enable = devm_gpiod_get_index(&client->dev, "s_enable", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->s_enable)) {
-		dev_err(&client->dev, "Error fetching s_enable.\n");
-		goto fail;
-	}
-	ov5670->s_idle = devm_gpiod_get_index(&client->dev, "s_idle", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->s_idle)) {
-		dev_err(&client->dev, "Error fetching s_idle.\n");
-		goto fail;
-	}
-	ov5670->s_resetn = devm_gpiod_get_index(&client->dev, "s_resetn", 0, GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5670->s_resetn)) {
-		dev_err(&client->dev, "Error fetching s_resetn.\n");
-		goto fail;
-	}
-
-	return 0;
-
-fail:
-	gpiod_remove_lookup_table(&ov5670_pmic_gpios);
-	return -EINVAL;
-}
-
-static void gpio_pmic_put(struct ov5670 *ov5670)
-{
-	gpiod_put(ov5670->gpio0);
-	gpiod_put(ov5670->gpio1);
-	gpiod_put(ov5670->gpio2);
-	gpiod_put(ov5670->gpio3);
-	gpiod_put(ov5670->gpio4);
-	gpiod_put(ov5670->gpio5);
-	gpiod_put(ov5670->gpio6);
-	gpiod_put(ov5670->s_enable);
-	gpiod_put(ov5670->s_idle);
-	gpiod_put(ov5670->s_resetn);
-
-	gpiod_remove_lookup_table(&ov5670_pmic_gpios);
-}
-
-/* Controls GPIOs provided by tps68470-gpio */
-static int gpio_pmic_ctrl(struct v4l2_subdev *sd, bool flag)
-{
-	struct ov5670 *ov5670 = to_ov5670(sd);
-
-	gpiod_set_value_cansleep(ov5670->gpio0, flag);
-	gpiod_set_value_cansleep(ov5670->gpio1, flag);
-	gpiod_set_value_cansleep(ov5670->gpio2, flag);
-	gpiod_set_value_cansleep(ov5670->gpio3, flag);
-	gpiod_set_value_cansleep(ov5670->gpio4, flag);
-	gpiod_set_value_cansleep(ov5670->gpio5, flag);
-	gpiod_set_value_cansleep(ov5670->gpio6, flag);
-	gpiod_set_value_cansleep(ov5670->s_enable, flag);
-	gpiod_set_value_cansleep(ov5670->s_idle, flag);
-	gpiod_set_value_cansleep(ov5670->s_resetn, flag);
-
-	return 0;
-}
-
-/* Get regulators provided by tps68470-regulator */
-static int regulator_pmic_get(struct ov5670 *ov5670)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
-	int i;
-
-	for (i = 0; i < OV5670_NUM_SUPPLIES; i++)
-		ov5670->supplies[i].supply = ov5670_supply_names[i];
-
-	return devm_regulator_bulk_get(&client->dev,
-				       OV5670_NUM_SUPPLIES,
-				       ov5670->supplies);
-}
-
-/* Configure clock provided by tps68470-clk */
-static int ov5670_configure_clock(struct ov5670 *ov5670)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
-	u32 current_freq;
-	int ret;
-
-	ov5670->xvclk = devm_clk_get(&client->dev, "tps68470-clk");
-	if (IS_ERR(ov5670->xvclk)) {
-		dev_err(&client->dev, "xvclk clock missing or invalid.\n");
-		return PTR_ERR(ov5670->xvclk);
-	}
-
-	/* TODO: get this value from SSDB */
-	ov5670->xvclk_freq = 19200000;
-
-	ret = clk_set_rate(ov5670->xvclk, ov5670->xvclk_freq);
-	if (ret < 0) {
-		dev_err(&client->dev, "Error setting xvclk rate.\n");
-		return -EINVAL;
-	}
-
-	current_freq = clk_get_rate(ov5670->xvclk);
-	if (current_freq != ov5670->xvclk_freq) {
-		dev_err(&client->dev, "Couldn't set xvclk freq to %d Hz, "
-				 "current freq: %d Hz\n",
-				 ov5670->xvclk_freq, current_freq);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 {
-	struct ov5670 *ov5670 = to_ov5670(sd);
-	int ret;
-
-	/* turn on */
-	if (flag) {
-		ret = gpio_crs_ctrl(sd, flag);
-		ret = gpio_pmic_ctrl(sd, flag);
-		ret = regulator_bulk_enable(OV5670_NUM_SUPPLIES, ov5670->supplies);
-		ov5670->regulator_enabled = true;
-		ret = clk_prepare_enable(ov5670->xvclk);
-		ov5670->clk_enabled = true;
-	}
-
-	/* turn off in reverse order */
-	if (ov5670->clk_enabled) {
-		clk_disable_unprepare(ov5670->xvclk);
-		ov5670->clk_enabled = false;
-	}
-	if (ov5670->regulator_enabled) {
-		ret = regulator_bulk_disable(OV5670_NUM_SUPPLIES, ov5670->supplies);
-		ov5670->regulator_enabled = false;
-	}
-	ret = gpio_pmic_ctrl(sd, flag);
-	ret = gpio_crs_ctrl(sd, flag);
-
-	return ret;
+	return gpio_crs_ctrl(sd, flag);
 }
 
 static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
@@ -2936,36 +2706,18 @@ static int ov5670_probe(struct i2c_client *client)
 		return ret;
 	}
 
-	ret = gpio_pmic_get(ov5670);
-	if (ret) {
-		err_msg = "Failed to get PMIC GPIOs";
-		goto put_crs_gpio;
-	}
-
-	ret = regulator_pmic_get(ov5670);
-	if (ret) {
-		err_msg = "Failed to get power regulators";
-		goto put_pmic_gpio;
-	}
-
-	ret = ov5670_configure_clock(ov5670);
-	if (ret) {
-		err_msg = "Could not configure clock.";
-		goto disable_regulator;
-	}
-
 	ret = power_up(&ov5670->sd);
 	if (ret) {
 		err_msg = "ov5670 power-up err.";
 		power_down(&ov5670->sd);
-		goto disable_regulator;
+		goto put_crs_gpio;
 	}
 
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
 	if (ret) {
 		err_msg = "ov5670_identify_module() error";
-		goto disable_regulator;
+		goto put_crs_gpio;
 	}
 
 	mutex_init(&ov5670->mutex);
@@ -3025,12 +2777,6 @@ error_handler_free:
 error_mutex_destroy:
 	mutex_destroy(&ov5670->mutex);
 
-disable_regulator:
-	regulator_bulk_disable(OV5670_NUM_SUPPLIES, ov5670->supplies);
-
-put_pmic_gpio:
-	gpio_pmic_put(ov5670);
-
 put_crs_gpio:
 	gpio_crs_put(ov5670);
 
@@ -3046,7 +2792,6 @@ static int ov5670_remove(struct i2c_client *client)
 	struct ov5670 *ov5670 = to_ov5670(sd);
 
 	gpio_crs_put(ov5670);
-	gpio_pmic_put(ov5670);
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
