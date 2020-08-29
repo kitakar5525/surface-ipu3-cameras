@@ -2925,32 +2925,32 @@ static int ov5670_probe(struct i2c_client *client)
 	ov5670->dep_dev = get_dep_dev(&client->dev);
 	if (IS_ERR(ov5670->dep_dev)) {
 		ret = PTR_ERR(ov5670->dep_dev);
-		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+		err_msg = "cannot get dep_dev: ret %d";
 		return ret;
 	}
 	dep_dev = ov5670->dep_dev;
 
 	ret = gpio_crs_get(ov5670);
 	if (ret) {
-		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+		err_msg = "Failed to get _CRS GPIOs";
 		return ret;
 	}
 
 	ret = gpio_pmic_get(ov5670);
 	if (ret) {
-		dev_err(dep_dev, "Failed to get PMIC GPIOs\n");
+		err_msg = "Failed to get PMIC GPIOs";
 		goto put_crs_gpio;
 	}
 
 	ret = regulator_pmic_get(ov5670);
 	if (ret) {
-		dev_err(&client->dev, "Failed to get power regulators\n");
+		err_msg = "Failed to get power regulators";
 		goto put_pmic_gpio;
 	}
 
 	ret = ov5670_configure_clock(ov5670);
 	if (ret) {
-		dev_dbg(&client->dev, "Could not configure clock.\n");
+		err_msg = "Could not configure clock.";
 		goto disable_regulator;
 	}
 
