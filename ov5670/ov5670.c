@@ -2419,6 +2419,9 @@ static int ov5670_identify_module(struct ov5670 *ov5670)
 		return -ENXIO;
 	}
 
+	dev_info(&client->dev, "OV5670 detected at address 0x%02x\n",
+			 client->addr);
+
 	return 0;
 }
 
