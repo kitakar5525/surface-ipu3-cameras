@@ -6,22 +6,22 @@
 #include <linux/pci.h>
 #include <media/v4l2-subdev.h>
 
-#define SWNODE_OV5693			0
-#define SWNODE_OV5693_PORT0		1
-#define SWNODE_OV5693_ENDPOINT0	2
+#define SWNODE_OV5670			0
+#define SWNODE_OV5670_PORT0		1
+#define SWNODE_OV5670_ENDPOINT0	2
 
 #define SWNODE_CIO2				3
 #define SWNODE_CIO2_PORT0		4
 #define SWNODE_CIO2_ENDPOINT0	5
 
-#define SURFACE_OV5693_HID	"INT33BE"
+#define SURFACE_OV5670_HID	"INT3479"
 #define SURFACE_CIO2_HID	"INT343E"
 
 #define CIO2_PCI_ID			0x9d32
 
 struct surface_camera {
 	struct pci_dev *cio2;
-	struct i2c_client *ov5693;
+	struct i2c_client *ov5670;
 };
 
 struct surface_camera camera;
@@ -30,7 +30,7 @@ static const struct software_node nodes[];
 
 u32 camf_data_lanes[2] = {1, 2};
 
-static const struct property_entry ov5693_props[] = {
+static const struct property_entry ov5670_props[] = {
 	PROPERTY_ENTRY_U32("bus-type", 5), // D-PHY
 	PROPERTY_ENTRY_U32("clock-lanes", 0),
 	PROPERTY_ENTRY_U32_ARRAY("data-lanes", camf_data_lanes),
@@ -39,14 +39,14 @@ static const struct property_entry ov5693_props[] = {
 };
 
 static const struct property_entry cio2_props[] = {
-	PROPERTY_ENTRY_REF("remote-endpoint", &nodes[SWNODE_OV5693_ENDPOINT0]),
+	PROPERTY_ENTRY_REF("remote-endpoint", &nodes[SWNODE_OV5670_ENDPOINT0]),
 	{ }
 };
 
 static const struct software_node nodes[] = {
-	{ SURFACE_OV5693_HID },
+	{ SURFACE_OV5670_HID },
 	{ "port0", &nodes[0] },
-	{ "endpoint0", &nodes[1], ov5693_props },
+	{ "endpoint0", &nodes[1], ov5670_props },
 	{ SURFACE_CIO2_HID },
 	{ "port0", &nodes[3] },
 	{ "endpoint0", &nodes[4], cio2_props },
@@ -62,16 +62,16 @@ static void surface_camera_remove_node(const struct software_node *n)
 
 static void surface_camera_unregister_nodes(void)
 {
-	surface_camera_remove_node(&nodes[SWNODE_OV5693_ENDPOINT0]);
-	surface_camera_remove_node(&nodes[SWNODE_OV5693_PORT0]);
-	surface_camera_remove_node(&nodes[SWNODE_OV5693]);
+	surface_camera_remove_node(&nodes[SWNODE_OV5670_ENDPOINT0]);
+	surface_camera_remove_node(&nodes[SWNODE_OV5670_PORT0]);
+	surface_camera_remove_node(&nodes[SWNODE_OV5670]);
 	
 	surface_camera_remove_node(&nodes[SWNODE_CIO2_ENDPOINT0]);
 	surface_camera_remove_node(&nodes[SWNODE_CIO2_PORT0]);
 	surface_camera_remove_node(&nodes[SWNODE_CIO2]);
 }
 
-static int surface_camera_check_ov5693(struct device *dev, void *data)
+static int surface_camera_check_ov5670(struct device *dev, void *data)
 {
 	struct i2c_client **client = data;
 	struct acpi_device *adev;
@@ -83,7 +83,7 @@ static int surface_camera_check_ov5693(struct device *dev, void *data)
 
 	hid = acpi_device_hid(adev);
 
-	if (strcmp(hid, SURFACE_OV5693_HID))
+	if (strcmp(hid, SURFACE_OV5670_HID))
 		return 0;
 
 	*client = to_i2c_client(dev);
@@ -102,21 +102,21 @@ static int __init surface_camera_init(void)
 		return ret;
 
 	// Find i2c device and add swnode as secondary
-	i2c_for_each_dev(&camera.ov5693, surface_camera_check_ov5693);
-	if (!camera.ov5693) {
+	i2c_for_each_dev(&camera.ov5670, surface_camera_check_ov5670);
+	if (!camera.ov5670) {
 		ret = -EPROBE_DEFER;
 		goto out;
 	}
 
-	fwnode = software_node_fwnode(&nodes[SWNODE_OV5693]);
+	fwnode = software_node_fwnode(&nodes[SWNODE_OV5670]);
 	if (!fwnode) {
 		ret = -ENODEV;
 		goto out;
 	}
 
 	fwnode->secondary = ERR_PTR(-ENODEV);
-	camera.ov5693->dev.fwnode = fwnode;
-	((struct v4l2_subdev *)camera.ov5693->dev.driver_data)->fwnode = fwnode;
+	camera.ov5670->dev.fwnode = fwnode;
+	((struct v4l2_subdev *)camera.ov5670->dev.driver_data)->fwnode = fwnode;
 
 	// Find pci device and add swnode as primary
 	camera.cio2 = pci_get_device(PCI_VENDOR_ID_INTEL, CIO2_PCI_ID, NULL);
@@ -149,7 +149,7 @@ out:
 static void __exit surface_camera_exit(void)
 {
 	camera.cio2->dev.fwnode = ERR_PTR(-ENODEV);
-	i2c_unregister_device(camera.ov5693);
+	i2c_unregister_device(camera.ov5670);
 	surface_camera_unregister_nodes();
 }
 
