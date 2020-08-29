@@ -2958,14 +2958,14 @@ static int ov5670_probe(struct i2c_client *client)
 	if (ret) {
 		err_msg = "ov5670 power-up err.";
 		power_down(&ov5670->sd);
-		goto error_print;
+		goto disable_regulator;
 	}
 
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
 	if (ret) {
 		err_msg = "ov5670_identify_module() error";
-		goto error_print;
+		goto disable_regulator;
 	}
 
 	mutex_init(&ov5670->mutex);
