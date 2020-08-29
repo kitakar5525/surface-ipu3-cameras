@@ -22,6 +22,9 @@
 struct surface_camera {
 	struct pci_dev *cio2;
 	struct i2c_client *ov5670;
+
+	/* Store original fwnode */
+	struct fwnode_handle *fwnode_cio2_orig;
 };
 
 struct surface_camera camera;
@@ -135,6 +138,9 @@ static int __init surface_camera_init(void)
 		goto out;
 	}
 
+	/* Backup original fwnode */
+	camera.fwnode_cio2_orig = camera.cio2->dev.fwnode;
+
 	fwnode->secondary = ERR_PTR(-ENODEV);
 	camera.cio2->dev.fwnode = fwnode;
 	ret = device_reprobe(&camera.cio2->dev);
@@ -154,7 +160,9 @@ static void __exit surface_camera_exit(void)
 {
 	pr_info("%s() called\n", __func__);
 
-	camera.cio2->dev.fwnode = ERR_PTR(-ENODEV);
+	/* Restore original fwnode */
+	camera.cio2->dev.fwnode = camera.fwnode_cio2_orig;
+
 	i2c_unregister_device(camera.ov5670);
 	pci_dev_put(camera.cio2);
 	surface_camera_unregister_nodes();
