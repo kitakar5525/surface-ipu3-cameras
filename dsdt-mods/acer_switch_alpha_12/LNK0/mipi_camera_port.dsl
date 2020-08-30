@@ -9,6 +9,7 @@ Scope (\_SB.PCI0.LNK0)
         ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
         Package () {
             Package () { "clock-frequency", 19200000 },
+            Package () { "rotation", 180 },
         }
     })
 
