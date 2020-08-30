@@ -2702,6 +2702,8 @@ static int ov5670_probe(struct i2c_client *client)
 	const char *err_msg;
 	int ret;
 
+	pr_info("%s() called\n", __func__);
+
 	ov5670 = devm_kzalloc(&client->dev, sizeof(*ov5670), GFP_KERNEL);
 	if (!ov5670) {
 		ret = -ENOMEM;
@@ -2810,6 +2812,8 @@ static int ov5670_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov5670 *ov5670 = to_ov5670(sd);
+
+	pr_info("%s() called\n", __func__);
 
 	gpio_crs_put(ov5670);
 
