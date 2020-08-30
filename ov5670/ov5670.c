@@ -11,6 +11,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/version.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
@@ -2216,8 +2217,10 @@ static int ov5670_s_power(struct v4l2_subdev *sd, int on)
 /* Initialize control handlers */
 static int ov5670_init_controls(struct ov5670 *ov5670)
 {
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 8, 0)
 	struct i2c_client *client = v4l2_get_subdevdata(&ov5670->sd);
 	struct v4l2_fwnode_device_properties props;
+#endif
 	struct v4l2_ctrl_handler *ctrl_hdlr;
 	s64 vblank_max;
 	s64 vblank_def;
@@ -2288,6 +2291,7 @@ static int ov5670_init_controls(struct ov5670 *ov5670)
 		goto error;
 	}
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 8, 0)
 	ret = v4l2_fwnode_device_parse(&client->dev, &props);
 	if (ret)
 		goto error;
@@ -2296,6 +2300,7 @@ static int ov5670_init_controls(struct ov5670 *ov5670)
 					      &props);
 	if (ret)
 		goto error;
+#endif
 
 	ov5670->sd.ctrl_handler = ctrl_hdlr;
 
