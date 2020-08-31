@@ -170,6 +170,16 @@ void dump_ssdb(uint8_t *data) {
 	printf("lanes_used: %d\n", d->lanes_used);
 	printf("mclk_speed: %d\n", d->mclk_speed);
 	printf("mclk_port: %d\n", d->mclk_port);
+
+	printf("/* Additional data */\n");
+	printf("rom_type: %d\n", d->rom_type);
+	printf("vcm_type: %d\n", d->vcm_type);
+	printf("flash_support: %d\n", d->flash_support);
+	printf("privacy_led: %d\n", d->privacy_led);
+	printf("degree: %d\n", d->degree);
+	printf("mipi_define: %d\n", d->mipi_define);
+	printf("control_logic_id: %d\n", d->control_logic_id);
+
 	printf("\n");
 }
 
