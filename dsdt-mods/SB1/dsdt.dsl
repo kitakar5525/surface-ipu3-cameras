@@ -3546,11 +3546,6 @@ DefinitionBlock ("", "DSDT", 2, "MSFT  ", "MSFT    ", 0x00000001)
 
                     Name (_ADR, 0x00040000)  // _ADR: Address
                 }
-
-                Device (ISP0)
-                {
-                    Name (_ADR, 0x00050000)  // _ADR: Address
-                }
             }
         }
     }
@@ -20255,24 +20250,6 @@ DefinitionBlock ("", "DSDT", 2, "MSFT  ", "MSFT    ", 0x00000001)
     }
 
     Scope (_SB.PCI0.GFX0)
-    {
-        Method (_DEP, 0, NotSerialized)  // _DEP: Dependencies
-        {
-            If (((S0ID == One) || (OSYS >= 0x07DF)))
-            {
-                Return (Package (0x01)
-                {
-                    PEPD
-                })
-            }
-            Else
-            {
-                Return (Package (0x00){})
-            }
-        }
-    }
-
-    Scope (_SB.PCI0.ISP0)
     {
         Method (_DEP, 0, NotSerialized)  // _DEP: Dependencies
         {
