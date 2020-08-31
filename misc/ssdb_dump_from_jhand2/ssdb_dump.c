@@ -85,16 +85,16 @@ void dump_bios_data(struct sensor_bios_data_packed *data) {
 
 int main() {
 	/* SB2 SSDB */
-	struct sensor_bios_data_packed *sb2_camf_data =
+	struct sensor_bios_data_packed *sb2_camf_ssdb_data =
 		(struct sensor_bios_data_packed *)sb2_camf_ssdb;
-	struct sensor_bios_data_packed *sb2_camr_data =
+	struct sensor_bios_data_packed *sb2_camr_ssdb_data =
 		(struct sensor_bios_data_packed *)sb2_camr_ssdb;
 
 	/* SB2 SSDB */
 	printf("SB2 CAMF SSDB data:\n");
-	dump_bios_data(sb2_camf_data);
+	dump_bios_data(sb2_camf_ssdb_data);
 	printf("SB2 CAMR SSDB data:\n");
-	dump_bios_data(sb2_camr_data);
+	dump_bios_data(sb2_camr_ssdb_data);
 
 	return 0;
 }
