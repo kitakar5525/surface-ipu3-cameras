@@ -1455,23 +1455,25 @@ static int ov7251_probe(struct i2c_client *client)
 	ov7251->i2c_client = client;
 	ov7251->dev = dev;
 
-	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
-	if (!endpoint) {
-		dev_err(dev, "endpoint node not found\n");
-		return -EINVAL;
-	}
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
+		if (!endpoint) {
+			dev_err(dev, "endpoint node not found\n");
+			return -EINVAL;
+		}
 
-	ret = v4l2_fwnode_endpoint_parse(endpoint, &ov7251->ep);
-	fwnode_handle_put(endpoint);
-	if (ret < 0) {
-		dev_err(dev, "parsing endpoint node failed\n");
-		return ret;
-	}
+		ret = v4l2_fwnode_endpoint_parse(endpoint, &ov7251->ep);
+		fwnode_handle_put(endpoint);
+		if (ret < 0) {
+			dev_err(dev, "parsing endpoint node failed\n");
+			return ret;
+		}
 
-	if (ov7251->ep.bus_type != V4L2_MBUS_CSI2_DPHY) {
-		dev_err(dev, "invalid bus type (%u), must be CSI2 (%u)\n",
-			ov7251->ep.bus_type, V4L2_MBUS_CSI2_DPHY);
-		return -EINVAL;
+		if (ov7251->ep.bus_type != V4L2_MBUS_CSI2_DPHY) {
+			dev_err(dev, "invalid bus type (%u), must be CSI2 (%u)\n",
+				ov7251->ep.bus_type, V4L2_MBUS_CSI2_DPHY);
+			return -EINVAL;
+		}
 	}
 
 	/* For DT-based systems */
@@ -1484,18 +1486,26 @@ static int ov7251_probe(struct i2c_client *client)
 		}
 	}
 
-	ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
-				       &ov7251->xclk_freq);
-	if (ret) {
-		dev_err(dev, "could not get xclk frequency\n");
-		return ret;
-	}
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
+						&ov7251->xclk_freq);
+		if (ret) {
+			dev_err(dev, "could not get xclk frequency\n");
+			return ret;
+		}
 
-	/* external clock must be 24MHz, allow 1% tolerance */
-	if (ov7251->xclk_freq < 23760000 || ov7251->xclk_freq > 24240000) {
-		dev_err(dev, "external clock frequency %u is not supported\n",
-			ov7251->xclk_freq);
-		return -EINVAL;
+		/* external clock must be 24MHz, allow 1% tolerance */
+		if (ov7251->xclk_freq < 23760000 || ov7251->xclk_freq > 24240000) {
+			dev_err(dev, "external clock frequency %u is not supported\n",
+				ov7251->xclk_freq);
+			return -EINVAL;
+		}
+	} else {
+		/* Can't read clock-frequency from fwnode with surface_camera
+		 * because currently surface_camera needs to be loaded before
+		 * sensor drivers. Hard-code for ACPI for now.
+		 */
+		ov7251->xclk_freq = 19200000;
 	}
 
 	/* For DT-based systems */
