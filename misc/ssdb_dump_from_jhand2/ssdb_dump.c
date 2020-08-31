@@ -92,10 +92,10 @@ int main() {
 	struct sensor_bios_data_packed *camr_data =
 		(struct sensor_bios_data_packed *)camr_ssdb;
 
-	printf("CAMF:");
+	printf("CAMF:\n");
 	dump_bios_data(camf_data);
 
-	printf("CAMR:");
+	printf("CAMR:\n");
 	dump_bios_data(camr_data);
 
 	return 0;
