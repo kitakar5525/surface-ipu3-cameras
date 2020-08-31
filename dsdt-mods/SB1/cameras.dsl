@@ -14,3 +14,5 @@
 #include "CIO2/ipu_cio2.dsl"
 #include "CIO2/ipu_endpoints.dsl"
 #include "CIO2/ipu_ports.dsl"
+
+#include "IMGU/ipu_imgu.dsl"
