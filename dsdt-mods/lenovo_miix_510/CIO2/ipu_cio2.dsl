@@ -4,33 +4,33 @@ Scope (\_SB_.PCI0)
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
         {
-            If ((CIOE == One))
-            {
-                Return (0x0F)
-            }
-            Else
-            {
-                Return (Zero)
-            }
+            Return (0x0F)
         }
 
-        Name (_HID, "INT343E")  // _HID: Hardware ID
-        Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings
+        If ((CIOE == One))
         {
-            Name (CBUF, ResourceTemplate ()
+            Name (_HID, "INT343E")  // _HID: Hardware ID
+            Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings
             {
-                Interrupt (ResourceConsumer, Level, ActiveLow, Shared, ,, _Y15)
+                Name (CBUF, ResourceTemplate ()
                 {
-                    0x00000010,
-                }
-                Memory32Fixed (ReadWrite,
-                    0xFE400000,         // Address Base
-                    0x00010000,         // Address Length
-                    )
-            })
-            CreateDWordField (CBUF, \_SB.PCI0.CIO2._CRS._Y15._INT, CIOV)  // _INT: Interrupts
-            CIOV = CIOI /* \CIOI */
-            Return (CBUF) /* \_SB_.PCI0.CIO2._CRS.CBUF */
+                    Interrupt (ResourceConsumer, Level, ActiveLow, Shared, ,, _Y15)
+                    {
+                        0x00000010,
+                    }
+                    Memory32Fixed (ReadWrite,
+                        0xFE400000,         // Address Base
+                        0x00010000,         // Address Length
+                        )
+                })
+                CreateDWordField (CBUF, \_SB.PCI0.CIO2._CRS._Y15._INT, CIOV)  // _INT: Interrupts
+                CIOV = CIOI /* \CIOI */
+                Return (CBUF) /* \_SB_.PCI0.CIO2._CRS.CBUF */
+            }
+        }
+        Else
+        {
+            Name (_ADR, 0x00140003)  // _ADR: Address
         }
     }
 }
