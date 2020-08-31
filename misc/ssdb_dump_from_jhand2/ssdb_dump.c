@@ -47,6 +47,7 @@ uint8_t camr_ssdb[] = {
 	/* 0068 */  0x00, 0x00, 0x00, 0x00                           // ....
 };
 
+/* From Intel's ipu4-acpi */
 struct sensor_bios_data_packed {
 	u8 version;
 	u8 sku;
