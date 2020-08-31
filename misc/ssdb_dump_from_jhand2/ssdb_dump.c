@@ -146,14 +146,14 @@ struct intel_ssdb {
 } __attribute__((__packed__));
 
 void dump_ssdb(uint8_t *data) {
-	struct sensor_bios_data_packed *d =
-		(struct sensor_bios_data_packed *)data;
+	struct intel_ssdb *d =
+		(struct intel_ssdb *)data;
 
-	printf("clockdiv: %d\n", d->clockdiv);
-	printf("link: %d\n", d->link);
-	printf("lanes: %d\n", d->lanes);
-	printf("mclkspeed: %d\n", d->mclkspeed);
-	printf("mclkport: %d\n", d->mclkport);
+	printf("lanes_clock_division: %d\n", d->lanes_clock_division);
+	printf("link_used: %d\n", d->link_used);
+	printf("lanes_used: %d\n", d->lanes_used);
+	printf("mclk_speed: %d\n", d->mclk_speed);
+	printf("mclk_port: %d\n", d->mclk_port);
 	printf("\n");
 }
 
