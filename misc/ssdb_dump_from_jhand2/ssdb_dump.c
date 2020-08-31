@@ -183,6 +183,17 @@ void dump_ssdb(uint8_t *data) {
 	printf("\n");
 }
 
+void dump_cldb(uint8_t *data) {
+	struct intel_cldb *d =
+		(struct intel_cldb *)data;
+
+	printf("version: %d\n", d->version);
+	printf("control_logic_type: %d\n", d->control_logic_type);
+	printf("control_logic_id: %d\n", d->control_logic_id);
+	printf("sensor_card_sku: %d\n", d->sensor_card_sku);
+	printf("\n");
+}
+
 int main() {
 	/* SB2 SSDB */
 	printf("SB2 CAMR SSDB data:\n");
