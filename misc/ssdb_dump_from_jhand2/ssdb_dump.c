@@ -145,6 +145,22 @@ struct intel_ssdb {
 						   the same size as seen on other firmwares.*/
 } __attribute__((__packed__));
 
+/* From old chromiumos' ACPI info reading implementation */
+struct intel_cldb {
+	u8 version;
+	/*
+	 * control logic type
+	 * 0: UNKNOWN
+	 * 1: DISCRETE(CRD-D)
+	 * 2: PMIC TPS68470
+	 * 3: PMIC uP6641
+	 */
+	u8 control_logic_type;
+	u8 control_logic_id; /* PMIC device node used for the camera sensor */
+	u8 sensor_card_sku;
+	u8 reserved[28];
+} __attribute__((__packed__));
+
 void dump_ssdb(uint8_t *data) {
 	struct intel_ssdb *d =
 		(struct intel_ssdb *)data;
