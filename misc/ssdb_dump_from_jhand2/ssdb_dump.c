@@ -1,6 +1,5 @@
 /**
- * This tool parses the SSDB fields from the surface book 2 DSDT and dumps
- * many of the fields.
+ * This tool parses the SSDB fields and dumps many of the fields.
  */
 
 #include <stdio.h>
@@ -12,8 +11,7 @@ typedef uint32_t u32;
 
 // These are hardcoded values for the ssdb dumped from the Surface Book 2
 // DSDT table.
-
-uint8_t camf_ssdb[] = {
+uint8_t sb2_camf_ssdb[] = {
 	/* 0000 */  0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // . ......
 	/* 0008 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // ........
 	/* 0010 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // ........
@@ -29,8 +27,7 @@ uint8_t camf_ssdb[] = {
 	/* 0060 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // ........
 	/* 0068 */  0x00, 0x00, 0x00, 0x00                           // ....
 };
-
-uint8_t camr_ssdb[] = {
+uint8_t sb2_camr_ssdb[] = {
 	/* 0000 */  0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // . ......
 	/* 0008 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // ........
 	/* 0010 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // ........
@@ -87,16 +84,17 @@ void dump_bios_data(struct sensor_bios_data_packed *data) {
 }
 
 int main() {
-	struct sensor_bios_data_packed *camf_data =
-		(struct sensor_bios_data_packed *)camf_ssdb;
-	struct sensor_bios_data_packed *camr_data =
-		(struct sensor_bios_data_packed *)camr_ssdb;
+	/* SB2 SSDB */
+	struct sensor_bios_data_packed *sb2_camf_data =
+		(struct sensor_bios_data_packed *)sb2_camf_ssdb;
+	struct sensor_bios_data_packed *sb2_camr_data =
+		(struct sensor_bios_data_packed *)sb2_camr_ssdb;
 
-	printf("CAMF:\n");
-	dump_bios_data(camf_data);
-
-	printf("CAMR:\n");
-	dump_bios_data(camr_data);
+	/* SB2 SSDB */
+	printf("SB2 CAMF SSDB data:\n");
+	dump_bios_data(sb2_camf_data);
+	printf("SB2 CAMR SSDB data:\n");
+	dump_bios_data(sb2_camr_data);
 
 	return 0;
 }
