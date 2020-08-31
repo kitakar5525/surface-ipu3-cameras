@@ -143,7 +143,7 @@ struct intel_ssdb {
 	uint8_t mclk_port;
 	uint8_t reserved[13];			/* Pads SSDB out so the binary blob in ACPI is
 						   the same size as seen on other firmwares.*/
-} __packed;
+} __attribute__((__packed__));
 
 void dump_ssdb(uint8_t *data) {
 	struct sensor_bios_data_packed *d =
