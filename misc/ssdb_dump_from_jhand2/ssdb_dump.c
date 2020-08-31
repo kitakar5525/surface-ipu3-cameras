@@ -90,31 +90,26 @@ struct sensor_bios_data_packed {
 	u8 reserved2[13];
 } __attribute__((__packed__));
 
-void dump_ssdb(struct sensor_bios_data_packed *data) {
-	printf("clockdiv: %d\n", data->clockdiv);
-	printf("link: %d\n", data->link);
-	printf("lanes: %d\n", data->lanes);
-	printf("mclkspeed: %d\n", data->mclkspeed);
-	printf("mclkport: %d\n", data->mclkport);
+void dump_ssdb(uint8_t *data) {
+	struct sensor_bios_data_packed *d =
+		(struct sensor_bios_data_packed *)data;
+
+	printf("clockdiv: %d\n", d->clockdiv);
+	printf("link: %d\n", d->link);
+	printf("lanes: %d\n", d->lanes);
+	printf("mclkspeed: %d\n", d->mclkspeed);
+	printf("mclkport: %d\n", d->mclkport);
 	printf("\n");
 }
 
 int main() {
 	/* SB2 SSDB */
-	struct sensor_bios_data_packed *sb2_camr_ssdb_data =
-		(struct sensor_bios_data_packed *)sb2_camr_ssdb;
-	struct sensor_bios_data_packed *sb2_camf_ssdb_data =
-		(struct sensor_bios_data_packed *)sb2_camf_ssdb;
-	struct sensor_bios_data_packed *sb2_cam3_ssdb_data =
-		(struct sensor_bios_data_packed *)sb2_cam3_ssdb;
-
-	/* SB2 SSDB */
 	printf("SB2 CAMR SSDB data:\n");
-	dump_ssdb(sb2_camr_ssdb_data);
+	dump_ssdb(sb2_camr_ssdb);
 	printf("SB2 CAMF SSDB data:\n");
-	dump_ssdb(sb2_camf_ssdb_data);
+	dump_ssdb(sb2_camf_ssdb);
 	printf("SB2 CAM3 SSDB data:\n");
-	dump_ssdb(sb2_cam3_ssdb_data);
+	dump_ssdb(sb2_cam3_ssdb);
 
 	return 0;
 }
