@@ -2,6 +2,7 @@
 // Copyright (c) 2017 Intel Corporation.
 
 #include <linux/acpi.h>
+#include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -2130,6 +2131,11 @@ static int __power_up(struct v4l2_subdev *sd)
 	ret = gpio_crs_ctrl(sd, true);
 	if (ret)
 		goto fail_power;
+
+	/* Add some delay (10~11ms).
+	 * This is required or identify_module() will fail.
+	 */
+	usleep_range(10000, 11000);
 
 	return 0;
 
