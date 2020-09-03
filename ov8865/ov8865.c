@@ -310,9 +310,11 @@ struct ov8865_dev {
 	struct clk *xclk;
 	u32 xclk_freq;
 
+	/* For DT-based systems */
 	struct regulator_bulk_data supplies[OV8865_NUM_SUPPLIES];
 	struct gpio_desc *reset_gpio;
 	struct gpio_desc *pwdn_gpio;
+
 	bool upside_down;
 
 	struct mutex lock;
@@ -1679,41 +1681,52 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 	struct i2c_client *client = sensor->i2c_client;
 	int ret = 0;
 
-	ov8865_power(sensor, false);
-	ov8865_reset(sensor, false);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ov8865_power(sensor, false);
+		ov8865_reset(sensor, false);
 
-	ret = clk_prepare_enable(sensor->xclk);
-	if (ret) {
-		dev_err(&client->dev, "%s: failed to enable clock\n",
-			__func__);
-		return ret;
+		ret = clk_prepare_enable(sensor->xclk);
+		if (ret) {
+			dev_err(&client->dev, "%s: failed to enable clock\n",
+				__func__);
+			return ret;
+		}
+
+		ov8865_power(sensor, true);
+
+		ret = regulator_bulk_enable(OV8865_NUM_SUPPLIES, sensor->supplies);
+		if (ret) {
+			dev_err(&client->dev, "%s: failed to enable regulators\n",
+				__func__);
+			goto err_power_off;
+		}
+
+		ov8865_reset(sensor, true);
+		usleep_range(10000, 12000);
 	}
-
-	ov8865_power(sensor, true);
-
-	ret = regulator_bulk_enable(OV8865_NUM_SUPPLIES, sensor->supplies);
-	if (ret) {
-		dev_err(&client->dev, "%s: failed to enable regulators\n",
-			__func__);
-		goto err_power_off;
-	}
-
-	ov8865_reset(sensor, true);
-	usleep_range(10000, 12000);
 
 	return 0;
 
 err_power_off:
-	ov8865_power(sensor, false);
-	clk_disable_unprepare(sensor->xclk);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ov8865_power(sensor, false);
+		clk_disable_unprepare(sensor->xclk);
+	}
 	return ret;
 }
 
 static void ov8865_set_power_off(struct ov8865_dev *sensor)
 {
-	ov8865_power(sensor, false);
-	regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
-	clk_disable_unprepare(sensor->xclk);
+	struct i2c_client *client = sensor->i2c_client;
+
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		ov8865_power(sensor, false);
+		regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
+		clk_disable_unprepare(sensor->xclk);
+	}
 }
 
 static int ov8865_set_power(struct ov8865_dev *sensor, bool on)
@@ -2436,30 +2449,41 @@ static int ov8865_probe(struct i2c_client *client)
 		return ret;
 	}
 
-	/* Get system clock (xclk). */
-	sensor->xclk = devm_clk_get(dev, "xclk");
-	if (IS_ERR(sensor->xclk)) {
-		dev_err(dev, "failed to get xclk\n");
-		return PTR_ERR(sensor->xclk);
-	}
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+		/* Get system clock (xclk). */
+		sensor->xclk = devm_clk_get(dev, "xclk");
+		if (IS_ERR(sensor->xclk)) {
+			dev_err(dev, "failed to get xclk\n");
+			return PTR_ERR(sensor->xclk);
+		}
 
-	sensor->xclk_freq = clk_get_rate(sensor->xclk);
-	if (sensor->xclk_freq != 24000000) {
-		dev_err(dev, "xclk frequency out of range: %d Hz, it should be 24000000 Hz\n",
-			sensor->xclk_freq);
-		return -EINVAL;
-	}
-	/* Request optional power down pin. */
-	sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
-						    GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->pwdn_gpio))
-		return PTR_ERR(sensor->pwdn_gpio);
+		sensor->xclk_freq = clk_get_rate(sensor->xclk);
+		if (sensor->xclk_freq != 24000000) {
+			dev_err(dev, "xclk frequency out of range: %d Hz, it should be 24000000 Hz\n",
+				sensor->xclk_freq);
+			return -EINVAL;
+		}
+		/* Request optional power down pin. */
+		sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
+								GPIOD_OUT_HIGH);
+		if (IS_ERR(sensor->pwdn_gpio))
+			return PTR_ERR(sensor->pwdn_gpio);
 
-	/* Request optional reset pin. */
-	sensor->reset_gpio = devm_gpiod_get_optional(dev, "reset",
-						     GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->reset_gpio))
-		return PTR_ERR(sensor->reset_gpio);
+		/* Request optional reset pin. */
+		sensor->reset_gpio = devm_gpiod_get_optional(dev, "reset",
+								GPIOD_OUT_HIGH);
+		if (IS_ERR(sensor->reset_gpio))
+			return PTR_ERR(sensor->reset_gpio);
+
+		ret = ov8865_get_regulators(sensor);
+		if (ret)
+			return ret;
+	} else {
+		/* For ACPI-based systems */
+		/* TODO: read from fwnode or SSDB */
+		sensor->xclk_freq = 19200000;
+	}
 
 	v4l2_i2c_subdev_init(&sensor->sd, client, &ov8865_subdev_ops);
 	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
@@ -2467,10 +2491,6 @@ static int ov8865_probe(struct i2c_client *client)
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
-	if (ret)
-		return ret;
-
-	ret = ov8865_get_regulators(sensor);
 	if (ret)
 		return ret;
 
