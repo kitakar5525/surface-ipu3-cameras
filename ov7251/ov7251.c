@@ -99,6 +99,12 @@ struct ov7251 {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
+	 * depending on devices. */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -739,6 +745,51 @@ static int ov7251_set_register_array(struct ov7251 *ov7251,
 	return 0;
 }
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov7251 *sensor, struct device *dep_dev)
+{
+	sensor->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(sensor->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	sensor->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(sensor->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(sensor->led_gpio))
+		dev_info(dep_dev, "Couldn't get GPIO LED. "
+				 "Maybe not exist, continue anyway.\n");
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov7251 *sensor)
+{
+	gpiod_put(sensor->xshutdn);
+	gpiod_put(sensor->pwdnb);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_put(sensor->led_gpio);
+}
+
+/* Control GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov7251 *sensor = to_ov7251(sd);
+
+	gpiod_set_value_cansleep(sensor->xshutdn, flag);
+	gpiod_set_value_cansleep(sensor->pwdnb, flag);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_set_value_cansleep(sensor->led_gpio, flag);
+
+	return 0;
+}
+
 static int ov7251_set_power_on(struct ov7251 *ov7251)
 {
 	int ret;
@@ -760,6 +811,10 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 		gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
 	}
 
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+		gpio_crs_ctrl(&ov7251->sd, true);
+
 	/* wait at least 65536 external clock cycles */
 	wait_us = DIV_ROUND_UP(65536 * 1000,
 			       DIV_ROUND_UP(ov7251->xclk_freq, 1000));
@@ -776,6 +831,10 @@ static void ov7251_set_power_off(struct ov7251 *ov7251)
 		gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
 		ov7251_regulators_disable(ov7251);
 	}
+
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+		gpio_crs_ctrl(&ov7251->sd, false);
 }
 
 static int ov7251_s_power(struct v4l2_subdev *sd, int on)
@@ -1433,6 +1492,12 @@ static int ov7251_probe(struct i2c_client *client)
 			return ret;
 		}
 		dep_dev = ov7251->dep_dev;
+
+		ret = gpio_crs_get(ov7251, dep_dev);
+		if (ret) {
+			dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+			return ret;
+		}
 	}
 
 	mutex_init(&ov7251->lock);
@@ -1571,6 +1636,10 @@ static int ov7251_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov7251 *ov7251 = to_ov7251(sd);
+
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+		gpio_crs_put(ov7251);
 
 	v4l2_async_unregister_subdev(&ov7251->sd);
 	media_entity_cleanup(&ov7251->sd.entity);
