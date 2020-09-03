@@ -12,6 +12,7 @@
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
@@ -331,6 +332,9 @@ struct ov8865_dev {
 	struct ov8865_ctrls ctrls;
 
 	bool streaming;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 static inline struct ov8865_dev *to_ov8865_dev(struct v4l2_subdev *sd)
@@ -2379,6 +2383,95 @@ power_off:
 	return ret;
 }
 
+/* Get acpi_device of dependent INT3472 device */
+static struct acpi_device *get_dep_adev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct acpi_device *dep_adev;
+	acpi_status status;
+	const char *dep_hid = "INT3472";
+	int i;
+
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		dev_err(dev, "No _DEP entry found\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	status = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(status)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device_info *info;
+		int match;
+
+		status = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(status)) {
+			dev_dbg(dev,
+				"Error reading _DEP device info, continue next\n");
+			continue;
+		}
+
+		match = info->valid & ACPI_VALID_HID &&
+			!strcmp(info->hardware_id.string, dep_hid);
+
+		kfree(info);
+
+		if (!match)
+			continue;
+
+		if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
+			dev_err(dev, "Error getting dependent ACPI device\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		/* found acpi_device of dependent device */
+		break;
+	}
+
+	if (!dep_adev) {
+		dev_err(dev, "Dependent ACPI device not found\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	dev_info(dev, "Dependent ACPI device found: %s\n",
+		 dev_name(&dep_adev->dev));
+
+	return dep_adev;
+}
+
+static int match_depend(struct device *dev, const void *data)
+{
+	return (dev && dev->fwnode == data) ? 1 : 0;
+}
+
+/* Get dependent INT3472 device */
+static struct device *get_dep_dev(struct device *dev)
+{
+	struct acpi_device *dep_adev;
+	struct device *dep_dev;
+
+	dep_adev = get_dep_adev(dev);
+	if (!dep_adev) {
+		dev_err(dev, "get_dep_adev() failed\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	dep_dev = bus_find_device(&platform_bus_type, NULL,
+				  &dep_adev->fwnode, match_depend);
+	if (!dep_dev) {
+		dev_err(dev, "Error getting dependent device\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	dev_info(dev, "Dependent device found: %s\n", dev_name(dep_dev));
+
+	return dep_dev;
+}
+
 static int ov8865_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
@@ -2386,6 +2479,7 @@ static int ov8865_probe(struct i2c_client *client)
 	struct ov8865_dev *sensor;
 	const struct ov8865_mode_info *default_mode;
 	struct v4l2_mbus_framefmt *fmt;
+	struct device *dep_dev;
 	u32 rotation;
 	int ret = 0;
 
@@ -2477,6 +2571,17 @@ static int ov8865_probe(struct i2c_client *client)
 		ret = ov8865_get_regulators(sensor);
 		if (ret)
 			return ret;
+	}
+
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(&client->dev))) {
+		sensor->dep_dev = get_dep_dev(&client->dev);
+		if (IS_ERR(sensor->dep_dev)) {
+			ret = PTR_ERR(sensor->dep_dev);
+			dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+			return ret;
+		}
+		dep_dev = sensor->dep_dev;
 	}
 
 	v4l2_i2c_subdev_init(&sensor->sd, client, &ov8865_subdev_ops);
