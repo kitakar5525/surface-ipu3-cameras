@@ -2062,6 +2062,34 @@ static const struct v4l2_ctrl_ops ov5670_ctrl_ops = {
 	.s_ctrl = ov5670_set_ctrl,
 };
 
+static int __power_down(struct v4l2_subdev *sd)
+{
+	int ret = 0;
+
+	return ret;
+}
+
+static int __power_up(struct v4l2_subdev *sd)
+{
+	int ret;
+
+	return 0;
+
+fail_power:
+	dev_err(&client->dev, "sensor power-up failed\n");
+
+	return ret;
+}
+
+static int ov5670_s_power(struct v4l2_subdev *sd, int on)
+{
+	if (!on)
+		return __power_down(sd);
+
+	/* on is true */
+	return __power_up(sd);
+}
+
 /* Initialize control handlers */
 static int ov5670_init_controls(struct ov5670 *ov5670)
 {
@@ -2434,6 +2462,10 @@ static const struct v4l2_subdev_video_ops ov5670_video_ops = {
 	.s_stream = ov5670_set_stream,
 };
 
+static const struct v4l2_subdev_core_ops ov5670_core_ops = {
+	.s_power = ov5670_s_power,
+};
+
 static const struct v4l2_subdev_pad_ops ov5670_pad_ops = {
 	.enum_mbus_code = ov5670_enum_mbus_code,
 	.get_fmt = ov5670_get_pad_format,
@@ -2551,6 +2583,13 @@ static int ov5670_probe(struct i2c_client *client)
 	}
 	dep_dev = ov5670->dep_dev;
 
+	ret = __power_up(&ov5670->sd);
+	if (ret) {
+		err_msg = "ov5670 power-up error";
+		__power_down(&ov5670->sd);
+		goto error_print;
+	}
+
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
 	if (ret) {
@@ -2598,6 +2637,13 @@ static int ov5670_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_enable(&client->dev);
 	pm_runtime_idle(&client->dev);
+
+	/* turn off sensor, after probed */
+	ret = __power_down(&ov5670->sd);
+	if (ret) {
+		err_msg = "v4l2_async_register_subdev() error";
+		goto error_print;
+	}
 
 	return 0;
 
