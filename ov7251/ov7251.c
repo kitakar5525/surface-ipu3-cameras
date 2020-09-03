@@ -71,6 +71,7 @@ struct ov7251 {
 	struct clk *xclk;
 	u32 xclk_freq;
 
+	/* For DT-based systems */
 	struct regulator *io_regulator;
 	struct regulator *core_regulator;
 	struct regulator *analog_regulator;
@@ -92,6 +93,7 @@ struct ov7251 {
 	struct mutex lock; /* lock to protect power state, ctrls and mode */
 	bool power_on;
 
+	/* For DT-based systems */
 	struct gpio_desc *enable_gpio;
 };
 
@@ -738,18 +740,21 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 	int ret;
 	u32 wait_us;
 
-	ret = ov7251_regulators_enable(ov7251);
-	if (ret < 0)
-		return ret;
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		ret = ov7251_regulators_enable(ov7251);
+		if (ret < 0)
+			return ret;
 
-	ret = clk_prepare_enable(ov7251->xclk);
-	if (ret < 0) {
-		dev_err(ov7251->dev, "clk prepare enable failed\n");
-		ov7251_regulators_disable(ov7251);
-		return ret;
+		ret = clk_prepare_enable(ov7251->xclk);
+		if (ret < 0) {
+			dev_err(ov7251->dev, "clk prepare enable failed\n");
+			ov7251_regulators_disable(ov7251);
+			return ret;
+		}
+
+		gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
 	}
-
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 1);
 
 	/* wait at least 65536 external clock cycles */
 	wait_us = DIV_ROUND_UP(65536 * 1000,
@@ -761,9 +766,12 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 
 static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
-	clk_disable_unprepare(ov7251->xclk);
-	gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
-	ov7251_regulators_disable(ov7251);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		clk_disable_unprepare(ov7251->xclk);
+		gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
+		ov7251_regulators_disable(ov7251);
+	}
 }
 
 static int ov7251_s_power(struct v4l2_subdev *sd, int on)
@@ -1286,11 +1294,14 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	/* get system clock (xclk) */
-	ov7251->xclk = devm_clk_get(dev, "xclk");
-	if (IS_ERR(ov7251->xclk)) {
-		dev_err(dev, "could not get xclk");
-		return PTR_ERR(ov7251->xclk);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		/* get system clock (xclk) */
+		ov7251->xclk = devm_clk_get(dev, "xclk");
+		if (IS_ERR(ov7251->xclk)) {
+			dev_err(dev, "could not get xclk");
+			return PTR_ERR(ov7251->xclk);
+		}
 	}
 
 	ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
@@ -1307,34 +1318,37 @@ static int ov7251_probe(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
-	if (ret) {
-		dev_err(dev, "could not set xclk frequency\n");
-		return ret;
-	}
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+		ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
+		if (ret) {
+			dev_err(dev, "could not set xclk frequency\n");
+			return ret;
+		}
 
-	ov7251->io_regulator = devm_regulator_get(dev, "vdddo");
-	if (IS_ERR(ov7251->io_regulator)) {
-		dev_err(dev, "cannot get io regulator\n");
-		return PTR_ERR(ov7251->io_regulator);
-	}
+		ov7251->io_regulator = devm_regulator_get(dev, "vdddo");
+		if (IS_ERR(ov7251->io_regulator)) {
+			dev_err(dev, "cannot get io regulator\n");
+			return PTR_ERR(ov7251->io_regulator);
+		}
 
-	ov7251->core_regulator = devm_regulator_get(dev, "vddd");
-	if (IS_ERR(ov7251->core_regulator)) {
-		dev_err(dev, "cannot get core regulator\n");
-		return PTR_ERR(ov7251->core_regulator);
-	}
+		ov7251->core_regulator = devm_regulator_get(dev, "vddd");
+		if (IS_ERR(ov7251->core_regulator)) {
+			dev_err(dev, "cannot get core regulator\n");
+			return PTR_ERR(ov7251->core_regulator);
+		}
 
-	ov7251->analog_regulator = devm_regulator_get(dev, "vdda");
-	if (IS_ERR(ov7251->analog_regulator)) {
-		dev_err(dev, "cannot get analog regulator\n");
-		return PTR_ERR(ov7251->analog_regulator);
-	}
+		ov7251->analog_regulator = devm_regulator_get(dev, "vdda");
+		if (IS_ERR(ov7251->analog_regulator)) {
+			dev_err(dev, "cannot get analog regulator\n");
+			return PTR_ERR(ov7251->analog_regulator);
+		}
 
-	ov7251->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov7251->enable_gpio)) {
-		dev_err(dev, "cannot get enable gpio\n");
-		return PTR_ERR(ov7251->enable_gpio);
+		ov7251->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_HIGH);
+		if (IS_ERR(ov7251->enable_gpio)) {
+			dev_err(dev, "cannot get enable gpio\n");
+			return PTR_ERR(ov7251->enable_gpio);
+		}
 	}
 
 	mutex_init(&ov7251->lock);
