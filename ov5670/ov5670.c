@@ -1837,6 +1837,13 @@ struct ov5670 {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
+	 * depending on devices.
+	 */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2062,20 +2069,73 @@ static const struct v4l2_ctrl_ops ov5670_ctrl_ops = {
 	.s_ctrl = ov5670_set_ctrl,
 };
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov5670 *sensor, struct device *dep_dev)
+{
+	sensor->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(sensor->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	sensor->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(sensor->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(sensor->led_gpio))
+		dev_info(dep_dev,
+			 "Couldn't get GPIO LED. Maybe not exist, continue anyway.\n");
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov5670 *sensor)
+{
+	gpiod_put(sensor->xshutdn);
+	gpiod_put(sensor->pwdnb);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_put(sensor->led_gpio);
+}
+
+/* Control GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov5670 *sensor = to_ov5670(sd);
+
+	gpiod_set_value_cansleep(sensor->xshutdn, flag);
+	gpiod_set_value_cansleep(sensor->pwdnb, flag);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_set_value_cansleep(sensor->led_gpio, flag);
+
+	return 0;
+}
+
 static int __power_down(struct v4l2_subdev *sd)
 {
 	int ret = 0;
+
+	ret = gpio_crs_ctrl(sd, false);
 
 	return ret;
 }
 
 static int __power_up(struct v4l2_subdev *sd)
 {
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
+
+	ret = gpio_crs_ctrl(sd, true);
+	if (ret)
+		goto fail_power;
 
 	return 0;
 
 fail_power:
+	gpio_crs_ctrl(sd, false);
 	dev_err(&client->dev, "sensor power-up failed\n");
 
 	return ret;
@@ -2605,18 +2665,24 @@ static int ov5670_probe(struct i2c_client *client)
 	}
 	dep_dev = ov5670->dep_dev;
 
+	ret = gpio_crs_get(ov5670, dep_dev);
+	if (ret) {
+		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+		return ret;
+	}
+
 	ret = __power_up(&ov5670->sd);
 	if (ret) {
 		err_msg = "ov5670 power-up error";
 		__power_down(&ov5670->sd);
-		goto error_print;
+		goto error_gpio_crs_put;
 	}
 
 	/* Check module identity */
 	ret = ov5670_identify_module(ov5670);
 	if (ret) {
 		err_msg = "ov5670_identify_module() error";
-		goto error_print;
+		goto error_gpio_crs_put;
 	}
 
 	mutex_init(&ov5670->mutex);
@@ -2678,6 +2744,9 @@ error_handler_free:
 error_mutex_destroy:
 	mutex_destroy(&ov5670->mutex);
 
+error_gpio_crs_put:
+	gpio_crs_put(ov5670);
+
 error_print:
 	dev_err(&client->dev, "%s: %s %d\n", __func__, err_msg, ret);
 
@@ -2688,6 +2757,8 @@ static int ov5670_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov5670 *ov5670 = to_ov5670(sd);
+
+	gpio_crs_put(ov5670);
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
