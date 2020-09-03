@@ -954,54 +954,16 @@ static int ov5693_init(struct v4l2_subdev *sd)
 	return 0;
 }
 
-static int power_ctrl(struct v4l2_subdev *sd, bool flag)
-{
-	int ret;
-
-	/* TODO: enable/disable power here using gpio_ctrl */
-
-	/* TODO: return useful value */
-	ret=0;
-
-	return ret;
-}
-
-static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
-{
-
-	/* TODO: enable/disable GPIO here */
-
-	return 0;
-}
-
 static int __power_up(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
-
-	/* power control */
-	ret = power_ctrl(sd, 1);
-	if (ret)
-		goto fail_power;
-
-	/* according to DS, at least 5ms is needed between DOVDD and PWDN */
-	/* add this delay time to 10~11ms*/
-	usleep_range(10000, 11000);
-
-	/* gpio ctrl */
-	ret = gpio_ctrl(sd, 1);
-	if (ret) {
-		ret = gpio_ctrl(sd, 1);
-		if (ret)
-			goto fail_power;
-	}
 
 	__cci_delay(up_delay);
 
 	return 0;
 
 fail_power:
-	power_ctrl(sd, 0);
 	dev_err(&client->dev, "sensor power-up failed\n");
 
 	return ret;
@@ -1010,23 +972,9 @@ fail_power:
 static int power_down(struct v4l2_subdev *sd)
 {
 	struct ov5693_device *dev = to_ov5693_sensor(sd);
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
 
 	dev->focus = OV5693_INVALID_CONFIG;
-
-	/* gpio ctrl */
-	ret = gpio_ctrl(sd, 0);
-	if (ret) {
-		ret = gpio_ctrl(sd, 0);
-		if (ret)
-			dev_err(&client->dev, "gpio failed 2\n");
-	}
-
-	/* power control */
-	ret = power_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "vprog failed.\n");
 
 	return ret;
 }
