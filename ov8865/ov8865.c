@@ -2387,9 +2387,20 @@ static int ov8865_enum_mbus_code(struct v4l2_subdev *sd,
 static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct ov8865_dev *sensor = to_ov8865_dev(sd);
+	struct i2c_client *client = sensor->i2c_client;
 	int ret = 0;
 
 	mutex_lock(&sensor->lock);
+
+	/* power_on() here before streaming for regular PCs. */
+	if (enable) {
+		ret = ov8865_set_power_on(sensor);
+		if (ret) {
+			dev_err(&client->dev, "sensor power-up error\n");
+			ov8865_set_power_off(sensor);
+			goto out;
+		}
+	}
 
 	if (sensor->streaming == !enable) {
 		if (enable && ret)
@@ -2408,6 +2419,10 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 		if (!ret)
 			sensor->streaming = enable;
 	}
+
+	/* power_off() here after streaming for regular PCs. */
+	if (!enable)
+		ov8865_set_power_off(sensor);
 
 out:
 	mutex_unlock(&sensor->lock);
