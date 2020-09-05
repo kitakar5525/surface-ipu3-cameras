@@ -1241,6 +1241,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 				dev_err(&client->dev, " startup FAILED!\n");
 			} else {
 				dev_err(&client->dev, " startup SUCCESS!\n");
+				mutex_unlock(&dev->input_lock);
 				break;
 			}
 		}
