@@ -112,6 +112,12 @@ static int __init surface_camera_init(void)
 		goto out;
 	}
 
+	if (!camera.ov7251->dev.driver_data) {
+		pr_warn("Currently, sensor driver needs to be loaded before "
+				"this driver. Exiting init.\n");
+		goto out;
+	}
+
 	fwnode = software_node_fwnode(&nodes[SWNODE_OV7251]);
 	if (!fwnode) {
 		ret = -ENODEV;
