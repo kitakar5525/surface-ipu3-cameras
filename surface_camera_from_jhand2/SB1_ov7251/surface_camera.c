@@ -159,6 +159,7 @@ static void __exit surface_camera_exit(void)
 	pci_dev_put(camera.cio2);
 	i2c_unregister_device(camera.ov7251);
 	surface_camera_unregister_nodes();
+	software_node_unregister_nodes(nodes);
 }
 
 module_init(surface_camera_init);
