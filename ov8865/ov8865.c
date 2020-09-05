@@ -2403,9 +2403,6 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 	}
 
 	if (sensor->streaming == !enable) {
-		if (enable && ret)
-			goto out;
-
 		ret = ov8865_write_reg(sensor, OV8865_SW_STANDBY_REG, enable ?
 				     OV8865_SW_STANDBY_STANDBY_N : 0x00);
 		if (ret)
