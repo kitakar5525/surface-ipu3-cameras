@@ -98,6 +98,8 @@ static int __init surface_camera_init(void)
 	struct fwnode_handle *fwnode;
 	int ret = 0;
 
+	pr_info("%s() called\n", __func__);
+
 	// Register software nodes
 	ret = software_node_register_nodes(nodes);
 	if (ret)
@@ -150,6 +152,8 @@ out:
 
 static void __exit surface_camera_exit(void)
 {
+	pr_info("%s() called\n", __func__);
+
 	camera.cio2->dev.fwnode = ERR_PTR(-ENODEV);
 	i2c_unregister_device(camera.ov7251);
 	surface_camera_unregister_nodes();
