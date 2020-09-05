@@ -154,7 +154,7 @@ static void __exit surface_camera_exit(void)
 {
 	pr_info("%s() called\n", __func__);
 
-	camera.cio2->dev.fwnode = ERR_PTR(-ENODEV);
+	pci_dev_put(camera.cio2);
 	i2c_unregister_device(camera.ov7251);
 	surface_camera_unregister_nodes();
 }
