@@ -143,6 +143,8 @@ static int __init surface_camera_init(void)
 		goto out;
 	}
 
+	pr_info("%s(): probe success\n", __func__);
+
 out:
 	if (ret)
 		surface_camera_unregister_nodes();
