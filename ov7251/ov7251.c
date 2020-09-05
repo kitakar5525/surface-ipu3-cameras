@@ -1446,6 +1446,8 @@ static int ov7251_probe(struct i2c_client *client)
 	u8 chip_id_high, chip_id_low, chip_rev;
 	int ret;
 
+	dev_info(dev, "%s() called\n", __func__);
+
 	ov7251 = devm_kzalloc(dev, sizeof(struct ov7251), GFP_KERNEL);
 	if (!ov7251)
 		return -ENOMEM;
@@ -1682,6 +1684,8 @@ static int ov7251_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov7251 *ov7251 = to_ov7251(sd);
+
+	dev_info(&client->dev, "%s() called\n", __func__);
 
 	/* For ACPI-based systems */
 	if (is_acpi_node(dev_fwnode(ov7251->dev)))
