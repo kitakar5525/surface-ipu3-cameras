@@ -1,4 +1,4 @@
-From fcd044f566f4d060155e1a3a2c0b0e7ee9cdaa66 Mon Sep 17 00:00:00 2001
+From de116c942f8f689a4d7dcd5512c86fc07f522d16 Mon Sep 17 00:00:00 2001
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Date: Mon, 19 Aug 2019 11:09:41 +0300
 Subject: [PATCH 1/4] software node: Add support for fwnode_graph* family of

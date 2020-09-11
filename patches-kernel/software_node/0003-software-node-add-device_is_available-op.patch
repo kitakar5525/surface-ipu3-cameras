@@ -1,7 +1,7 @@
-From 89489484e2b3801e5471e10338be24bc3b8ae87d Mon Sep 17 00:00:00 2001
+From e9a3097db8e3475cdcf372b16affb863b3c68e6d Mon Sep 17 00:00:00 2001
 From: Jordan Hand <jorhand@linux.microsoft.com>
 Date: Sun, 14 Jun 2020 19:20:28 -0700
-Subject: [PATCH 4/4] software node: add device_is_available op
+Subject: [PATCH 3/4] software node: add device_is_available op
 
 Some consumers of the fwnode APIs check to see if a device is available
 for use. Simply return true for all software nodes.
@@ -16,7 +16,7 @@ Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
  1 file changed, 7 insertions(+)
 
 diff --git a/drivers/base/swnode.c b/drivers/base/swnode.c
-index 561c2ae3a56f..0601b20ab2aa 100644
+index f99d787838f5..70f52ddda8fa 100644
 --- a/drivers/base/swnode.c
 +++ b/drivers/base/swnode.c
 @@ -363,6 +363,12 @@ static void software_node_put(struct fwnode_handle *fwnode)
@@ -32,7 +32,7 @@ index 561c2ae3a56f..0601b20ab2aa 100644
  static bool software_node_property_present(const struct fwnode_handle *fwnode,
  					   const char *propname)
  {
-@@ -642,6 +648,7 @@ software_node_graph_parse_endpoint(const struct fwnode_handle *fwnode,
+@@ -640,6 +646,7 @@ software_node_graph_parse_endpoint(const struct fwnode_handle *fwnode,
  static const struct fwnode_operations software_node_ops = {
  	.get = software_node_get,
  	.put = software_node_put,

@@ -1,0 +1,45 @@
+From 7bbb0a2ed4aef1ca38779117b14277332a42e54b Mon Sep 17 00:00:00 2001
+From: Daniel Scally <djrscally@gmail.com>
+Date: Fri, 11 Sep 2020 00:06:11 +0100
+Subject: [PATCH 4/4] Fix bugs in software_node_graph_get_next_endpoint()
+
+As originally written, the software_node_graph_get_next_endpoint() function
+holds on to references for port software_nodes and additionally passes invalid
+combinations of parameters to software_node_get_next_child - an endpoint which
+is not a child of the port that is also passed.
+
+This patch rectifies both issues.
+
+Signed-off-by: Daniel Scally <djrscally@gmail.com>
+
+(Patch from here:
+- https://github.com/djrscally/miix-510-cameras/blob/b055f45c02321d9e4817825306f073bcac6d9971/patches/0004-Fix-bugs-in-software_node_graph_get_next_endpoint.patch)
+[Applied on top of v5.9-rc4]
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ drivers/base/swnode.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/base/swnode.c b/drivers/base/swnode.c
+index 70f52ddda8fa..d03f299a294f 100644
+--- a/drivers/base/swnode.c
++++ b/drivers/base/swnode.c
+@@ -581,10 +581,15 @@ software_node_graph_get_next_endpoint(const struct fwnode_handle *fwnode,
+ 	}
+ 
+ 	for (; port; port = swnode_graph_find_next_port(parent, port)) {
++		if ((old) && (software_node_get_parent(old) != port ))
++			old = NULL;
++
+ 		endpoint = software_node_get_next_child(port, old);
+ 		fwnode_handle_put(old);
+ 		if (endpoint)
+ 			break;
++		else
++			fwnode_handle_put(port);
+ 	}
+ 
+ 	fwnode_handle_put(port);
+-- 
+2.28.0
+
