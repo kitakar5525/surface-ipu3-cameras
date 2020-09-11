@@ -2517,7 +2517,7 @@ static int match_depend(struct device *dev, const void *data)
 	return (dev && dev->fwnode == data) ? 1 : 0;
 }
 
-void *get_dep_dev(struct device *dev)
+static struct device *get_dep_dev(struct device *dev)
 {
 	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
 	struct acpi_handle_list dep_devices;
