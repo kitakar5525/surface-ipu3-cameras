@@ -1,0 +1,1 @@
+These software node patches in this directory is required for the surface_camera driver.
