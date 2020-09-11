@@ -17,10 +17,8 @@ Content-Transfer-Encoding: 8bit
 
 		(Driver file from here:
 		- https://github.com/djrscally/miix-510-cameras/blob/f94c3c5b4db87e58fb4146a181608ae963737beb/tps68470-clk.c
-		and partially from gist found in this comment for Makefile, Kconfig:
-		- https://github.com/linux-surface/linux-surface/issues/91#issuecomment-676210125
-		and partially from gist found in this comment for MFD:
-		- https://github.com/linux-surface/linux-surface/issues/91#issuecomment-675884262)
+		and partially from gist found in found in linux-surface camera
+		support issue, for Makefile, Kconfig and MFD.)
 		[Overrode current driver with the file. Renamed file to clk-tps68470.c
 		to match the other filenames in clk dir. Changed indentation to match
 		other help text style in Kconfig.]

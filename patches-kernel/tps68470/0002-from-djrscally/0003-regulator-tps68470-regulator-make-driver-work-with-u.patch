@@ -13,9 +13,9 @@ Subject: [PATCH 3/5] regulator: tps68470-regulator: make driver work with
 		upstream mfd/tps68470, from djrscally
 
 		(Driver file from here:
-		- https://github.com/djrscally/miix-510-cameras/blob/f94c3c5b4db87e58fb4146a181608ae963737beb/tps68470-regulator.c)
-		and partially from gist found in this comment for Kconfig, Makefile, and MFD:
-		- https://github.com/linux-surface/linux-surface/issues/91#issuecomment-675884262)
+		- https://github.com/djrscally/miix-510-cameras/blob/f94c3c5b4db87e58fb4146a181608ae963737beb/tps68470-regulator.c
+		and partially from gist found in linux-surface camera support
+		issue, for Kconfig, Makefile, and MFD.)
 		[Overrode current driver with this file. Changed indentation to match
 		other help text style in Kconfig]
 		Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>

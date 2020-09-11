@@ -3,8 +3,7 @@ From: Daniel Scally <djrscally@gmail.com>
 Date: Wed, 19 Aug 2020 23:19:57 +0900
 Subject: [PATCH 1/5] mfd: tps68470: add tps68470_i2c_ids for sysfs new_device
 
-(from gist found in this comment
-- https://github.com/linux-surface/linux-surface/issues/91#issuecomment-675884262)
+(from gist found in linux-surface camera support issue)
 [Added comment to above tps68470_i2c_ids. Added MODULE_DEVICE_TABLE(),
 useful when driver is built as module.]
 [Usage:
