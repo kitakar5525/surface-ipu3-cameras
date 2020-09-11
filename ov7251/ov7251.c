@@ -582,6 +582,20 @@ static const struct ov7251_mode_info ov7251_mode_info_data[] = {
 			.denominator = 9043
 		}
 	},
+	{
+		.width = 720,
+		.height = 540,
+		.data = ov7251_setting_vga_90fps,
+		.data_size = ARRAY_SIZE(ov7251_setting_vga_90fps),
+		.pixel_clock = 48000000,
+		.link_freq = 0, /* an index in link_freq[] */
+		.exposure_max = 552,
+		.exposure_def = 504,
+		.timeperframe = {
+			.numerator = 100,
+			.denominator = 9043
+		}
+	},
 };
 
 static int ov7251_regulators_enable(struct ov7251 *ov7251)
