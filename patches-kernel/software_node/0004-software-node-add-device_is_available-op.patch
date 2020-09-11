@@ -1,0 +1,45 @@
+From 89489484e2b3801e5471e10338be24bc3b8ae87d Mon Sep 17 00:00:00 2001
+From: Jordan Hand <jorhand@linux.microsoft.com>
+Date: Sun, 14 Jun 2020 19:20:28 -0700
+Subject: [PATCH 4/4] software node: add device_is_available op
+
+Some consumers of the fwnode APIs check to see if a device is available
+for use. Simply return true for all software nodes.
+
+Signed-off-by: Jordan Hand <jorhand@linux.microsoft.com>
+
+(Patch from here:
+- https://github.com/jhand2/surface-camera/blob/1ef74b790906f293d51b6673e06358593534f7bf/patches/0003-software-node-add-device_is_available-op.patch)
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ drivers/base/swnode.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/base/swnode.c b/drivers/base/swnode.c
+index 561c2ae3a56f..0601b20ab2aa 100644
+--- a/drivers/base/swnode.c
++++ b/drivers/base/swnode.c
+@@ -363,6 +363,12 @@ static void software_node_put(struct fwnode_handle *fwnode)
+ 	kobject_put(&swnode->kobj);
+ }
+ 
++static bool software_node_device_is_available(const struct fwnode_handle *fwnode)
++{
++	// TODO: Is there any intelligent checking we can do here?
++	return true;
++}
++
+ static bool software_node_property_present(const struct fwnode_handle *fwnode,
+ 					   const char *propname)
+ {
+@@ -642,6 +648,7 @@ software_node_graph_parse_endpoint(const struct fwnode_handle *fwnode,
+ static const struct fwnode_operations software_node_ops = {
+ 	.get = software_node_get,
+ 	.put = software_node_put,
++	.device_is_available = software_node_device_is_available,
+ 	.property_present = software_node_property_present,
+ 	.property_read_int_array = software_node_read_int_array,
+ 	.property_read_string_array = software_node_read_string_array,
+-- 
+2.28.0
+

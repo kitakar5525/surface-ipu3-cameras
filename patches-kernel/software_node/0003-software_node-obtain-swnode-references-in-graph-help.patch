@@ -1,0 +1,46 @@
+From 4af5dc90f1795be710e6a8ff6b818ea85697f99c Mon Sep 17 00:00:00 2001
+From: Jordan Hand <jorhand@linux.microsoft.com>
+Date: Sun, 14 Jun 2020 19:14:17 -0700
+Subject: [PATCH 3/4] software_node: obtain swnode references in graph helpers
+
+A few of the helper functions in the swnode graph API implementations
+get references to the software_node_fwnode but do not obtain a reference
+to the underlying kobj.
+
+Obtain references to properly manage the lifetime of the software node.
+
+Signed-off-by: Jordan Hand <jorhand@linux.microsoft.com>
+
+(Patch from here:
+- https://github.com/jhand2/surface-camera/blob/6472b7ca4bd51f04d827f4827e437e3453b0dc3c/patches/0002-software_node-obtain-swnode-references-in-graph-help.patch)
+Signed-off-by: Tsuchiya Yuto <kitakar@gmail.com>
+---
+ drivers/base/swnode.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/swnode.c b/drivers/base/swnode.c
+index da353a1c1e3e..561c2ae3a56f 100644
+--- a/drivers/base/swnode.c
++++ b/drivers/base/swnode.c
+@@ -450,7 +450,7 @@ software_node_get_next_child(const struct fwnode_handle *fwnode,
+ 		c = list_next_entry(c, entry);
+ 	else
+ 		c = list_first_entry(&p->children, struct swnode, entry);
+-	return &c->fwnode;
++	return fwnode_handle_get(&c->fwnode);
+ }
+ 
+ static struct fwnode_handle *
+@@ -465,8 +465,7 @@ software_node_get_named_child_node(const struct fwnode_handle *fwnode,
+ 
+ 	list_for_each_entry(child, &swnode->children, entry) {
+ 		if (!strcmp(childname, kobject_name(&child->kobj))) {
+-			kobject_get(&child->kobj);
+-			return &child->fwnode;
++			return fwnode_handle_get(&child->fwnode);
+ 		}
+ 	}
+ 	return NULL;
+-- 
+2.28.0
+
