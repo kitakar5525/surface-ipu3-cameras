@@ -23,6 +23,8 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
+#define OV7251_ACPI_HID "INT347E"
+
 #define OV7251_SC_MODE_SELECT		0x0100
 #define OV7251_SC_MODE_SELECT_SW_STANDBY	0x0
 #define OV7251_SC_MODE_SELECT_STREAMING		0x1
@@ -106,6 +108,8 @@ struct ov7251 {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -797,7 +801,7 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 	u32 wait_us;
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (!ov7251->is_acpi_based) {
 		ret = ov7251_regulators_enable(ov7251);
 		if (ret < 0)
 			return ret;
@@ -813,7 +817,7 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+	if (ov7251->is_acpi_based)
 		gpio_crs_ctrl(&ov7251->sd, true);
 
 	/* wait at least 65536 external clock cycles */
@@ -827,14 +831,14 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (!ov7251->is_acpi_based) {
 		clk_disable_unprepare(ov7251->xclk);
 		gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
 		ov7251_regulators_disable(ov7251);
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+	if (ov7251->is_acpi_based)
 		gpio_crs_ctrl(&ov7251->sd, false);
 }
 
@@ -1415,7 +1419,13 @@ static int ov7251_probe(struct i2c_client *client)
 	ov7251->i2c_client = client;
 	ov7251->dev = dev;
 
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (acpi_dev_present(OV7251_ACPI_HID, NULL, -1)) {
+		dev_info(dev, "system is acpi-based\n");
+		ov7251->is_acpi_based = true;
+	} else
+		dev_info(dev, "system is not acpi-based\n");
+
+	if (!ov7251->is_acpi_based) {
 		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
 		if (!endpoint) {
 			dev_err(dev, "endpoint node not found\n");
@@ -1437,7 +1447,7 @@ static int ov7251_probe(struct i2c_client *client)
 	}
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (!ov7251->is_acpi_based) {
 		/* get system clock (xclk) */
 		ov7251->xclk = devm_clk_get(dev, "xclk");
 		if (IS_ERR(ov7251->xclk)) {
@@ -1446,7 +1456,7 @@ static int ov7251_probe(struct i2c_client *client)
 		}
 	}
 
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (!ov7251->is_acpi_based) {
 		ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency",
 						&ov7251->xclk_freq);
 		if (ret) {
@@ -1469,7 +1479,7 @@ static int ov7251_probe(struct i2c_client *client)
 	}
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (!ov7251->is_acpi_based) {
 		ret = clk_set_rate(ov7251->xclk, ov7251->xclk_freq);
 		if (ret) {
 			dev_err(dev, "could not set xclk frequency\n");
@@ -1502,7 +1512,7 @@ static int ov7251_probe(struct i2c_client *client)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(ov7251->dev))) {
+	if (ov7251->is_acpi_based) {
 		ov7251->dep_dev = get_dep_dev(&client->dev);
 		if (IS_ERR(ov7251->dep_dev)) {
 			ret = PTR_ERR(ov7251->dep_dev);
@@ -1658,7 +1668,7 @@ static int ov7251_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s() called\n", __func__);
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(ov7251->dev)))
+	if (ov7251->is_acpi_based)
 		gpio_crs_put(ov7251);
 
 	v4l2_async_unregister_subdev(&ov7251->sd);
@@ -1677,7 +1687,7 @@ MODULE_DEVICE_TABLE(of, ov7251_of_match);
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov7251_acpi_ids[] = {
-	{"INT347E"},
+	{OV7251_ACPI_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov7251_acpi_ids);
