@@ -386,6 +386,8 @@ struct ov8865_dev {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 static inline struct ov8865_dev *to_ov8865_dev(struct v4l2_subdev *sd)
@@ -2587,6 +2589,12 @@ static int ov8865_probe(struct i2c_client *client)
 		return -ENOMEM;
 
 	sensor->i2c_client = client;
+
+	if (acpi_match_device(dev->driver->acpi_match_table, dev)) {
+		dev_info(dev, "system is acpi-based\n");
+		sensor->is_acpi_based = true;
+	} else
+		dev_info(dev, "system is not acpi-based\n");
 
 	/*
 	 * Default init sequence initialize sensor to
