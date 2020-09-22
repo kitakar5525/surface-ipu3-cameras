@@ -20,6 +20,8 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
+#define OV8865_ACPI_HID "INT347A"
+
 #define OV8865_XCLK_FREQ		24000000
 
 /* System */
@@ -341,6 +343,8 @@ struct ov8865_dev {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 static inline struct ov8865_dev *to_ov8865_dev(struct v4l2_subdev *sd)
@@ -1738,7 +1742,7 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 	int ret = 0;
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		ov8865_power(sensor, false);
 		ov8865_reset(sensor, false);
 
@@ -1763,7 +1767,7 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev))) {
+	if (sensor->is_acpi_based) {
 		gpio_crs_ctrl(&sensor->sd, true);
 
 		/* Add some delay. This is required or check_chip_id() will fail. */
@@ -1774,7 +1778,7 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 
 err_power_off:
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		ov8865_power(sensor, false);
 		clk_disable_unprepare(sensor->xclk);
 	}
@@ -1783,17 +1787,15 @@ err_power_off:
 
 static void ov8865_set_power_off(struct ov8865_dev *sensor)
 {
-	struct i2c_client *client = sensor->i2c_client;
-
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		ov8865_power(sensor, false);
 		regulator_bulk_disable(OV8865_NUM_SUPPLIES, sensor->supplies);
 		clk_disable_unprepare(sensor->xclk);
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (sensor->is_acpi_based)
 		gpio_crs_ctrl(&sensor->sd, false);
 }
 
@@ -2582,6 +2584,12 @@ static int ov8865_probe(struct i2c_client *client)
 
 	sensor->i2c_client = client;
 
+	if (acpi_dev_present(OV8865_ACPI_HID, NULL, -1)) {
+		dev_info(dev, "system is acpi-based\n");
+		sensor->is_acpi_based = true;
+	} else
+		dev_info(dev, "system is not acpi-based\n");
+
 	/*
 	 * Default init sequence initialize sensor to
 	 * RAW SBGGR10 3264x1836@30fps.
@@ -2604,7 +2612,7 @@ static int ov8865_probe(struct i2c_client *client)
 	sensor->current_mode = default_mode;
 	sensor->last_mode = default_mode;
 
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		/* Optional indication of physical rotation of sensor. */
 		ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
 						&rotation);
@@ -2626,7 +2634,7 @@ static int ov8865_probe(struct i2c_client *client)
 		sensor->upside_down = true;
 	}
 
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(&client->dev),
 							NULL);
 		if (!endpoint) {
@@ -2643,7 +2651,7 @@ static int ov8865_probe(struct i2c_client *client)
 	}
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(&client->dev))) {
+	if (!sensor->is_acpi_based) {
 		/* Get system clock (xclk). */
 		sensor->xclk = devm_clk_get(dev, "xclk");
 		if (IS_ERR(sensor->xclk)) {
@@ -2675,7 +2683,7 @@ static int ov8865_probe(struct i2c_client *client)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev))) {
+	if (sensor->is_acpi_based) {
 		sensor->dep_dev = get_dep_dev(&client->dev);
 		if (IS_ERR(sensor->dep_dev)) {
 			ret = PTR_ERR(sensor->dep_dev);
@@ -2722,7 +2730,7 @@ err_entity_cleanup:
 	mutex_destroy(&sensor->lock);
 	media_entity_cleanup(&sensor->sd.entity);
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (sensor->is_acpi_based)
 		gpio_crs_put(sensor);
 	return ret;
 }
@@ -2736,7 +2744,7 @@ static int ov8865_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s() called", __func__);
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (sensor->is_acpi_based)
 		gpio_crs_put(sensor);
 
 	v4l2_async_unregister_subdev(&sensor->sd);
@@ -2761,7 +2769,7 @@ MODULE_DEVICE_TABLE(of, ov8865_dt_ids);
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov8865_acpi_ids[] = {
-	{"INT347A"},
+	{OV8865_ACPI_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
