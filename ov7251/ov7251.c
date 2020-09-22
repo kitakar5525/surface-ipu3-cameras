@@ -1226,6 +1226,16 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 
 	mutex_lock(&ov7251->lock);
 
+	/* power_on() here before streaming for regular PCs. */
+	if (enable) {
+		ret = ov7251_set_power_on(ov7251);
+		if (ret) {
+			dev_err(ov7251->dev, "sensor power-up error\n");
+			ov7251_set_power_off(ov7251);
+			goto exit;
+		}
+	}
+
 	if (enable) {
 		ret = ov7251_set_register_array(ov7251,
 					ov7251->current_mode->data,
@@ -1247,6 +1257,10 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 		ret = ov7251_write_reg(ov7251, OV7251_SC_MODE_SELECT,
 				       OV7251_SC_MODE_SELECT_SW_STANDBY);
 	}
+
+	/* power_off() here after streaming for regular PCs. */
+	if (!enable)
+		ov7251_set_power_off(ov7251);
 
 exit:
 	mutex_unlock(&ov7251->lock);
