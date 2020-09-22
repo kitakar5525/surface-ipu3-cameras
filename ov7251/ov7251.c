@@ -105,6 +105,8 @@ struct ov7251 {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 static inline struct ov7251 *to_ov7251(struct v4l2_subdev *sd)
@@ -1413,6 +1415,12 @@ static int ov7251_probe(struct i2c_client *client)
 
 	ov7251->i2c_client = client;
 	ov7251->dev = dev;
+
+	if (acpi_match_device(dev->driver->acpi_match_table, dev)) {
+		dev_info(dev, "system is acpi-based\n");
+		ov7251->is_acpi_based = true;
+	} else
+		dev_info(dev, "system is not acpi-based\n");
 
 	if (!is_acpi_node(dev_fwnode(ov7251->dev))) {
 		endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
