@@ -1371,10 +1371,16 @@ static u64 ov8865_calc_pixel_rate(struct ov8865_dev *sensor)
 {
 	u64 rate;
 
-	rate = sensor->current_mode->vtot * sensor->current_mode->htot;
-	rate *= ov8865_framerates[sensor->current_fr];
+	/* For DT-based systems */
+	if (!sensor->is_acpi_based) {
+		rate = sensor->current_mode->vtot * sensor->current_mode->htot;
+		rate *= ov8865_framerates[sensor->current_fr];
 
-	return rate;
+		return rate;
+	}
+
+	/* For ACPI-based systems */
+	return link_freq_configs[0].pixel_rate;
 }
 
 static int ov8865_set_mode_direct(struct ov8865_dev *sensor,
