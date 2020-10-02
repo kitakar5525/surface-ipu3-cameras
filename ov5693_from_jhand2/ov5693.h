@@ -2,6 +2,7 @@
 #define __DRIVERS_MEDIA_I2C_OV5693_H__
 
 #define OV5693_NAME		"ov5693"
+#define OV5693_HID		"INT33BE"
 
 #define OV5693_POWER_UP_RETRY_NUM 5
 
