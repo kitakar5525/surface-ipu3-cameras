@@ -52,7 +52,7 @@ control_logic_type: 1
 control_logic_id: 0
 sensor_card_sku: 32
 
-SB1 CAMF_SKC2 CLDB data:
+SB1 CAMF_SKC1 CLDB data:
 version: 0
 control_logic_type: 1
 control_logic_id: 1
