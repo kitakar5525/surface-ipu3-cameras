@@ -295,7 +295,7 @@ int main() {
 	/* SB2 CLDB */
 	printf("SB2 CAMR_SKC0 CLDB data:\n");
 	dump_cldb(sb2_camr_skc0_cldb);
-	printf("SB2 CAMF_SKC2 CLDB data:\n");
+	printf("SB2 CAMF_SKC1 CLDB data:\n");
 	dump_cldb(sb2_camf_skc1_cldb);
 	printf("SB2 CAM3_SKC2 CLDB data:\n");
 	dump_cldb(sb2_cam3_skc2_cldb);
@@ -311,7 +311,7 @@ int main() {
 	/* SB1 CLDB */
 	printf("SB1 CAMR_SKC0 CLDB data:\n");
 	dump_cldb(sb1_camr_skc0_cldb);
-	printf("SB1 CAMF_SKC2 CLDB data:\n");
+	printf("SB1 CAMF_SKC1 CLDB data:\n");
 	dump_cldb(sb1_camf_skc1_cldb);
 	printf("SB1 CAM3_SKC2 CLDB data:\n");
 	dump_cldb(sb1_cam3_skc2_cldb);
