@@ -1586,6 +1586,32 @@ static struct device *get_dep_dev(struct device *dev)
 	return dep_dev;
 }
 
+static struct device *get_pmic_dev_by_uid(struct device *dev)
+{
+	struct acpi_device *int3472_adev;
+	struct device *int3472_dev;
+
+	/* FIXME: The _UID of PMIC that INT33BE uses on Surface Book 1
+	 * is 1. Hard-code for now.
+	 */
+	int3472_adev = acpi_dev_get_first_match_dev("INT3472", "1", -1);
+	if (!int3472_adev) {
+		dev_err(dev,
+			"error getting the PMIC's ACPI device.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	int3472_dev = bus_find_device_by_acpi_dev(&platform_bus_type, int3472_adev);
+	acpi_dev_put(int3472_adev);
+	if (!int3472_dev) {
+		dev_err(dev,
+			"error finding the PMIC's physical device.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	return int3472_dev;
+}
+
 static int ov5693_probe(struct i2c_client *client)
 {
 	struct ov5693_device *ov5693;
