@@ -1472,11 +1472,15 @@ static int match_depend(struct device *dev, const void *data)
 
 static struct device *get_dep_dev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle;
+	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
 	struct device *dep_dev;
 	int ret;
 	int i;
+
+	sensor_adev = acpi_dev_get_first_match_dev(OV5693_HID, NULL, -1);
+	dev_handle = sensor_adev->handle;
 
 	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
@@ -1629,7 +1633,7 @@ out_free:
 }
 
 static const struct acpi_device_id ov5693_acpi_match[] = {
-	{"INT33BE"},
+	{OV5693_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov5693_acpi_match);
