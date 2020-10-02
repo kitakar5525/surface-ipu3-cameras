@@ -185,6 +185,9 @@ struct ov5693_device {
 
 	struct ov5693_resolution *curr_mode;
 	struct clk *xvclk;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 enum ov5693_tok_type {
