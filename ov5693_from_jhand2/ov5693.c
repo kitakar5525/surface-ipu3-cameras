@@ -480,6 +480,29 @@ static struct device *get_dep_dev(struct device *dev)
 	return dep_dev;
 }
 
+static struct device *get_pmic_dev_by_uid(struct device *dev)
+{
+	struct acpi_device *int3472_adev;
+	struct device *int3472_dev;
+
+	/* TODO: The _UID of PMIC INT33BE uses is 1. Hard-code for now. */
+	int3472_adev = acpi_dev_get_first_match_dev("INT3472", "1", -1);
+	if (!int3472_adev) {
+		dev_dbg(dev,
+			"error getting the PMIC's ACPI device.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	int3472_dev = bus_find_device_by_acpi_dev(&platform_bus_type, int3472_adev);
+	if (!int3472_dev) {
+		dev_dbg(dev,
+			"error finding the PMIC's physical device.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	return int3472_dev;
+}
+
 static int __ov5693_power_off(struct ov5693_device *ov5693)
 {
 	gpiod_set_value_cansleep(ov5693->xshutdn, 0);
