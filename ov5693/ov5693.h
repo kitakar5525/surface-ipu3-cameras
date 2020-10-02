@@ -30,6 +30,8 @@
 #include <linux/v4l2-mediabus.h>
 #include <media/media-entity.h>
 
+#define OV5693_HID "INT33BE"
+
 /*
  * FIXME: non-preview resolutions are currently broken
  */
