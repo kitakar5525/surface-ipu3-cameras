@@ -1565,7 +1565,7 @@ static int ov5693_probe(struct i2c_client *client)
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
 
-	ov5693->dep_dev = get_dep_dev(&client->dev);
+	ov5693->dep_dev = get_pmic_dev_by_uid(&client->dev);
 	if (IS_ERR(ov5693->dep_dev)) {
 		ret = PTR_ERR(ov5693->dep_dev);
 		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
