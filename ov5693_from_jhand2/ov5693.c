@@ -9,7 +9,6 @@
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
 #include <linux/platform_device.h>
-#include <linux/regulator/consumer.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
@@ -515,16 +514,11 @@ static int __ov5693_power_off(struct ov5693_device *ov5693)
 	gpiod_put(ov5693->pwdnb);
 	gpiod_put(ov5693->led_gpio);
 
-	regulator_bulk_disable(OV5693_NUM_SUPPLIES, ov5693->supplies);
-
 	return 0;
 }
 
 static int __ov5693_power_on(struct ov5693_device *ov5693)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov5693->sd);
-	int ret;
-
 	ov5693->xshutdn = gpiod_get_index(ov5693->dep_dev, NULL, 0, GPIOD_ASIS);
 	if (IS_ERR(ov5693->xshutdn)) {
 		printk("Couldn't get GPIO XSHUTDN\n");
@@ -545,12 +539,6 @@ static int __ov5693_power_on(struct ov5693_device *ov5693)
 
 	gpiod_set_value_cansleep(ov5693->xshutdn, 0);
 	gpiod_set_value_cansleep(ov5693->pwdnb, 0);
-
-	ret = regulator_bulk_enable(OV5693_NUM_SUPPLIES, ov5693->supplies);
-	if (ret) {
-		dev_err(&client->dev, "Failed to enable regulators\n");
-		return ret;
-	}
 
 	gpiod_set_value_cansleep(ov5693->xshutdn, 0);
 
@@ -647,19 +635,6 @@ err:
 	return ret;
 }
 
-static int ov5693_configure_regulators(struct ov5693_device *dev)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&dev->sd);
-	int i;
-
-	for (i = 0; i < OV5693_NUM_SUPPLIES; i++)
-		dev->supplies[i].supply = ov5693_supply_names[i];
-
-	return devm_regulator_bulk_get(&client->dev,
-				       OV5693_NUM_SUPPLIES,
-				       dev->supplies);
-}
-
 static int ov5693_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
@@ -691,12 +666,6 @@ static int ov5693_probe(struct i2c_client *client,
 	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	dev->sd.entity.ops = &ov5693_subdev_entity_ops;
-
-	ret = ov5693_configure_regulators(dev);
-	if (ret) {
-		dev_err(&client->dev, "Failed to get power regulators\n");
-		return ret;
-	}
 
 	// Power on
 	ret = __ov5693_power_on(dev);
