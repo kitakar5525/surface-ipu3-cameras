@@ -496,65 +496,19 @@ static int __ov5693_power_off(struct ov5693_device *ov5693)
 
 static int __ov5693_power_on(struct ov5693_device *ov5693)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov5693->sd);
-	struct acpi_handle *dev_handle = ACPI_HANDLE(&client->dev);
-	struct acpi_handle_list dep_devices;
-	acpi_status status;
-	struct device *dev;
-	int i;
-
-	// TODO: Refactor this into own function
-	// Get dependant INT3472 device
-	if (!acpi_has_method(dev_handle, "_DEP")) {
-		printk("No dependant devices\n");
-		return -100;
-	}
-
-	status = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
-					 &dep_devices);
-	if (ACPI_FAILURE(status)) {
-		printk("Failed to evaluate _DEP.\n");
-		return -ENODEV;
-	}
-
-	for (i = 0; i < dep_devices.count; i++) {
-		struct acpi_device *device;
-		struct acpi_device_info *info;
-
-		status = acpi_get_object_info(dep_devices.handles[i], &info);
-		if (ACPI_FAILURE(status)) {
-			printk("Error reading _DEP device info\n");
-			return -ENODEV;
-		}
-
-		if (info->valid & ACPI_VALID_HID &&
-				!strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &device))
-				return -ENODEV;
-
-			dev = bus_find_device(&platform_bus_type, NULL,
-					&device->fwnode, match_depend);
-			if (dev) {
-				dev_info(&client->dev, "Dependent platform device found %s\n",
-					dev_name(dev));
-				break;
-			}
-		}
-	}
-
-	ov5693->xshutdn = gpiod_get_index(dev, NULL, 0, GPIOD_ASIS);
+	ov5693->xshutdn = gpiod_get_index(ov5693->dep_dev, NULL, 0, GPIOD_ASIS);
 	if (IS_ERR(ov5693->xshutdn)) {
 		printk("Couldn't get GPIO XSHUTDN\n");
 		return -EINVAL;
 	}
 
-	ov5693->pwdnb = gpiod_get_index(dev, NULL, 1, GPIOD_ASIS);
+	ov5693->pwdnb = gpiod_get_index(ov5693->dep_dev, NULL, 1, GPIOD_ASIS);
 	if (IS_ERR(ov5693->pwdnb)) {
 		printk("Couldn't get GPIO PWDNB\n");
 		return -EINVAL;
 	}
 
-	ov5693->led_gpio = gpiod_get_index(dev, NULL, 2, GPIOD_ASIS);
+	ov5693->led_gpio = gpiod_get_index(ov5693->dep_dev, NULL, 2, GPIOD_ASIS);
 	if (IS_ERR(ov5693->led_gpio)) {
 		printk("Couldn't get GPIO 2\n");
 		return -EINVAL;
