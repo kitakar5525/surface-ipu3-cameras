@@ -780,28 +780,28 @@ static int __ov5693_otp_read(struct v4l2_subdev *sd, u8 *buf)
 			if ((*b) == 0) {
 				dev->otp_size = 320;
 				break;
-			} else {
-				b = buf;
-				continue;
 			}
+			/* (*b) != 0 */
+			b = buf;
+			continue;
 		} else if (i ==
 			   24) {		//if the first 320bytes data doesn't not exist, try to read the next 32bytes data.
 			if ((*b) == 0) {
 				dev->otp_size = 32;
 				break;
-			} else {
-				b = buf;
-				continue;
 			}
+			/* (*b) != 0 */
+			b = buf;
+			continue;
 		} else if (i ==
 			   27) {		//if the prvious 32bytes data doesn't exist, try to read the next 32bytes data again.
 			if ((*b) == 0) {
 				dev->otp_size = 32;
 				break;
-			} else {
-				dev->otp_size = 0;	// no OTP data.
-				break;
 			}
+			/* (*b) != 0 */
+			dev->otp_size = 0;	// no OTP data.
+			break;
 		}
 
 		b = b + OV5693_OTP_BANK_SIZE;
@@ -1455,17 +1455,19 @@ static int ov5693_s_power(struct v4l2_subdev *sd, int on)
 	int ret;
 
 	dev_info(&client->dev, "%s: on %d\n", __func__, on);
+
 	if (on == 0)
 		return power_down(sd);
-	else {
-		ret = power_up(sd);
-		if (!ret) {
-			ret = ov5693_init(sd);
-			/* restore settings */
-			ov5693_res = ov5693_res_preview;
-			N_RES = N_RES_PREVIEW;
-		}
+
+	/* on == 1 */
+	ret = power_up(sd);
+	if (!ret) {
+		ret = ov5693_init(sd);
+		/* restore settings */
+		ov5693_res = ov5693_res_preview;
+		N_RES = N_RES_PREVIEW;
 	}
+
 	return ret;
 }
 
