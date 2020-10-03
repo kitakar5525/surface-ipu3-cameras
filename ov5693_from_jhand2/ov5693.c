@@ -496,7 +496,7 @@ static struct device *get_pmic_dev_by_uid(struct device *dev)
 	/* TODO: The _UID of PMIC INT33BE uses is 1. Hard-code for now. */
 	int3472_adev = acpi_dev_get_first_match_dev("INT3472", "1", -1);
 	if (!int3472_adev) {
-		dev_dbg(dev,
+		dev_err(dev,
 			"error getting the PMIC's ACPI device.\n");
 		return ERR_PTR(-ENODEV);
 	}
@@ -504,7 +504,7 @@ static struct device *get_pmic_dev_by_uid(struct device *dev)
 	int3472_dev = bus_find_device_by_acpi_dev(&platform_bus_type, int3472_adev);
 	acpi_dev_put(int3472_adev);
 	if (!int3472_dev) {
-		dev_dbg(dev,
+		dev_err(dev,
 			"error finding the PMIC's physical device.\n");
 		return ERR_PTR(-ENODEV);
 	}
