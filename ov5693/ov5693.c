@@ -1323,10 +1323,25 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 
 	mutex_lock(&dev->input_lock);
 
+	/* power_on() here before streaming for regular PCs. */
+	if (enable) {
+		ret = power_up(sd);
+		if (ret) {
+			dev_err(&client->dev, "sensor power-up error\n");
+			power_down(sd);
+			goto out;
+		}
+	}
+
 	ret = ov5693_write_reg(client, OV5693_8BIT, OV5693_SW_STREAM,
 			       enable ? OV5693_START_STREAMING :
 			       OV5693_STOP_STREAMING);
 
+	/* power_off() here after streaming for regular PCs. */
+	if (!enable)
+		power_down(sd);
+
+out:
 	mutex_unlock(&dev->input_lock);
 
 	return ret;
