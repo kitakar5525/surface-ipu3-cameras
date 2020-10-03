@@ -436,7 +436,7 @@ static struct device *get_dep_dev(struct device *dev)
 
 	sensor_adev = acpi_dev_get_first_match_dev(OV5693_HID, NULL, -1);
 	if (!sensor_adev) {
-		printk("Couldn't get sensor ACPI device\n");
+		dev_err(dev, "Couldn't get sensor ACPI device\n");
 		return ERR_PTR(-ENODEV);
 	}
 	dev_handle = sensor_adev->handle;
@@ -444,14 +444,14 @@ static struct device *get_dep_dev(struct device *dev)
 
 	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
-		printk("No dependent devices\n");
+		dev_err(dev, "No dependent devices\n");
 		return ERR_PTR(-ENODEV);
 	}
 
 	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
 					 &dep_devices);
 	if (ACPI_FAILURE(ret)) {
-		printk("Failed to evaluate _DEP.\n");
+		dev_err(dev, "Failed to evaluate _DEP.\n");
 		return ERR_PTR(-ENODEV);
 	}
 
@@ -461,7 +461,7 @@ static struct device *get_dep_dev(struct device *dev)
 
 		ret = acpi_get_object_info(dep_devices.handles[i], &info);
 		if (ACPI_FAILURE(ret)) {
-			printk("Error reading _DEP device info\n");
+			dev_err(dev, "Error reading _DEP device info\n");
 			return ERR_PTR(-ENODEV);
 		}
 
