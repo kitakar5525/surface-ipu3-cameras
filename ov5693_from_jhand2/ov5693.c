@@ -436,6 +436,7 @@ static struct device *get_dep_dev(struct device *dev)
 
 	sensor_adev = acpi_dev_get_first_match_dev(OV5693_HID, NULL, -1);
 	dev_handle = sensor_adev->handle;
+	acpi_dev_put(sensor_adev);
 
 	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
