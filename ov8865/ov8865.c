@@ -21,6 +21,8 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
+#define OV8865_ACPI_HID "INT347A"
+
 /* System */
 
 #define OV8865_SW_STANDBY_REG		0x0100
@@ -2607,7 +2609,7 @@ static int ov8865_probe(struct i2c_client *client)
 
 	sensor->i2c_client = client;
 
-	if (acpi_match_device(dev->driver->acpi_match_table, dev)) {
+	if (acpi_dev_present(OV8865_ACPI_HID, NULL, -1)) {
 		dev_info(dev, "system is acpi-based\n");
 		sensor->is_acpi_based = true;
 	} else
@@ -2794,7 +2796,7 @@ MODULE_DEVICE_TABLE(of, ov8865_dt_ids);
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov8865_acpi_ids[] = {
-	{"INT347A"},
+	{OV8865_ACPI_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
