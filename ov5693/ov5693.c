@@ -1885,7 +1885,7 @@ static int ov5693_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov5693_device *dev = to_ov5693_sensor(sd);
 
-	dev_dbg(&client->dev, "ov5693_remove...\n");
+	dev_dbg(&client->dev, "%s...\n", __func__);
 
 	dev->platform_data->csi_cfg(sd, 0);
 
