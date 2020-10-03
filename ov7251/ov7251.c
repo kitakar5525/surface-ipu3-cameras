@@ -1496,7 +1496,8 @@ static int ov7251_probe(struct i2c_client *client)
 	} else {
 		/* Can't read clock-frequency from fwnode with surface_camera
 		 * because currently surface_camera needs to be loaded before
-		 * sensor drivers. Hard-code for ACPI for now. */
+		 * sensor drivers. Hard-code for ACPI for now.
+		 */
 		ov7251->xclk_freq = 19200000;
 	}
 
