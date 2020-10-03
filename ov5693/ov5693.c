@@ -1551,12 +1551,41 @@ static struct device *get_pmic_dev_by_uid(struct device *dev)
 	return int3472_dev;
 }
 
+static int ov5693_init_controls(struct ov5693_device *ov5693)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov5693->sd);
+	unsigned int i;
+	int ret;
+
+	ret = v4l2_ctrl_handler_init(&ov5693->ctrl_handler,
+				     ARRAY_SIZE(ov5693_controls));
+	if (ret) {
+		ov5693_remove(client);
+		return ret;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ov5693_controls); i++)
+		v4l2_ctrl_new_custom(&ov5693->ctrl_handler,
+				     &ov5693_controls[i],
+				     NULL);
+
+	if (ov5693->ctrl_handler.error) {
+		ov5693_remove(client);
+		return ov5693->ctrl_handler.error;
+	}
+
+	/* Use same lock for controls as for everything else. */
+	ov5693->ctrl_handler.lock = &ov5693->input_lock;
+	ov5693->sd.ctrl_handler = &ov5693->ctrl_handler;
+
+	return 0;
+}
+
 static int ov5693_probe(struct i2c_client *client)
 {
 	struct ov5693_device *ov5693;
 	struct device *dep_dev;
 	int ret = 0;
-	unsigned int i;
 
 	ov5693 = kzalloc(sizeof(*ov5693), GFP_KERNEL);
 	if (!ov5693)
@@ -1591,26 +1620,10 @@ static int ov5693_probe(struct i2c_client *client)
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
 	ov5693->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
-	ret =
-	    v4l2_ctrl_handler_init(&ov5693->ctrl_handler,
-				   ARRAY_SIZE(ov5693_controls));
-	if (ret) {
+
+	ret = ov5693_init_controls(ov5693);
+	if (ret)
 		ov5693_remove(client);
-		return ret;
-	}
-
-	for (i = 0; i < ARRAY_SIZE(ov5693_controls); i++)
-		v4l2_ctrl_new_custom(&ov5693->ctrl_handler, &ov5693_controls[i],
-				     NULL);
-
-	if (ov5693->ctrl_handler.error) {
-		ov5693_remove(client);
-		return ov5693->ctrl_handler.error;
-	}
-
-	/* Use same lock for controls as for everything else. */
-	ov5693->ctrl_handler.lock = &ov5693->input_lock;
-	ov5693->sd.ctrl_handler = &ov5693->ctrl_handler;
 
 	ret = media_entity_pads_init(&ov5693->sd.entity, 1, &ov5693->pad);
 	if (ret)
