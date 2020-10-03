@@ -1620,6 +1620,10 @@ static int ov5693_probe(struct i2c_client *client)
 	if (!ov5693)
 		return -ENOMEM;
 
+	/* check if VCM device exists */
+	/* TODO: read from SSDB */
+	ov5693->has_vcm = false;
+
 	mutex_init(&ov5693->input_lock);
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
