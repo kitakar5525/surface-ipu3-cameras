@@ -253,7 +253,8 @@ struct ov5693_device {
 	struct device *dep_dev;
 
 	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
-	 * depending on devices. */
+	 * depending on devices.
+	 */
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
