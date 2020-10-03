@@ -780,8 +780,8 @@ static int gpio_crs_get(struct ov7251 *sensor, struct device *dep_dev)
 
 	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
 	if (IS_ERR(sensor->led_gpio))
-		dev_info(dep_dev, "Couldn't get GPIO LED. "
-				 "Maybe not exist, continue anyway.\n");
+		dev_info(dep_dev,
+			 "Couldn't get GPIO LED. Maybe not exist, continue anyway.\n");
 
 	return 0;
 }
