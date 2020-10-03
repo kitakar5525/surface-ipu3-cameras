@@ -922,6 +922,9 @@ static int ov5693_init(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
 
+	if (!dev->has_vcm)
+		return 0;
+
 	dev_info(&client->dev, "%s\n", __func__);
 	mutex_lock(&dev->input_lock);
 	dev->vcm_update = false;
