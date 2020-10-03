@@ -611,6 +611,8 @@ static int ov5693_probe(struct i2c_client *client,
 	struct ov5693_device *dev;
 	int ret = 0;
 
+	dev_info(&client->dev, "%s() called", __func__);
+
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev) {
 		dev_err(&client->dev, "out of memory\n");
