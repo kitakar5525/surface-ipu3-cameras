@@ -1629,6 +1629,8 @@ static int ov5693_probe(struct i2c_client *client)
 	struct device *dep_dev;
 	int ret = 0;
 
+	dev_info(&client->dev, "%s() called", __func__);
+
 	ov5693 = kzalloc(sizeof(*ov5693), GFP_KERNEL);
 	if (!ov5693)
 		return -ENOMEM;
