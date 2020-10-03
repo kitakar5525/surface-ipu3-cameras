@@ -1214,15 +1214,15 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
 		cfg->try_fmt = *fmt;
-		mutex_unlock(&dev->input_lock);
-		return 0;
+		ret = 0;
+		goto error_mutex_unlock;
 	}
 
 	dev->fmt_idx = get_resolution_index(fmt->width, fmt->height);
 	if (dev->fmt_idx == -1) {
 		dev_err(&client->dev, "get resolution fail\n");
-		mutex_unlock(&dev->input_lock);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto error_mutex_unlock;
 	}
 
 	ret = startup(sd);
@@ -1264,6 +1264,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	if (ret)
 		dev_warn(&client->dev, "ov5693 stream off err\n");
 
+error_mutex_unlock:
 	mutex_unlock(&dev->input_lock);
 	return ret;
 }
