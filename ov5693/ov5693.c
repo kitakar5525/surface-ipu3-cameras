@@ -614,7 +614,7 @@ static int __ov5693_otp_read(struct v4l2_subdev *sd, u8 *buf)
 			dev_err(&client->dev, "failed to prepare OTP page\n");
 			return ret;
 		}
-		// dev_dbg(&client->dev, "write 0x%x->0x%x\n",OV5693_OTP_BANK_REG,(i|0xc0));
+		//dev_dbg(&client->dev, "write 0x%x->0x%x\n",OV5693_OTP_BANK_REG,(i|0xc0));
 
 		/*enable read */
 		ret = ov5693_write_reg(client, OV5693_8BIT, OV5693_OTP_READ_REG,
@@ -624,8 +624,8 @@ static int __ov5693_otp_read(struct v4l2_subdev *sd, u8 *buf)
 				"failed to set OTP reading mode page");
 			return ret;
 		}
-		// dev_dbg(&client->dev, "write 0x%x->0x%x\n",
-		// 	OV5693_OTP_READ_REG,OV5693_OTP_MODE_READ);
+		//dev_dbg(&client->dev, "write 0x%x->0x%x\n",
+		//	OV5693_OTP_READ_REG,OV5693_OTP_MODE_READ);
 
 		/* Reading the OTP data array */
 		ret = ov5693_read_otp_reg_array(client, OV5693_OTP_BANK_SIZE,
@@ -636,10 +636,10 @@ static int __ov5693_otp_read(struct v4l2_subdev *sd, u8 *buf)
 			return ret;
 		}
 
-		// dev_dbg(&client->dev,
-		// 	"BANK[%2d] %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-		// 	i, *b, *(b+1), *(b+2), *(b+3), *(b+4), *(b+5), *(b+6), *(b+7),
-		// 	*(b+8), *(b+9), *(b+10), *(b+11), *(b+12), *(b+13), *(b+14), *(b+15));
+		//dev_dbg(&client->dev,
+		//	"BANK[%2d] %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		//	i, *b, *(b+1), *(b+2), *(b+3), *(b+4), *(b+5), *(b+6), *(b+7),
+		//	*(b+8), *(b+9), *(b+10), *(b+11), *(b+12), *(b+13), *(b+14), *(b+15));
 
 		//Intel OTP map, try to read 320byts first.
 		if (i == 21) {
