@@ -574,7 +574,8 @@ static int ov5693_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov5693_device *dev = to_ov5693_sensor(sd);
-	dev_dbg(&client->dev, "ov5693_remove...\n");
+
+	dev_info(&client->dev, "ov5693_remove...\n");
 
 	pm_runtime_disable(&client->dev);
 
