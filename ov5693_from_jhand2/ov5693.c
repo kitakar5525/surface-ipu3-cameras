@@ -448,8 +448,7 @@ static struct device *get_dep_dev(struct device *dev)
 		return ERR_PTR(-ENODEV);
 	}
 
-	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL,
-					 &dep_devices);
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
 	if (ACPI_FAILURE(ret)) {
 		dev_err(dev, "Failed to evaluate _DEP.\n");
 		return ERR_PTR(-ENODEV);
@@ -466,15 +465,16 @@ static struct device *get_dep_dev(struct device *dev)
 		}
 
 		if (info->valid & ACPI_VALID_HID &&
-				!strcmp(info->hardware_id.string, "INT3472")) {
+		    !strcmp(info->hardware_id.string, "INT3472")) {
 			if (acpi_bus_get_device(dep_devices.handles[i], &device))
 				return ERR_PTR(-ENODEV);
 
 			dep_dev = bus_find_device(&platform_bus_type, NULL,
-					&device->fwnode, match_depend);
+						  &device->fwnode, match_depend);
 			if (dep_dev) {
-				dev_info(dev, "Dependent platform device found: %s\n",
-					dev_name(dep_dev));
+				dev_info(dev,
+					 "Dependent platform device found: %s\n",
+					 dev_name(dep_dev));
 				break;
 			}
 		}
