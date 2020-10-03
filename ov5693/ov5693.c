@@ -1593,6 +1593,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	struct camera_mipi_info *ov5693_info = NULL;
 	int ret = 0;
 	int idx;
+	int cnt;
 
 	if (format->pad)
 		return -EINVAL;
@@ -1627,33 +1628,26 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 		return -EINVAL;
 	}
 
-	ret = startup(sd);
-	if (ret) {
-		int i = 0;
-
-		dev_err(&client->dev, "ov5693 startup err, retry to power up\n");
-		for (i = 0; i < OV5693_POWER_UP_RETRY_NUM; i++) {
-			dev_err(&client->dev,
-				"ov5693 retry to power up %d/%d times, result: ",
-				i + 1, OV5693_POWER_UP_RETRY_NUM);
-			power_down(sd);
-			ret = power_up(sd);
-			if (!ret) {
-				mutex_unlock(&dev->input_lock);
-				ov5693_init(sd);
-				mutex_lock(&dev->input_lock);
-			} else {
-				dev_err(&client->dev, "power up failed, continue\n");
-				continue;
-			}
-			ret = startup(sd);
-			if (ret) {
-				dev_err(&client->dev, " startup FAILED!\n");
-			} else {
-				dev_err(&client->dev, " startup SUCCESS!\n");
-				break;
-			}
+	for (cnt = 0; cnt < OV5693_POWER_UP_RETRY_NUM; cnt++) {
+		power_down(sd);
+		ret = power_up(sd);
+		if (ret) {
+			dev_err(&client->dev, "power up failed\n");
+			continue;
 		}
+
+		mutex_unlock(&dev->input_lock);
+		ov5693_init(sd);
+		mutex_lock(&dev->input_lock);
+		ret = startup(sd);
+		if (ret)
+			dev_err(&client->dev, " startup() FAILED!\n");
+		else
+			break;
+	}
+	if (cnt == OV5693_POWER_UP_RETRY_NUM) {
+		dev_err(&client->dev, "power up failed, gave up\n");
+		goto mutex_unlock;
 	}
 
 	/*
