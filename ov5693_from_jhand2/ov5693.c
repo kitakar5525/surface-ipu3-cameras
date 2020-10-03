@@ -498,6 +498,7 @@ static struct device *get_pmic_dev_by_uid(struct device *dev)
 	}
 
 	int3472_dev = bus_find_device_by_acpi_dev(&platform_bus_type, int3472_adev);
+	acpi_dev_put(int3472_adev);
 	if (!int3472_dev) {
 		dev_dbg(dev,
 			"error finding the PMIC's physical device.\n");
