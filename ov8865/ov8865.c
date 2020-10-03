@@ -296,52 +296,39 @@ struct ov8865_link_freq_config {
 	const struct ov8865_reg_list reg_list;
 };
 
-static const struct reg_value mipi_data_rate_720mbps[] = {
-	{0x0103, 0x01},
-	{0x0100, 0x00},
-	{0x0302, 0x4b},
-	{0x0303, 0x01},
-	{0x030b, 0x02},
-	{0x030d, 0x4b},
-	{0x031e, 0x0c},
+static const struct reg_value mipi_data_rate_840mbps[] = {
+	{0x0300, 0x04},
+	{0x0301, 0x00},
+	{0x0302, 0x84},
+	{0x0303, 0x00},
+	{0x0304, 0x03},
+	{0x0305, 0x01},
+	{0x0306, 0x01},
+	{0x030a, 0x00},
+	{0x030b, 0x00},
+	{0x030c, 0x00},
+	{0x030d, 0x26},
+	{0x030e, 0x00},
+	{0x030f, 0x06},
+	{0x0312, 0x01},
+	{0x3031, 0x0a},
 };
 
-static const struct reg_value mipi_data_rate_360mbps[] = {
-	{0x0103, 0x01},
-	{0x0100, 0x00},
-	{0x0302, 0x4b},
-	{0x0303, 0x03},
-	{0x030b, 0x02},
-	{0x030d, 0x4b},
-	{0x031e, 0x0c},
-};
-
-#define OV8865_LINK_FREQ_360MHZ		360000000ULL
-#define OV8865_LINK_FREQ_180MHZ		180000000ULL
-
-static const s64 link_freq_menu_items[] = {
-	OV8865_LINK_FREQ_360MHZ,
-	OV8865_LINK_FREQ_180MHZ
-};
-
-enum {
-	OV8865_LINK_FREQ_720MBPS,
-	OV8865_LINK_FREQ_360MBPS,
-};
+#define OV8865_LINK_FREQ_422MHZ			422400000
+#define OV8865_LINK_FREQ_422MHZ_INDEX	0
 
 static const struct ov8865_link_freq_config link_freq_configs[] = {
-	[OV8865_LINK_FREQ_720MBPS] = {
+	{
+		.pixel_rate = (OV8865_LINK_FREQ_422MHZ * 2 * 2) / 10,
 		.reg_list = {
-			.num_of_regs = ARRAY_SIZE(mipi_data_rate_720mbps),
-			.regs = mipi_data_rate_720mbps,
-		}
-	},
-	[OV8865_LINK_FREQ_360MBPS] = {
-		.reg_list = {
-			.num_of_regs = ARRAY_SIZE(mipi_data_rate_360mbps),
-			.regs = mipi_data_rate_360mbps,
+			.num_of_regs = ARRAY_SIZE(mipi_data_rate_840mbps),
+			.regs = mipi_data_rate_840mbps,
 		}
 	}
+};
+
+static const s64 link_freq_menu_items[] = {
+	OV8865_LINK_FREQ_422MHZ
 };
 
 struct ov8865_mode_info {
