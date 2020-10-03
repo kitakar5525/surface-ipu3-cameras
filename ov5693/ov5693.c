@@ -1633,6 +1633,10 @@ static int ov5693_probe(struct i2c_client *client)
 	}
 	dep_dev = ov5693->dep_dev;
 
+	/* check if VCM device exists */
+	/* TODO: read from SSDB */
+	ov5693->has_vcm = false;
+
 	ret = gpio_crs_get(ov5693, dep_dev);
 	if (ret) {
 		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");

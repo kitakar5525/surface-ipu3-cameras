@@ -257,6 +257,8 @@ struct ov5693_device {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool has_vcm;
 };
 
 enum ov5693_tok_type {
