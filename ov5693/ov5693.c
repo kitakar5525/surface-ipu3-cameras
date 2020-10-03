@@ -1554,6 +1554,7 @@ static struct device *get_pmic_dev_by_uid(struct device *dev)
 static int ov5693_init_controls(struct ov5693_device *ov5693)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ov5693->sd);
+	struct v4l2_ctrl *ctrl;
 	unsigned int i;
 	int ret;
 
@@ -1568,6 +1569,17 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 		v4l2_ctrl_new_custom(&ov5693->ctrl_handler,
 				     &ov5693_controls[i],
 				     NULL);
+
+	/* link freq */
+	ctrl = v4l2_ctrl_new_int_menu(&ov5693->ctrl_handler, NULL,
+				      V4L2_CID_LINK_FREQ,
+				      0, 0, link_freq_menu_items);
+	if (ctrl)
+		ctrl->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+
+	/* pixel rate */
+	v4l2_ctrl_new_std(&ov5693->ctrl_handler, NULL, V4L2_CID_PIXEL_RATE,
+			  0, OV5693_PIXEL_RATE, 1, OV5693_PIXEL_RATE);
 
 	if (ov5693->ctrl_handler.error) {
 		ov5693_remove(client);
