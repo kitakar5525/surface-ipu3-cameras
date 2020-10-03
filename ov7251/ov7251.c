@@ -23,6 +23,8 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
+#define OV7251_ACPI_HID "INT347E"
+
 #define OV7251_SC_MODE_SELECT		0x0100
 #define OV7251_SC_MODE_SELECT_SW_STANDBY	0x0
 #define OV7251_SC_MODE_SELECT_STREAMING		0x1
@@ -1430,7 +1432,7 @@ static int ov7251_probe(struct i2c_client *client)
 	ov7251->i2c_client = client;
 	ov7251->dev = dev;
 
-	if (acpi_match_device(dev->driver->acpi_match_table, dev)) {
+	if (acpi_dev_present(OV7251_ACPI_HID, NULL, -1)) {
 		dev_info(dev, "system is acpi-based\n");
 		ov7251->is_acpi_based = true;
 	} else
@@ -1697,7 +1699,7 @@ MODULE_DEVICE_TABLE(of, ov7251_of_match);
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov7251_acpi_ids[] = {
-	{"INT347E"},
+	{OV7251_ACPI_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov7251_acpi_ids);
