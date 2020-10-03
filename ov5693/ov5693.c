@@ -1902,13 +1902,42 @@ static int ov5693_remove(struct i2c_client *client)
 	return 0;
 }
 
+static int ov5693_init_controls(struct ov5693_device *ov5693)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov5693->sd);
+	unsigned int i;
+	int ret;
+
+	ret = v4l2_ctrl_handler_init(&ov5693->ctrl_handler,
+				     ARRAY_SIZE(ov5693_controls));
+	if (ret) {
+		ov5693_remove(client);
+		return ret;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ov5693_controls); i++)
+		v4l2_ctrl_new_custom(&ov5693->ctrl_handler,
+				     &ov5693_controls[i],
+				     NULL);
+
+	if (ov5693->ctrl_handler.error) {
+		ov5693_remove(client);
+		return ov5693->ctrl_handler.error;
+	}
+
+	/* Use same lock for controls as for everything else. */
+	ov5693->ctrl_handler.lock = &ov5693->input_lock;
+	ov5693->sd.ctrl_handler = &ov5693->ctrl_handler;
+
+	return 0;
+}
+
 static int ov5693_probe(struct i2c_client *client)
 {
 	struct ov5693_device *dev;
 	int i2c;
 	int ret = 0;
 	void *pdata;
-	unsigned int i;
 
 	/*
 	 * Firmware workaround: Some modules use a "secondary default"
@@ -1951,26 +1980,10 @@ static int ov5693_probe(struct i2c_client *client)
 	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
 	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
-	ret =
-	    v4l2_ctrl_handler_init(&dev->ctrl_handler,
-				   ARRAY_SIZE(ov5693_controls));
-	if (ret) {
+
+	ret = ov5693_init_controls(dev);
+	if (ret)
 		ov5693_remove(client);
-		return ret;
-	}
-
-	for (i = 0; i < ARRAY_SIZE(ov5693_controls); i++)
-		v4l2_ctrl_new_custom(&dev->ctrl_handler, &ov5693_controls[i],
-				     NULL);
-
-	if (dev->ctrl_handler.error) {
-		ov5693_remove(client);
-		return dev->ctrl_handler.error;
-	}
-
-	/* Use same lock for controls as for everything else. */
-	dev->ctrl_handler.lock = &dev->input_lock;
-	dev->sd.ctrl_handler = &dev->ctrl_handler;
 
 	ret = media_entity_pads_init(&dev->sd.entity, 1, &dev->pad);
 	if (ret)
