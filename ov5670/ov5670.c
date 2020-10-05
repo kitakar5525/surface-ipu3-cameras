@@ -10,6 +10,8 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
 
+#define OV5670_HID "INT3479"
+
 #define OV5670_REG_CHIP_ID		0x300a
 #define OV5670_CHIP_ID			0x005670
 
@@ -2616,12 +2618,21 @@ static const struct v4l2_subdev_internal_ops ov5670_internal_ops = {
 /* Get acpi_device of dependent INT3472 device */
 static struct acpi_device *get_dep_adev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle;
+	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
 	struct acpi_device *dep_adev;
 	acpi_status status;
 	const char *dep_hid = "INT3472";
 	int i;
+
+	sensor_adev = acpi_dev_get_first_match_dev(OV5670_HID, NULL, -1);
+	if (!sensor_adev) {
+		dev_err(dev, "Couldn't get sensor ACPI device\n");
+		return ERR_PTR(-ENODEV);
+	}
+	dev_handle = sensor_adev->handle;
+	acpi_dev_put(sensor_adev);
 
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		dev_err(dev, "No _DEP entry found\n");
