@@ -23,6 +23,8 @@ References:
 
 About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
 
+---
+
 #### links
 
 Intel maintains IPU4 (not IPU3) drivers (crlmodule, ipu4-acpi, and ipu4) at linux-intel-lts repo (up to v4.19):
