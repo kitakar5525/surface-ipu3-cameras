@@ -124,14 +124,6 @@
 #define OV5693_OTP_READ_ONETIME		16
 #define OV5693_OTP_MODE_READ		1
 
-static const char * const ov5693_supply_names[] = {
-	"dovdd",	/* Digital I/O power */
-	"avdd",		/* Analog power */
-	"dvdd",		/* Digital core power */
-};
-
-#define OV5693_NUM_SUPPLIES ARRAY_SIZE(ov5693_supply_names)
-
 struct regval_list {
 	u16 reg_num;
 	u8 value;
@@ -191,7 +183,6 @@ struct ov5693_device {
 	bool vcm_update;
 	enum vcm_type vcm;
 
-	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	struct ov5693_resolution *curr_mode;
 	struct clk *xvclk;
 };
