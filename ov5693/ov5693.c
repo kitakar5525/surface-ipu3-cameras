@@ -1475,6 +1475,7 @@ static int ov5693_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s...\n", __func__);
 
 	gpio_crs_put(ov5693);
+	put_device(ov5693->dep_dev);
 
 	v4l2_async_unregister_subdev(sd);
 
