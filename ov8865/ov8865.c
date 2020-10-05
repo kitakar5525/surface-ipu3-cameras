@@ -2457,16 +2457,16 @@ static int ov8865_probe(struct i2c_client *client)
 	if (IS_ERR(sensor->reset_gpio))
 		return PTR_ERR(sensor->reset_gpio);
 
+	ret = ov8865_get_regulators(sensor);
+	if (ret)
+		return ret;
+
 	v4l2_i2c_subdev_init(&sensor->sd, client, &ov8865_subdev_ops);
 	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
 			    V4L2_SUBDEV_FL_HAS_EVENTS;
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
-	if (ret)
-		return ret;
-
-	ret = ov8865_get_regulators(sensor);
 	if (ret)
 		return ret;
 
