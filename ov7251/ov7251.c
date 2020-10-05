@@ -1691,10 +1691,8 @@ static int ov7251_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s() called\n", __func__);
 
 	/* For ACPI-based systems */
-	if (ov7251->is_acpi_based) {
+	if (ov7251->is_acpi_based)
 		gpio_crs_put(ov7251);
-		put_device(ov7251->dep_dev);
-	}
 
 	v4l2_async_unregister_subdev(&ov7251->sd);
 	media_entity_cleanup(&ov7251->sd.entity);
