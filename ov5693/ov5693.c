@@ -1617,15 +1617,15 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
 		cfg->try_fmt = *fmt;
-		mutex_unlock(&dev->input_lock);
-		return 0;
+		ret = 0;
+		goto mutex_unlock;
 	}
 
 	dev->fmt_idx = get_resolution_index(fmt->width, fmt->height);
 	if (dev->fmt_idx == -1) {
 		dev_err(&client->dev, "get resolution fail\n");
-		mutex_unlock(&dev->input_lock);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto mutex_unlock;
 	}
 
 	for (cnt = 0; cnt < OV5693_POWER_UP_RETRY_NUM; cnt++) {
@@ -1664,14 +1664,14 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 				     &ov5693_res[dev->fmt_idx]);
 	if (ret) {
 		dev_err(&client->dev, "failed to get integration_factor\n");
-		goto err;
+		goto mutex_unlock;
 	}
 
 	ov5693_info->metadata_width = fmt->width * 10 / 8;
 	ov5693_info->metadata_height = 1;
 	ov5693_info->metadata_effective_width = &ov5693_embedded_effective_size;
 
-err:
+mutex_unlock:
 	mutex_unlock(&dev->input_lock);
 	return ret;
 }
