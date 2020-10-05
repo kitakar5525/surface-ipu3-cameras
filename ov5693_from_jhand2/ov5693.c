@@ -557,6 +557,8 @@ static int ov5693_remove(struct i2c_client *client)
 
 	__ov5693_power_off(dev);
 
+	put_device(dev->dep_dev);
+
 	v4l2_async_unregister_subdev(sd);
 
 	media_entity_cleanup(&dev->sd.entity);
