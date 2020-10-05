@@ -2771,7 +2771,6 @@ static int ov5670_remove(struct i2c_client *client)
 	struct ov5670 *ov5670 = to_ov5670(sd);
 
 	gpio_crs_put(ov5670);
-	put_device(ov5670->dep_dev);
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
