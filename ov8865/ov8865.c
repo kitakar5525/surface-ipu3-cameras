@@ -2772,8 +2772,11 @@ static int ov8865_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s() called", __func__);
 
 	/* For ACPI-based systems */
-	if (sensor->is_acpi_based)
+	if (sensor->is_acpi_based) {
 		gpio_crs_put(sensor);
+		put_device(sensor->dep_dev);
+	}
+	
 
 	v4l2_async_unregister_subdev(&sensor->sd);
 	mutex_destroy(&sensor->lock);
