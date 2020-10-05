@@ -12,6 +12,8 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
 
+#define OV5670_HID "INT3479"
+
 #define OV5670_REG_CHIP_ID		0x300a
 #define OV5670_CHIP_ID			0x005670
 
@@ -2586,11 +2588,20 @@ static int match_depend(struct device *dev, const void *data)
 
 static struct device *get_dep_dev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle;
+	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
 	struct device *dep_dev;
 	int ret;
 	int i;
+
+	sensor_adev = acpi_dev_get_first_match_dev(OV5670_HID, NULL, -1);
+	if (!sensor_adev) {
+		dev_err(dev, "Couldn't get sensor ACPI device\n");
+		return ERR_PTR(-ENODEV);
+	}
+	dev_handle = sensor_adev->handle;
+	acpi_dev_put(sensor_adev);
 
 	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
@@ -2777,7 +2788,7 @@ static const struct dev_pm_ops ov5670_pm_ops = {
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov5670_acpi_ids[] = {
-	{"INT3479"},
+	{OV5670_HID},
 	{ /* sentinel */ }
 };
 
