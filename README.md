@@ -23,7 +23,8 @@ References:
 
 3. Go to sensor drivers dir (e.g., ov5693) and follow the README there
 
-About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
+- About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
+- About `ov5693` and `ov5693_from_jhand2` dirs: Both drivers are working now. (you can load only one of them at the same time, of course) The former is from atomisp driver and modified to work with ipu3. The latter is from jhand2 and I made some changes. (jhand2 seems to be busy, so I haven't made pull request or something so far yet)
 
 ---
 
