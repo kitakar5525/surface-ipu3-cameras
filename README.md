@@ -14,6 +14,8 @@ References:
 
 #### usage
 
+0. Build kernel with `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5)
+
 1. Apply software node kernel patch
 2. Add bridge driver that builds software node
 
