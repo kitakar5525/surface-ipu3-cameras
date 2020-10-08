@@ -14,14 +14,19 @@ References:
 
 #### usage
 
-0. Build kernel with `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5)
+First, build kernel with the following changes:
 
+0. Set the kernel config `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5)
 1. Apply software node kernel patch
 2. Add bridge driver that builds software node
 
-   Both available in djrscally's repo: https://github.com/djrscally/miix-510-cameras/tree/master/patches
+   software node and bridge driver patches are available in djrscally's repo: https://github.com/djrscally/miix-510-cameras/tree/master/patches
 
-3. Go to sensor drivers dir (e.g., ov5693) and follow the README there
+Then, build sensor drivers:
+
+- Go to sensor drivers dir (e.g., ov5693) and follow the README there
+
+Note:
 
 - About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
 - About `ov5693` and `ov5693_from_jhand2` dirs: Both drivers are working now. (you can load only one of them at the same time, of course) The former is from atomisp driver and modified to work with ipu3. The latter is from jhand2 and I made some changes. (jhand2 seems to be busy, so I haven't made pull request or something so far yet)
