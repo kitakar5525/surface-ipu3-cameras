@@ -105,9 +105,12 @@ struct intel_cldb {
 	u8 reserved[28];
 } __attribute__((__packed__));
 
-void dump_ssdb(struct device *dev, struct intel_ssdb *data)
+void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
+
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data, data_len, true);
 
 	dev_info(dev, "link_used: %d\n", data->link_used);
 	dev_info(dev, "lanes_used: %d\n", data->lanes_used);
@@ -127,9 +130,12 @@ void dump_ssdb(struct device *dev, struct intel_ssdb *data)
 	dev_info(dev, "\n");
 }
 
-void dump_cldb(struct device *dev, struct intel_cldb *data)
+void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
+
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data, data_len, true);
 
 	dev_info(dev, "version: %d\n", data->version);
 	dev_info(dev, "control_logic_type: %d\n", data->control_logic_type);
@@ -238,29 +244,31 @@ static int get_acpi_data(struct device *dev)
 	struct intel_ssdb sensor_data;
 	struct intel_cldb pmic_data;
 	struct device *dep_dev;
-	int ret;
+	int ssdb_len;
+	int cldb_len;
 
 	dev_info(dev, "-------------------- %s --------------------\n",
 		 dev_name(dev));
 
 	dep_dev = get_dep_dev(dev);
 	if (IS_ERR(dep_dev))
-		dev_warn(dev, "cannot get dep_dev: ret %d\n", ret);
+		dev_warn(dev, "cannot get dep_dev: ret %ld\n",
+			 PTR_ERR(dep_dev));
 	
-	ret = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
-	if (ret < 0)
-		return ret;
+	ssdb_len = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
+	if (ssdb_len < 0)
+		return ssdb_len;
 
 	if (!IS_ERR(dep_dev)) {
-		ret = read_acpi_block(dep_dev, "CLDB", &pmic_data,
+		cldb_len = read_acpi_block(dep_dev, "CLDB", &pmic_data,
 				      sizeof(pmic_data));
-		if (ret < 0)
-			return ret;
+		if (cldb_len < 0)
+			return cldb_len;
 	}
 
-	dump_ssdb(dev, &sensor_data);
+	dump_ssdb(dev, &sensor_data, ssdb_len);
 	if (!IS_ERR(dep_dev)) {
-		dump_cldb(dev, &pmic_data);
+		dump_cldb(dev, &pmic_data, cldb_len);
 		put_device(dep_dev);
 	}
 
