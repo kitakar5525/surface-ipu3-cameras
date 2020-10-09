@@ -8,7 +8,6 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
-#include <linux/platform_device.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
@@ -613,16 +612,11 @@ static struct acpi_device *get_dep_adev(struct device *dev)
 	return dep_adev;
 }
 
-static int match_depend(struct device *dev, const void *data)
-{
-	return (dev && dev->fwnode == data) ? 1 : 0;
-}
-
 /* Get dependent INT3472 device */
 static struct device *get_dep_dev(struct device *dev)
 {
 	struct acpi_device *dep_adev;
-	struct device *dep_dev;
+	struct acpi_device_physical_node *dep_phys;
 
 	dep_adev = get_dep_adev(dev);
 	if (!dep_adev) {
@@ -630,16 +624,32 @@ static struct device *get_dep_dev(struct device *dev)
 		return ERR_PTR(-ENODEV);
 	}
 
-	dep_dev = bus_find_device(&platform_bus_type, NULL,
-				  &dep_adev->fwnode, match_depend);
-	if (!dep_dev) {
-		dev_err(dev, "Error getting dependent device\n");
+	/*
+	 * HACK: We know that the PMIC is a "discrete" PMIC, an ACPI device
+	 * that just serves as a container to list system GPIOs.
+	 *
+	 * The ACPI device has no fwnode, nor does it have a platform device.
+	 * This prevents fetching GPIOs. It however seems to be backed by the
+	 * PCI root complex (pci0000:00/0000:00:00.0) as its physical device,
+	 * and that device has its fwnode set to \_SB.PCI0.DSC1. Whether this
+	 * is correct or not is unknown, let's just get the physical device and
+	 * move on for now.
+	 *
+	 * (@kitakar5525)This is observed on Microsoft Surface Go series
+	 * and Acer Switch Alpha 12.
+	 */
+	dep_phys = list_first_entry_or_null(&dep_adev->physical_node_list,
+					    struct acpi_device_physical_node,
+					    node);
+	if (!dep_phys) {
+		dev_info(dev,
+			 "Error getting physical node of dependent device\n");
 		return ERR_PTR(-ENODEV);
 	}
 
-	dev_info(dev, "Dependent device found: %s\n", dev_name(dep_dev));
+	dev_info(dev, "Dependent device found: %s\n", dev_name(dep_phys->dev));
 
-	return dep_dev;
+	return dep_phys->dev;
 }
 
 static int ov5693_probe(struct i2c_client *client)
