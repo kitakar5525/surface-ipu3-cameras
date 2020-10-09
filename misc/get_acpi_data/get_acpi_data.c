@@ -119,7 +119,7 @@ struct intel_cldb {
 	u8 reserved[28];
 } __attribute__((__packed__));
 
-void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
+static void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
 
@@ -144,7 +144,7 @@ void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 	dev_info(dev, "\n");
 }
 
-void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
+static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
 
