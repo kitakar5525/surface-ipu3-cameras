@@ -244,33 +244,32 @@ static int get_acpi_data(struct device *dev)
 	struct intel_ssdb sensor_data;
 	struct intel_cldb pmic_data;
 	struct device *dep_dev;
-	int ssdb_len;
-	int cldb_len;
+	int len;
+	int ret;
 
 	dev_info(dev, "-------------------- %s --------------------\n",
-		 dev_name(dev));
+		 dev_name(dev));;
+	
+	len = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
+	if (len < 0)
+		return len;
+
+	dump_ssdb(dev, &sensor_data, len);
 
 	dep_dev = get_dep_dev(dev);
-	if (IS_ERR(dep_dev))
-		dev_warn(dev, "cannot get dep_dev: ret %ld\n",
-			 PTR_ERR(dep_dev));
-	
-	ssdb_len = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
-	if (ssdb_len < 0)
-		return ssdb_len;
-
-	if (!IS_ERR(dep_dev)) {
-		cldb_len = read_acpi_block(dep_dev, "CLDB", &pmic_data,
-				      sizeof(pmic_data));
-		if (cldb_len < 0)
-			return cldb_len;
+	if (IS_ERR(dep_dev)) {
+		ret = PTR_ERR(dep_dev);
+		dev_err(dev, "cannot get dep_dev: ret %d\n", ret);
+		return ret;
 	}
 
-	dump_ssdb(dev, &sensor_data, ssdb_len);
-	if (!IS_ERR(dep_dev)) {
-		dump_cldb(dev, &pmic_data, cldb_len);
-		put_device(dep_dev);
-	}
+	len = read_acpi_block(dep_dev, "CLDB", &pmic_data,
+				sizeof(pmic_data));
+	if (len < 0)
+		return len;
+
+	dump_cldb(dev, &pmic_data, len);
+	put_device(dep_dev);
 
 	return 0;
 }
