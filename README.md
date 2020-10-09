@@ -12,6 +12,31 @@ References:
 - Surface gen 4 to 6 devices use IPU3.
 - Surface gen 7 devices use IPU4 instead (except SL3, which uses USB cameras instead).
 
+For S3 cameras, I made a separate repo: https://github.com/kitakar5525/surface3-atomisp-cameras
+
+#### What device uses what sensors?
+
+From linux-surface's acpidumps repo and Surface firmware download files:
+
+```bash
+# S3 (atomisp)
+CAM6 APTA0330 AR0330 # Front cam
+CAM1 OVTI8835 OV8835 # Rear cam
+
+# SP/SB/SGO with gen4+ (SP4 and later gen) devices
+CAMF INT33BE OV5693
+CAMR INT347A OV8865
+CAM3 INT347E OV7251 # IR cam
+
+# Note that SP7/SB3 uses ipu4. ipu4 driver isn't upstream and currently
+# available up to only 4.19, someone need to port it to newer kernel
+# series. Take a look at links section below for more info.
+
+# SL1/SL2 (SL3 uses USB cameras instead)
+CAMF OVTI9734 OV9734
+CAM3 INT347E OV7251 # IR cam
+```
+
 #### usage
 
 First, build kernel with the following changes:
