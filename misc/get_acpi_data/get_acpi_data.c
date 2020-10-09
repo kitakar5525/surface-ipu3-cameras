@@ -180,16 +180,16 @@ err:
 	return status;
 }
 
+/* Get dependent INT3472 device */
 static struct device *get_dep_dev(struct device *dev)
 {
 	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
 	struct acpi_handle_list dep_devices;
-	struct acpi_device_physical_node *dep_phys;
 	struct acpi_device *dep_adev;
+	struct acpi_device_physical_node *dep_phys;
 	int ret;
 	int i;
 
-	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		dev_err(dev, "No dependent devices\n");
 		return ERR_PTR(-ENODEV);
