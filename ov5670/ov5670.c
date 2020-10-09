@@ -2626,12 +2626,19 @@ static struct device *get_dep_dev(struct device *dev)
 
 		if (info->valid & ACPI_VALID_HID &&
 		    !strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev))
+			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
+				dev_err(dev, "Error getting adev of dep_dev\n");
 				return ERR_PTR(-ENODEV);
+			}
 
 			/* found adev of dep_dev */
 			break;
 		}
+	}
+
+	if (!dep_adev) {
+		dev_err(dev, "adev of dep_dev not found\n");
+		return ERR_PTR(-ENODEV);
 	}
 
 	dep_dev = bus_find_device(&platform_bus_type, NULL,
