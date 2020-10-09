@@ -231,13 +231,30 @@ static struct device *get_dep_dev(struct device *dev)
 static int get_acpi_data(struct device *dev)
 {
 	struct intel_ssdb sensor_data;
+	struct intel_cldb pmic_data;
+	struct device *dep_dev;
 	int ret;
+
+	dep_dev = get_dep_dev(dev);
+	if (IS_ERR(dep_dev))
+		dev_warn(dev, "cannot get dep_dev: ret %d\n", ret);
 	
 	ret = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
 	if (ret < 0)
 		return ret;
 
+	if (!IS_ERR(dep_dev)) {
+		ret = read_acpi_block(dep_dev, "CLDB", &pmic_data,
+				      sizeof(pmic_data));
+		if (ret < 0)
+			return ret;
+	}
+
 	dump_ssdb(dev, &sensor_data);
+	if (!IS_ERR(dep_dev)) {
+		dump_cldb(dev, &pmic_data);
+		put_device(dep_dev);
+	}
 	dev_info(dev, "-------------------- %s done --------------------\n",
 		 dev_name(dev));
 
