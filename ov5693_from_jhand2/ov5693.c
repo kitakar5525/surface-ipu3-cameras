@@ -431,6 +431,7 @@ static struct device *get_dep_dev(struct device *dev)
 	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
 	struct device *dep_dev;
+	struct acpi_device *dep_adev;
 	int ret;
 	int i;
 
@@ -455,7 +456,6 @@ static struct device *get_dep_dev(struct device *dev)
 	}
 
 	for (i = 0; i < dep_devices.count; i++) {
-		struct acpi_device *device;
 		struct acpi_device_info *info;
 
 		ret = acpi_get_object_info(dep_devices.handles[i], &info);
@@ -466,24 +466,23 @@ static struct device *get_dep_dev(struct device *dev)
 
 		if (info->valid & ACPI_VALID_HID &&
 		    !strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &device))
+			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev))
 				return ERR_PTR(-ENODEV);
 
-			dep_dev = bus_find_device(&platform_bus_type, NULL,
-						  &device->fwnode, match_depend);
-			if (dep_dev) {
-				dev_info(dev,
-					 "Dependent platform device found: %s\n",
-					 dev_name(dep_dev));
-				break;
-			}
+			/* found adev of dep_dev */
+			break;
 		}
 	}
 
+	dep_dev = bus_find_device(&platform_bus_type, NULL,
+				  &dep_adev->fwnode, match_depend);
 	if (!dep_dev) {
 		dev_err(dev, "Error getting dependent platform device\n");
 		return ERR_PTR(-EINVAL);
 	}
+
+	dev_info(dev, "Dependent platform device found: %s\n",
+		 dev_name(dep_dev));
 
 	return dep_dev;
 }
