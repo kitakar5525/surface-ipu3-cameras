@@ -2,6 +2,7 @@
 
 #include <linux/acpi.h>
 #include <linux/i2c.h>
+#include <linux/platform_device.h>
 
 /* From Intel's ipu4-acpi */
 struct sensor_bios_data_packed {
@@ -166,6 +167,65 @@ static int read_acpi_block(struct device *dev, char *id, void *data, u32 size)
 err:
 	kfree(buffer.pointer);
 	return status;
+}
+
+static int match_depend(struct device *dev, const void *data)
+{
+	return (dev && dev->fwnode == data) ? 1 : 0;
+}
+
+static struct device *get_dep_dev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct device *dep_dev;
+	int ret;
+	int i;
+
+	// Get dependent INT3472 device
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		dev_err(dev, "No dependent devices\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device *device;
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			dev_err(dev, "Error reading _DEP device info\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+		    !strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &device))
+				return ERR_PTR(-ENODEV);
+
+			dep_dev = bus_find_device(&platform_bus_type, NULL,
+						  &device->fwnode, match_depend);
+			if (dep_dev) {
+				dev_info(dev,
+					 "Dependent platform device found: %s\n",
+					 dev_name(dep_dev));
+				break;
+			}
+		}
+	}
+
+	if (!dep_dev) {
+		dev_err(dev, "Error getting dependent platform device\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	return dep_dev;
 }
 
 static int get_acpi_data(struct device *dev)
