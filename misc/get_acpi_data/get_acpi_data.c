@@ -107,6 +107,8 @@ struct intel_cldb {
 
 void dump_ssdb(struct device *dev, struct intel_ssdb *data)
 {
+	dev_info(dev, "========== %s() ==========\n", __func__);
+
 	dev_info(dev, "link_used: %d\n", data->link_used);
 	dev_info(dev, "lanes_used: %d\n", data->lanes_used);
 	dev_info(dev, "vcm_type: %d\n", data->vcm_type);
@@ -127,10 +129,13 @@ void dump_ssdb(struct device *dev, struct intel_ssdb *data)
 
 void dump_cldb(struct device *dev, struct intel_cldb *data)
 {
+	dev_info(dev, "========== %s() ==========\n", __func__);
+
 	dev_info(dev, "version: %d\n", data->version);
 	dev_info(dev, "control_logic_type: %d\n", data->control_logic_type);
 	dev_info(dev, "control_logic_id: %d\n", data->control_logic_id);
 	dev_info(dev, "sensor_card_sku: %d\n", data->sensor_card_sku);
+
 	dev_info(dev, "\n");
 }
 
@@ -235,6 +240,9 @@ static int get_acpi_data(struct device *dev)
 	struct device *dep_dev;
 	int ret;
 
+	dev_info(dev, "-------------------- %s --------------------\n",
+		 dev_name(dev));
+
 	dep_dev = get_dep_dev(dev);
 	if (IS_ERR(dep_dev))
 		dev_warn(dev, "cannot get dep_dev: ret %d\n", ret);
@@ -255,8 +263,6 @@ static int get_acpi_data(struct device *dev)
 		dump_cldb(dev, &pmic_data);
 		put_device(dep_dev);
 	}
-	dev_info(dev, "-------------------- %s done --------------------\n",
-		 dev_name(dev));
 
 	return 0;
 }
