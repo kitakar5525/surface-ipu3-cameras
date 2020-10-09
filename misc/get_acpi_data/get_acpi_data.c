@@ -259,8 +259,8 @@ static int get_acpi_data(struct device *dev)
 	int ret;
 
 	dev_info(dev, "-------------------- %s --------------------\n",
-		 dev_name(dev));;
-	
+		 dev_name(dev));
+
 	len = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
 	if (len < 0)
 		return len;
