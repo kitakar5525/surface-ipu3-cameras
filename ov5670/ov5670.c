@@ -2580,13 +2580,14 @@ static const struct v4l2_subdev_internal_ops ov5670_internal_ops = {
 	.open = ov5670_open,
 };
 
+/* Get dependent INT3472 device */
 static struct device *get_dep_dev(struct device *dev)
 {
 	struct acpi_handle *dev_handle;
 	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
-	struct acpi_device_physical_node *dep_phys;
 	struct acpi_device *dep_adev;
+	struct acpi_device_physical_node *dep_phys;
 	int ret;
 	int i;
 
@@ -2598,7 +2599,6 @@ static struct device *get_dep_dev(struct device *dev)
 	dev_handle = sensor_adev->handle;
 	acpi_dev_put(sensor_adev);
 
-	// Get dependent INT3472 device
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		dev_err(dev, "No dependent devices\n");
 		return ERR_PTR(-ENODEV);
