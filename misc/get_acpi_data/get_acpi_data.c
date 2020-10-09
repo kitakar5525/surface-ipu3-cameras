@@ -274,8 +274,7 @@ static int get_acpi_data(struct device *dev)
 		return ret;
 	}
 
-	len = read_acpi_block(dep_dev, "CLDB", &pmic_data,
-				sizeof(pmic_data));
+	len = read_acpi_block(dep_dev, "CLDB", &pmic_data, sizeof(pmic_data));
 	if (len < 0)
 		return len;
 
