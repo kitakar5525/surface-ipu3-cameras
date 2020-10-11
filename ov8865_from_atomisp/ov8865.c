@@ -955,9 +955,9 @@ static int __ov8865_s_power(struct v4l2_subdev *sd, int on)
 		}
 		//OV8865_LOG(1, "ov8865 before ov8865_init_registers\n");
 		ret = ov8865_init_registers(sd);
-	       // OV8865_LOG(1, "ov8865 after ov8865_init_registers\n");
+		// OV8865_LOG(1, "ov8865 after ov8865_init_registers\n");
 		if (ret) {
-	       // OV8865_LOG(1, "ov8865 bu64243_power_down power_down ret = %d\n",ret);
+		// OV8865_LOG(1, "ov8865 bu64243_power_down power_down ret = %d\n",ret);
 			bu64243_power_down(sd);
 			power_down(sd);
 		}
