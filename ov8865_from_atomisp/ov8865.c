@@ -1986,21 +1986,7 @@ static struct i2c_driver ov8865_driver = {
 	.probe_new = ov8865_probe,
 	.remove = ov8865_remove,
 };
-
-static __init int ov8865_init_mod(void)
-{
-	OV8865_LOG(2, "%s %d\n", __func__, __LINE__);
-	return i2c_add_driver(&ov8865_driver);
-}
-
-static __exit void ov8865_exit_mod(void)
-{
-	OV8865_LOG(2, "%s %d\n", __func__, __LINE__);
-	i2c_del_driver(&ov8865_driver);
-}
-
-module_init(ov8865_init_mod);
-module_exit(ov8865_exit_mod);
+module_i2c_driver(ov8865_driver);
 
 MODULE_DESCRIPTION("A low-level driver for Omnivision OV8865 sensors");
 MODULE_LICENSE("GPL");
