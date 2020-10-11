@@ -633,8 +633,7 @@ err:
 	return ret;
 }
 
-static int ov5693_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
+static int ov5693_probe(struct i2c_client *client)
 {
 	struct ov5693_device *dev;
 	int ret = 0;
@@ -737,7 +736,7 @@ static struct i2c_driver ov5693_i2c_driver = {
 		.pm = &ov5693_pm_ops,
 		.acpi_match_table = ACPI_PTR(ov5693_acpi_ids),
 	},
-	.probe = ov5693_probe,
+	.probe_new = ov5693_probe,
 	.remove = ov5693_remove,
 };
 
