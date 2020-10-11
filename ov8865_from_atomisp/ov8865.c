@@ -64,7 +64,7 @@ module_param(debug, int, 0644);
 
 struct ov8865_device *global_dev;
 static unsigned int ctrl_value;
-static int bu64243_vcm_ctrl(const char *val, struct kernel_param *kp);
+static int bu64243_vcm_ctrl(const char *val, const struct kernel_param *kp);
 static int bu64243_t_focus_abs(struct v4l2_subdev *sd, s32 value);
 
 module_param_call(vcm_ctrl, bu64243_vcm_ctrl, param_get_uint,
@@ -76,7 +76,7 @@ static unsigned char ov8865_raw[DATA_BUF_SIZE];
 static unsigned char ov8865_otp_data[DATA_BUF_SIZE];
 static u16 exposure_time;
 static int op_dump_otp;
-static int ov8865_dump_otp(const char *val, struct kernel_param *kp);
+static int ov8865_dump_otp(const char *val, const struct kernel_param *kp);
 module_param_call(dump_otp, ov8865_dump_otp, param_get_uint,
 				&op_dump_otp, S_IRUGO | S_IWUSR);
 
@@ -91,7 +91,7 @@ module_param(log_level, int, 0644);
 			printk(a, ## __VA_ARGS__); \
 	} while (0)
 
-static int ov8865_dump_otp(const char *val, struct kernel_param *kp)
+static int ov8865_dump_otp(const char *val, const struct kernel_param *kp)
 {
 	int ret;
 
@@ -562,7 +562,7 @@ static int bu64243_t_focus_abs(struct v4l2_subdev *sd, s32 value)
 
 
 
-static int bu64243_vcm_ctrl(const char *val, struct kernel_param *kp)
+static int bu64243_vcm_ctrl(const char *val, const struct kernel_param *kp)
 {
 	int ret;
 	int rv = param_set_int(val, kp);
