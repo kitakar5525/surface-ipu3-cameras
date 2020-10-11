@@ -391,6 +391,7 @@ static inline const char *
 macro_to_string(const struct macro_string *array, int size, u8 val)
 {
 	int i;
+
 	for (i = 0; i < size; i++) {
 		if (array[i].val == val)
 			return array[i].string;
