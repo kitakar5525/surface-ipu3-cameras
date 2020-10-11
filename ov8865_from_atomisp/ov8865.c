@@ -1744,12 +1744,21 @@ static int match_depend(struct device *dev, const void *data)
 /* Get dependent INT3472 device */
 static struct device *get_dep_dev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_device *sensor_adev;
+	struct acpi_handle *dev_handle;
 	struct acpi_handle_list dep_devices;
 	struct acpi_device *dep_adev;
 	struct device *dep_dev;
 	int ret;
 	int i;
+
+	sensor_adev = acpi_dev_get_first_match_dev(OV8865_HID, NULL, -1);
+	if (!sensor_adev) {
+		dev_err(dev, "Couldn't get sensor ACPI device\n");
+		return ERR_PTR(-ENODEV);
+	}
+	dev_handle = sensor_adev->handle;
+	acpi_dev_put(sensor_adev);
 
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		dev_err(dev, "No dependent devices\n");
@@ -1895,7 +1904,7 @@ out_free:
 }
 
 static const struct acpi_device_id ov8865_acpi_ids[] = {
-	{"INT347A"},
+	{OV8865_HID},
 	{},
 };
 MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);

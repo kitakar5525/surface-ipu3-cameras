@@ -94,6 +94,7 @@ struct bu64243_device {
 
 #define	OV8865_NAME	"ov8865"
 #define	OV8865_ADDR	0x10
+#define OV8865_HID	"INT347A"
 
 
 #define OV8865_CHIP_ID	0x8865
