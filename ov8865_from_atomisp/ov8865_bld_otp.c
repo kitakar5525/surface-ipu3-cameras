@@ -12,26 +12,6 @@
 #include "ov8865_bld_otp.h"
 
 #ifdef __KERNEL__
-static u32 ov8865_otp_save(const u8 *databuf, u32 data_size, const u8 *filp_name)
-{
-	struct file *fp=NULL;
-	mm_segment_t fs;
-	loff_t pos;
-
-	fp=filp_open(filp_name,O_CREAT|O_RDWR,0644);
-	if(IS_ERR(fp))
-		return -1;
-
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-	pos = 0;
-	vfs_write(fp, databuf, data_size, &pos);
-	set_fs(fs);
-
-	filp_close(fp,NULL);
-
-	return 0;
-}
 static int
 ov8865_read_otp(struct i2c_client *client, u16 len, u16 reg, u8 *val)
 {
@@ -172,10 +152,10 @@ static ov8865_group_address_t lsc_awb_light_src_two_group_addr[2] = {
 	{0x1FE, 0x9F}
 };
 /*
-8865 CRC_16 Checksum 计算以下三组数据总和：
-1. 5000色温下LSC和AWB 有效数据的一组: 第一组：0x7030~0x70CB  第二组：0x70CF~0x716A 
-2. 3000色温下LSC和AWB 有效数据的一组: 第一组：0x7172~0x7173 0x7176~0x720A  第二组：0x7211~0x7212 0x7215~0x72A9
-3. AF有效数据的一组：第一组：0x72AC~0x72B6  第二组：0x72B8~0x72C2 
+8865 CRC_16 Checksum 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟杰和ｏ拷
+1. 5000色锟斤拷锟斤拷LSC锟斤拷AWB 锟斤拷效锟斤拷锟捷碉拷一锟斤拷: 锟斤拷一锟介：0x7030~0x70CB  锟节讹拷锟介：0x70CF~0x716A 
+2. 3000色锟斤拷锟斤拷LSC锟斤拷AWB 锟斤拷效锟斤拷锟捷碉拷一锟斤拷: 锟斤拷一锟介：0x7172~0x7173 0x7176~0x720A  锟节讹拷锟介：0x7211~0x7212 0x7215~0x72A9
+3. AF锟斤拷效锟斤拷锟捷碉拷一锟介：锟斤拷一锟介：0x72AC~0x72B6  锟节讹拷锟介：0x72B8~0x72C2 
 
 */
 static int check_all_calibration_data(const u8 *ov8865_data_ptr, u32 offset, u32 len)

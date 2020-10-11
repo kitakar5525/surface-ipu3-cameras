@@ -75,10 +75,6 @@ static int ov8865_otp_size;
 static unsigned char ov8865_raw[DATA_BUF_SIZE];
 static unsigned char ov8865_otp_data[DATA_BUF_SIZE];
 static u16 exposure_time;
-static int op_dump_otp;
-static int ov8865_dump_otp(const char *val, const struct kernel_param *kp);
-module_param_call(dump_otp, ov8865_dump_otp, param_get_uint,
-				&op_dump_otp, S_IRUGO | S_IWUSR);
 
 #define OV8865_DEFAULT_LOG_LEVEL 1
 
@@ -90,21 +86,6 @@ module_param(log_level, int, 0644);
 		if (level < log_level) \
 			printk(a, ## __VA_ARGS__); \
 	} while (0)
-
-static int ov8865_dump_otp(const char *val, const struct kernel_param *kp)
-{
-	int ret;
-
-	ret = ov8865_otp_save(ov8865_raw, ov8865_raw_size, OV8865_SAVE_RAW_DATA);
-	if (ret != 0)
-		OV8865_LOG(2, "Fail to save ov8865 RAW data\n");
-
-	ret = ov8865_otp_save(ov8865_otp_data, ov8865_otp_size, OV8865_SAVE_OTP_DATA);
-	if (ret != 0)
-		OV8865_LOG(2, "Fail to save ov8865 OTP data\n");
-
-	return 0;
-}
 
 static int
 ov8865_read_reg(struct i2c_client *client, u16 len, u16 reg, u16 *val)
