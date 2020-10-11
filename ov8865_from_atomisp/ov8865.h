@@ -481,6 +481,13 @@ struct ov8865_device {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
+	 * depending on devices.
+	 */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 /*
