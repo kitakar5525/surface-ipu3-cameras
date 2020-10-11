@@ -1351,7 +1351,7 @@ static int __ov8865_try_mbus_fmt(struct v4l2_subdev *sd,
 		fmt->height = dev->curr_res_table[idx].height;
 	}
 
-	fmt->code = V4L2_MBUS_FMT_SBGGR10_1X10;
+	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	return 0;
 }
 
@@ -1441,7 +1441,7 @@ static int ov8865_g_mbus_fmt(struct v4l2_subdev *sd,
 	mutex_lock(&dev->input_lock);
 	fmt->width = dev->curr_res_table[dev->fmt_idx].width;
 	fmt->height = dev->curr_res_table[dev->fmt_idx].height;
-	fmt->code = V4L2_MBUS_FMT_SBGGR10_1X10;
+	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	mutex_unlock(&dev->input_lock);
 
 	return 0;
@@ -1565,7 +1565,7 @@ static int ov8865_enum_frameintervals(struct v4l2_subdev *sd,
 static int ov8865_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned int index,
 				enum v4l2_mbus_pixelcode *code)
 {
-	*code = V4L2_MBUS_FMT_SBGGR10_1X10;
+	*code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	return 0;
 }
 
@@ -1676,7 +1676,7 @@ ov8865_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 {
 	if (code->index)
 		return -EINVAL;
-	code->code = V4L2_MBUS_FMT_SBGGR10_1X10;
+	code->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 
 	return 0;
 }
@@ -2084,7 +2084,7 @@ static int ov8865_probe(struct i2c_client *client,
 	dev->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
 	dev->sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV_SENSOR;
-	dev->format.code = V4L2_MBUS_FMT_SBGGR10_1X10;
+	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 
 	ret = v4l2_ctrl_handler_init(&dev->ctrl_handler, ARRAY_SIZE(ctrls) + 1);
 	if (ret) {
