@@ -2417,7 +2417,7 @@ static struct ov8865_resolution ov8865_res_preview[] = {
 			}
 		}
 	},
-      {
+	{
 		.desc = "ov8865_1936x1096_30fps",
 		.width = 1936,
 		.height = 1096,
@@ -2517,7 +2517,7 @@ static struct ov8865_resolution ov8865_res_still[] = {
 			}
 		},
 	},
-       {
+	{
 		 .desc = "ov8865_1632x1224_30fps",
 		 .width = 1632,
 		 .height = 1224,
@@ -2536,7 +2536,7 @@ static struct ov8865_resolution ov8865_res_still[] = {
 			}
 		}
 	},
-      {
+	{
 		.desc = "ov8865_1936x1096_30fps",
 		.width = 1936,
 		.height = 1096,
