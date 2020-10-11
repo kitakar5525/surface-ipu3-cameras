@@ -1511,13 +1511,13 @@ ov8865_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cf
 	return 0;
 }
 
-static int ov8830_enum_frame_interval(struct v4l2_subdev *sd,
+static int ov8865_enum_frame_interval(struct v4l2_subdev *sd,
 				      struct v4l2_subdev_pad_config *cfg,
 				      struct v4l2_subdev_frame_interval_enum *fie)
 {
 	unsigned int index = fie->index;
 	int fmt_index;
-	struct ov8865_device *dev = to_ov8830_sensor(sd);
+	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	const struct ov8865_resolution *res;
 
 	mutex_lock(&dev->input_lock);
@@ -1979,10 +1979,17 @@ static const struct i2c_device_id ov8865_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, ov8865_id);
 
+static const struct acpi_device_id ov8865_acpi_ids[] = {
+	{"INT347A"},
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
+
 static struct i2c_driver ov8865_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
 		.name = OV8865_NAME,
+		.acpi_match_table = ov8865_acpi_ids,
 	},
 	.probe = ov8865_probe,
 	.remove = ov8865_remove,
