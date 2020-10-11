@@ -40,7 +40,6 @@
 #include <linux/io.h>
 #include <linux/bitops.h>
 #include <media/v4l2-device.h>
-#include <media/v4l2-chip-ident.h>
 #include <asm/intel-mid.h>
 #include <linux/firmware.h>
 
@@ -986,16 +985,6 @@ static int ov8865_s_power(struct v4l2_subdev *sd, int on)
 	return ret;
 }
 
-static int ov8865_g_chip_ident(struct v4l2_subdev *sd,
-				struct v4l2_dbg_chip_ident *chip)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-
-	v4l2_chip_ident_i2c_client(client, chip, V4L2_IDENT_OV8865, 0);
-
-	return 0;
-}
-
 /* Return value of the specified register, first try getting it from
  * the register list and if not found, get from the sensor via i2c.
  */
@@ -1897,7 +1886,6 @@ static const struct v4l2_subdev_sensor_ops ov8865_sensor_ops = {
 };
 
 static const struct v4l2_subdev_core_ops ov8865_core_ops = {
-	.g_chip_ident = ov8865_g_chip_ident,
 	.queryctrl = v4l2_subdev_queryctrl,
 	.g_ctrl = v4l2_subdev_g_ctrl,
 	.s_ctrl = v4l2_subdev_s_ctrl,
