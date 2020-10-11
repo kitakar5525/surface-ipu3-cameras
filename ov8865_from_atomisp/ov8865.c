@@ -254,7 +254,7 @@ ov8865_write_reg(struct i2c_client *client, u16 data_length, u16 reg, u16 val)
  */
 
 static int __ov8865_flush_reg_array(struct i2c_client *client,
-				     struct ov8865_write_ctrl *ctrl)
+				    struct ov8865_write_ctrl *ctrl)
 {
 	u16 size;
 
@@ -269,8 +269,8 @@ static int __ov8865_flush_reg_array(struct i2c_client *client,
 }
 
 static int __ov8865_buf_reg_array(struct i2c_client *client,
-				   struct ov8865_write_ctrl *ctrl,
-				   const struct ov8865_reg *next)
+				  struct ov8865_write_ctrl *ctrl,
+				  const struct ov8865_reg *next)
 {
 	int size;
 	u16 *data16;
@@ -307,8 +307,8 @@ static int __ov8865_buf_reg_array(struct i2c_client *client,
 
 static int
 __ov8865_write_reg_is_consecutive(struct i2c_client *client,
-				   struct ov8865_write_ctrl *ctrl,
-				   const struct ov8865_reg *next)
+				  struct ov8865_write_ctrl *ctrl,
+				  const struct ov8865_reg *next)
 {
 	if (ctrl->index == 0)
 		return 1;
@@ -317,7 +317,7 @@ __ov8865_write_reg_is_consecutive(struct i2c_client *client,
 }
 
 static int ov8865_write_reg_array(struct i2c_client *client,
-				   const struct ov8865_reg *reglist)
+				  const struct ov8865_reg *reglist)
 {
 	const struct ov8865_reg *next = reglist;
 	struct ov8865_write_ctrl ctrl;
@@ -659,8 +659,7 @@ out:
 	return 0;
 }
 
-static int __ov8865_get_max_fps_index(
-				const struct ov8865_fps_setting *fps_settings)
+static int __ov8865_get_max_fps_index(const struct ov8865_fps_setting *fps_settings)
 {
 	int i;
 
@@ -673,7 +672,7 @@ static int __ov8865_get_max_fps_index(
 }
 
 static int __ov8865_update_frame_timing(struct v4l2_subdev *sd, int exposure,
-			u16 *hts, u16 *vts)
+					u16 *hts, u16 *vts)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
@@ -690,7 +689,7 @@ static int __ov8865_update_frame_timing(struct v4l2_subdev *sd, int exposure,
 }
 
 static int __ov8865_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
-			int dig_gain, u16 *hts, u16 *vts)
+				 int dig_gain, u16 *hts, u16 *vts)
 {
 	/* shunyong: disabled exposure setting */
 
@@ -736,8 +735,8 @@ static int __ov8865_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
 	return ov8865_write_reg(client, OV8865_16BIT, OV8865_AGC_ADJ, gain & 0x1FFF);
 }
 
-static int ov8865_set_exposure(struct v4l2_subdev *sd, int exposure, int gain,
-				int dig_gain)
+static int ov8865_set_exposure(struct v4l2_subdev *sd, int exposure,
+			       int gain, int dig_gain)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	const struct ov8865_resolution *res;
@@ -816,7 +815,7 @@ out:
 }
 
 static int ov8865_s_exposure(struct v4l2_subdev *sd,
-			      struct atomisp_exposure *exposure)
+			     struct atomisp_exposure *exposure)
 {
 	return ov8865_set_exposure(sd, exposure->integration_time[0],
 				exposure->gain[0], exposure->gain[1]);
@@ -1023,7 +1022,8 @@ static int ov8865_get_register(struct v4l2_subdev *sd, int reg,
 }
 
 static int ov8865_get_register_16bit(struct v4l2_subdev *sd, int reg,
-		const struct ov8865_reg *reglist, unsigned int *value)
+				     const struct ov8865_reg *reglist,
+				     unsigned int *value)
 {
 	int high, low;
 
@@ -1158,7 +1158,7 @@ static int ov8865_get_intg_factor(struct v4l2_subdev *sd,
 
 #if 0
 static int __ov8865_s_frame_interval(struct v4l2_subdev *sd,
-			struct v4l2_subdev_frame_interval *interval)
+				     struct v4l2_subdev_frame_interval *interval)
 {
 	/* shunyong disabel s_frame_interval for PO */
 #if 0
@@ -1228,7 +1228,7 @@ static int __ov8865_s_frame_interval(struct v4l2_subdev *sd,
  */
 #define LARGEST_ALLOWED_RATIO_MISMATCH 500
 static int distance(struct ov8865_resolution const *res, const u32 w,
-				const u32 h)
+		    const u32 h)
 {
 	unsigned int w_ratio = ((res->width<<13)/w);
 	unsigned int h_ratio = ((res->height<<13)/h);
@@ -1376,7 +1376,7 @@ static int ov8865_try_mbus_fmt(struct v4l2_subdev *sd,
 }
 
 static int ov8865_s_mbus_fmt(struct v4l2_subdev *sd,
-			      struct v4l2_mbus_framefmt *fmt)
+			     struct v4l2_mbus_framefmt *fmt)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	struct camera_mipi_info *ov8865_info = NULL;
@@ -1438,7 +1438,7 @@ out:
 }
 
 static int ov8865_g_mbus_fmt(struct v4l2_subdev *sd,
-			      struct v4l2_mbus_framefmt *fmt)
+			     struct v4l2_mbus_framefmt *fmt)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 
@@ -1512,7 +1512,7 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
  * ov8865 enum frame size, frame intervals
  */
 static int ov8865_enum_framesizes(struct v4l2_subdev *sd,
-				   struct v4l2_frmsizeenum *fsize)
+				  struct v4l2_frmsizeenum *fsize)
 {
 	unsigned int index = fsize->index;
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
@@ -1533,7 +1533,7 @@ static int ov8865_enum_framesizes(struct v4l2_subdev *sd,
 }
 
 static int ov8865_enum_frameintervals(struct v4l2_subdev *sd,
-				       struct v4l2_frmivalenum *fival)
+				      struct v4l2_frmivalenum *fival)
 {
 	unsigned int index = fival->index;
 	int fmt_index;
@@ -1570,14 +1570,13 @@ static int ov8865_enum_frameintervals(struct v4l2_subdev *sd,
 }
 
 static int ov8865_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned int index,
-				 enum v4l2_mbus_pixelcode *code)
+				enum v4l2_mbus_pixelcode *code)
 {
 	*code = V4L2_MBUS_FMT_SBGGR10_1X10;
 	return 0;
 }
 
-static int ov8865_s_config(struct v4l2_subdev *sd,
-			    int irq, void *pdata)
+static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1680,7 +1679,7 @@ fail_csi_cfg:
 
 static int
 ov8865_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-		       struct v4l2_subdev_mbus_code_enum *code)
+		      struct v4l2_subdev_mbus_code_enum *code)
 {
 	if (code->index)
 		return -EINVAL;
@@ -1691,7 +1690,7 @@ ov8865_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 
 static int
 ov8865_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-			struct v4l2_subdev_frame_size_enum *fse)
+		       struct v4l2_subdev_frame_size_enum *fse)
 {
 	int index = fse->index;
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
@@ -1713,8 +1712,8 @@ ov8865_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 
 static struct v4l2_mbus_framefmt *
 __ov8865_get_pad_format(struct ov8865_device *sensor,
-			 struct v4l2_subdev_fh *fh, unsigned int pad,
-			 enum v4l2_subdev_format_whence which)
+			struct v4l2_subdev_fh *fh, unsigned int pad,
+			enum v4l2_subdev_format_whence which)
 {
 	if (which == V4L2_SUBDEV_FORMAT_TRY)
 		return v4l2_subdev_get_try_format(fh, pad);
@@ -1724,7 +1723,7 @@ __ov8865_get_pad_format(struct ov8865_device *sensor,
 
 static int
 ov8865_get_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-		       struct v4l2_subdev_format *fmt)
+		      struct v4l2_subdev_format *fmt)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 
@@ -1735,7 +1734,7 @@ ov8865_get_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 
 static int
 ov8865_set_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-		       struct v4l2_subdev_format *fmt)
+		      struct v4l2_subdev_format *fmt)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	struct v4l2_mbus_framefmt *format =
@@ -1854,7 +1853,7 @@ ov8865_g_frame_interval(struct v4l2_subdev *sd,
 }
 #if 0
 static int ov8865_s_frame_interval(struct v4l2_subdev *sd,
-			struct v4l2_subdev_frame_interval *interval)
+				   struct v4l2_subdev_frame_interval *interval)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	int ret;
@@ -2047,7 +2046,7 @@ static const struct v4l2_ctrl_config ctrls[] = {
 };
 
 static int ov8865_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+			const struct i2c_device_id *id)
 {
 	struct ov8865_device *dev;
 	unsigned int i;

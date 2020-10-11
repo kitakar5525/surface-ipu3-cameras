@@ -2714,10 +2714,10 @@ static struct ov8865_resolution ov8865_res_video[] = {
 
 };
 
-static int
-ov8865_read_reg(struct i2c_client *client, u16 len, u16 reg, u16 *val);
+static int ov8865_read_reg(struct i2c_client *client, u16 len, u16 reg,
+			   u16 *val);
 
-static int
-ov8865_write_reg(struct i2c_client *client, u16 data_length, u16 reg, u16 val);
+static int ov8865_write_reg(struct i2c_client *client, u16 data_length,
+			    u16 reg, u16 val);
 
 #endif
