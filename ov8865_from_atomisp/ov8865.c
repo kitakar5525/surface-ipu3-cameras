@@ -555,7 +555,7 @@ static int bu64243_t_focus_abs(struct v4l2_subdev *sd, s32 value)
 	if (r < 0)
 		return r;
 
-	getnstimeofday(&dev->focus_time);
+	ktime_get_real_ts64(&dev->focus_time);
 	dev->focus = value;
 	return 0;
 }

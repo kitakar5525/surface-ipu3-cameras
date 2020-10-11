@@ -89,7 +89,7 @@ struct bu64243_device {
 	u16 slew_rate;		/* slew rate*/
 	u16 step_res;		/* step resolution */
 	u16 step_time;		/* step time */
-	struct timespec focus_time;	/* Time when focus was last time set */
+	struct timespec64 focus_time;	/* Time when focus was last time set */
 	__u8 buffer[4];			/* Used for i2c transactions */
 	const struct camera_af_platform_data *platform_data;
 };
