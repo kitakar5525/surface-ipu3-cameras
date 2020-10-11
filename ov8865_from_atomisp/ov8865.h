@@ -422,6 +422,23 @@ struct ov8865_format {
 	struct s_register_setting *regs;
 };
 
+/*
+ * V4L2 private internal data interface.
+ * -----------------------------------------------------------------------------
+ * struct v4l2_private_int_data - request private data stored in video device
+ * internal memory.
+ * @size: sanity check to ensure userspace's buffer fits whole private data.
+ *	  If not, kernel will make partial copy (or nothing if @size == 0).
+ *	  @size is always corrected for the minimum necessary if IOCTL returns
+ *	  no error.
+ * @data: pointer to userspace buffer.
+ */
+struct v4l2_private_int_data {
+	__u32 size;
+	void __user *data;
+	__u32 reserved[2];
+};
+
 /* ov8865 device structure */
 struct ov8865_device {
 	struct v4l2_subdev sd;
