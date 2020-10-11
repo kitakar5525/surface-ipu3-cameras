@@ -126,8 +126,10 @@ static int read_acpi_block(struct device *dev, char *id, void *data, u32 size)
 	u32 buffer_length;
 
 	status = acpi_evaluate_object(dev_handle, id, NULL, &buffer);
-	if (!ACPI_SUCCESS(status))
+	if (!ACPI_SUCCESS(status)) {
+		dev_err(dev, "acpi_evaluate_object() failed\n");
 		return -ENODEV;
+	}
 
 	obj = (union acpi_object *)buffer.pointer;
 	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
