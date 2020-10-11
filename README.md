@@ -35,6 +35,11 @@ CAM3 INT347E OV7251 # IR cam
 # SL1/SL2 (SL3 uses USB cameras instead)
 CAMF OVTI9734 OV9734
 CAM3 INT347E OV7251 # IR cam
+
+# non-Surface devices
+# Acer Switch Alpha 12
+# Front cam is USB
+LNK0 INT3479 OV5670 # Rear cam
 ```
 
 #### usage
