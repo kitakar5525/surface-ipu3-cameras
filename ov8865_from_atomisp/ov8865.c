@@ -1323,23 +1323,6 @@ static int get_resolution_index(struct v4l2_subdev *sd, int w, int h)
 	return -1;
 }
 
-static int ov8865_g_mbus_fmt(struct v4l2_subdev *sd,
-			     struct v4l2_mbus_framefmt *fmt)
-{
-	struct ov8865_device *dev = to_ov8865_sensor(sd);
-
-	if (!fmt)
-		return -EINVAL;
-
-	mutex_lock(&dev->input_lock);
-	fmt->width = dev->curr_res_table[dev->fmt_idx].width;
-	fmt->height = dev->curr_res_table[dev->fmt_idx].height;
-	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
-	mutex_unlock(&dev->input_lock);
-
-	return 0;
-}
-
 static int ov8865_detect(struct i2c_client *client, u16 *id, u8 *revision)
 {
 	struct i2c_adapter *adapter = client->adapter;
@@ -1736,7 +1719,6 @@ static int ov8865_g_skip_frames(struct v4l2_subdev *sd, u32 *frames)
 
 static const struct v4l2_subdev_video_ops ov8865_video_ops = {
 	.s_stream = ov8865_s_stream,
-	.g_mbus_fmt = ov8865_g_mbus_fmt,
 	.g_frame_interval = ov8865_g_frame_interval,
 	//.s_frame_interval = ov8865_s_frame_interval,
 };
