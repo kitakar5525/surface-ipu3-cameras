@@ -1650,9 +1650,75 @@ static int ov8865_init_controls(struct ov8865_device *ov8865)
 	return 0;
 }
 
+static int match_depend(struct device *dev, const void *data)	
+{	
+	return (dev && dev->fwnode == data) ? 1 : 0;	
+}
+
+/* Get dependent INT3472 device */
+static struct device *get_dep_dev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct acpi_device *dep_adev;
+	struct device *dep_dev;
+	int ret;
+	int i;
+
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		dev_err(dev, "No dependent devices\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			dev_err(dev, "Error reading _DEP device info\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+		    !strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
+				dev_err(dev, "Error getting adev of dep_dev\n");
+				return ERR_PTR(-ENODEV);
+			}
+
+			/* found adev of dep_dev */
+			break;
+		}
+	}
+
+	if (!dep_adev) {
+		dev_err(dev, "adev of dep_dev not found\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	dep_dev = bus_find_device(&platform_bus_type, NULL,
+				  &dep_adev->fwnode, match_depend);
+	if (!dep_dev) {
+		dev_err(dev, "Error getting dependent platform device\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	dev_info(dev, "Dependent platform device found: %s\n",
+		 dev_name(dep_dev));
+
+	return dep_dev;
+}
+
 static int ov8865_probe(struct i2c_client *client)
 {
 	struct ov8865_device *dev;
+	struct device *dep_dev;
 	int ret;
 
 	OV8865_LOG(2, "%s %d start\n", __func__, __LINE__);
@@ -1671,6 +1737,14 @@ static int ov8865_probe(struct i2c_client *client)
 
 	dev->fmt_idx = 0;
 	v4l2_i2c_subdev_init(&(dev->sd), client, &ov8865_ops);
+
+	dev->dep_dev = get_dep_dev(&client->dev);
+	if (IS_ERR(dev->dep_dev)) {
+		ret = PTR_ERR(dev->dep_dev);
+		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+		return ret;
+	}
+	dep_dev = dev->dep_dev;
 
 	ret = bu64243_init(&dev->sd);
 	if (ret < 0)
