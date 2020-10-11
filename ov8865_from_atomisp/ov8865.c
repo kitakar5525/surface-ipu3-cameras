@@ -1878,10 +1878,42 @@ static const struct v4l2_ctrl_config ctrls[] = {
 	}
 };
 
+static int ov8865_init_controls(struct ov8865_device *ov8865)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
+	unsigned int i;
+	int ret;
+
+	ret = v4l2_ctrl_handler_init(&ov8865->ctrl_handler, ARRAY_SIZE(ctrls) + 1);
+	if (ret) {
+		ov8865_remove(client);
+		return ret;
+	}
+
+	OV8865_LOG(1, "%s %d handle init done\n", __func__, __LINE__);
+				//OV8865_LOG(1, "ov8865 handle init done\n");
+	ov8865->run_mode = v4l2_ctrl_new_custom(&ov8865->ctrl_handler,
+					     &ctrl_run_mode, NULL);
+
+	for (i = 0; i < ARRAY_SIZE(ctrls); i++)
+		v4l2_ctrl_new_custom(&ov8865->ctrl_handler, &ctrls[i], NULL);
+
+	if (ov8865->ctrl_handler.error) {
+		ov8865_remove(client);
+		return ov8865->ctrl_handler.error;
+	}
+
+	/* Use same lock for controls as for everything else. */
+	ov8865->ctrl_handler.lock = &ov8865->input_lock;
+	ov8865->sd.ctrl_handler = &ov8865->ctrl_handler;
+	v4l2_ctrl_handler_setup(&ov8865->ctrl_handler);
+
+	return 0;
+}
+
 static int ov8865_probe(struct i2c_client *client)
 {
 	struct ov8865_device *dev;
-	unsigned int i;
 	int ret;
 
 	OV8865_LOG(2, "%s %d start\n", __func__, __LINE__);
@@ -1925,29 +1957,9 @@ static int ov8865_probe(struct i2c_client *client)
 	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 
-	ret = v4l2_ctrl_handler_init(&dev->ctrl_handler, ARRAY_SIZE(ctrls) + 1);
-	if (ret) {
+	ret = ov8865_init_controls(dev);
+	if (ret)
 		ov8865_remove(client);
-		return ret;
-	}
-
-	OV8865_LOG(1, "%s %d handle init done\n", __func__, __LINE__);
-				//OV8865_LOG(1, "ov8865 handle init done\n");
-	dev->run_mode = v4l2_ctrl_new_custom(&dev->ctrl_handler,
-					     &ctrl_run_mode, NULL);
-
-	for (i = 0; i < ARRAY_SIZE(ctrls); i++)
-		v4l2_ctrl_new_custom(&dev->ctrl_handler, &ctrls[i], NULL);
-
-	if (dev->ctrl_handler.error) {
-		ov8865_remove(client);
-		return dev->ctrl_handler.error;
-	}
-
-	/* Use same lock for controls as for everything else. */
-	dev->ctrl_handler.lock = &dev->input_lock;
-	dev->sd.ctrl_handler = &dev->ctrl_handler;
-	v4l2_ctrl_handler_setup(&dev->ctrl_handler);
 
 	OV8865_LOG(1, "%s %d ctrl added\n", __func__, __LINE__);
 				//OV8865_LOG(1, "ov8865 ctrl added\n");
