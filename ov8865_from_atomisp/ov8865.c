@@ -171,7 +171,7 @@ again:
 	msg.flags = 0;
 	msg.len = len;
 	msg.buf = data;
-	
+
 	ret = i2c_transfer(client->adapter, &msg, 1);
 
 	/*
@@ -398,7 +398,7 @@ static int bu64243_read8(struct v4l2_subdev *sd, int reg, u8 * data)
 	r = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
 	if (r != ARRAY_SIZE(msg))
 		return -EIO;
-	
+
 	return 0;
 }
 static int bu64243_cmd(struct v4l2_subdev *sd, s32 reg, s32 val)
