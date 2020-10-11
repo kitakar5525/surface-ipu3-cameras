@@ -456,7 +456,7 @@ static int bu64243_power_up(struct v4l2_subdev *sd)
 			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
 		dev->point_b = focus_far - VCM_ORIENTATION_OFFSET - INTEL_FOCUS_OFFSET - 1;			/*	lens loat */
 		dev->point_a = dev->point_b - POINT_AB_OFFSET;			/* 0 um	*/
-		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d \n", __func__, focus_far, dev->point_a, dev->point_b);
+		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d\n", __func__, focus_far, dev->point_a, dev->point_b);
 	}
 
 	r = bu64243_write8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, dev->focus), BU64243_D_LO(dev->focus));
@@ -503,11 +503,11 @@ static int bu64243_power_down(struct v4l2_subdev *sd)
 
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
-		OV8865_LOG(1, "otp data valid !!!enter bu64243_power_down \n ");
+		OV8865_LOG(1, "otp data valid !!!enter bu64243_power_down\n ");
 		focus_far = ov8865_dev->otp_data[8] | ov8865_dev->otp_data[7];
 		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET))
 			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
-		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d \n", __func__, focus_far, dev->point_a, dev->point_b);
+		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d\n", __func__, focus_far, dev->point_a, dev->point_b);
 	}
 	r = bu64243_write8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, focus_far), BU64243_D_LO(focus_far));
 	if (r < 0)
@@ -1152,7 +1152,7 @@ static int ov8865_get_intg_factor(struct v4l2_subdev *sd,
 				__func__, __LINE__,
 				m->coarse_integration_time_min, m->coarse_integration_time_max_margin,
 				m->fine_integration_time_min, m->fine_integration_time_max_margin);
-		OV8865_LOG(2, "%s %d crop_x_start:%d crop_y_start:%d crop_x_end:%d crop_y_end:%d \n", __func__, __LINE__,
+		OV8865_LOG(2, "%s %d crop_x_start:%d crop_y_start:%d crop_x_end:%d crop_y_end:%d\n", __func__, __LINE__,
 				m->crop_horizontal_start, m->crop_vertical_start, m->crop_horizontal_end, m->crop_vertical_end);
 		OV8865_LOG(2, "%s %d output_width:%d output_height:%d\n", __func__, __LINE__, m->output_width, m->output_height);
 	}
