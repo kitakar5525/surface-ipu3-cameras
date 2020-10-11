@@ -1441,6 +1441,7 @@ static int ov8865_s_ctrl(struct v4l2_ctrl *ctrl)
 	struct ov8865_device *dev = container_of(
 		ctrl->handler, struct ov8865_device, ctrl_handler);
 	struct i2c_client *client = v4l2_get_subdevdata(&dev->sd);
+	int ret;
 
 	/* input_lock is taken by the control framework, so it
 	 * doesn't need to be taken here.
@@ -1459,8 +1460,16 @@ static int ov8865_s_ctrl(struct v4l2_ctrl *ctrl)
 		dev->fps_index = 0;
 		return 0;
 	case V4L2_CID_TEST_PATTERN:
-		return ov8865_write_reg(client, OV8865_16BIT, 0x3070,
-					ctrl->val);
+		ret = power_up(&dev->sd);
+		if (ret) {
+			dev_err(&client->dev, "sensor power-up error\n");
+			power_down(&dev->sd);
+			return ret;
+		}
+		ret = ov8865_write_reg(client, OV8865_16BIT, 0x3070,
+				       ctrl->val);
+		power_down(&dev->sd);
+		return ret;
 	/* shunyong: disable focus when PO */
 	case V4L2_CID_FOCUS_ABSOLUTE:
 		return bu64243_t_focus_abs(&dev->sd, ctrl->val);
