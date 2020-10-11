@@ -228,6 +228,19 @@ struct bu64243_device {
 
 #define MAX_FPS_OPTIONS_SUPPORTED	3
 
+/* Camera class:
+ * Exposure, Flash and privacy (indicator) light controls, to be upstreamed */
+#define V4L2_CID_CAMERA_LASTP1             (V4L2_CID_CAMERA_CLASS_BASE + 1024)
+#define V4L2_CID_FOCAL_ABSOLUTE            (V4L2_CID_CAMERA_LASTP1 + 0)
+#define V4L2_CID_FNUMBER_ABSOLUTE          (V4L2_CID_CAMERA_LASTP1 + 1)
+#define V4L2_CID_FNUMBER_RANGE             (V4L2_CID_CAMERA_LASTP1 + 2)
+#define V4L2_CID_RUN_MODE			(V4L2_CID_CAMERA_LASTP1 + 20)
+/* Query Focus Status */
+#define V4L2_CID_FOCUS_STATUS              (V4L2_CID_CAMERA_LASTP1 + 14)
+/* Query sensor's binning factor */
+#define V4L2_CID_BIN_FACTOR_HORZ	   (V4L2_CID_CAMERA_LASTP1 + 15)
+#define V4L2_CID_BIN_FACTOR_VERT	   (V4L2_CID_CAMERA_LASTP1 + 16)
+
 #define	v4l2_format_capture_type_entry(_width, _height, \
 		_pixelformat, _bytesperline, _colorspace) \
 	{\
