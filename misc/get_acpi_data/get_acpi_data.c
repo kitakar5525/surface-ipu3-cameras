@@ -4,36 +4,6 @@
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 
-/* From Intel's ipu4-acpi */
-struct sensor_bios_data_packed {
-	u8 version;
-	u8 sku;
-	u8 guid_csi2[16];
-	u8 devfunction;
-	u8 bus;
-	u32 dphylinkenfuses;
-	u32 clockdiv;
-	u8 link;
-	u8 lanes;
-	u32 csiparams[10];
-	u32 maxlanespeed;
-	u8 sensorcalibfileidx;
-	u8 sensorcalibfileidxInMBZ[3];
-	u8 romtype;
-	u8 vcmtype;
-	u8 platforminfo;
-	u8 platformsubinfo;
-	u8 flash;
-	u8 privacyled;
-	u8 degree;
-	u8 mipilinkdefined;
-	u32 mclkspeed;
-	u8 controllogicid;
-	u8 reserved1[3];
-	u8 mclkport;
-	u8 reserved2[13];
-} __attribute__((__packed__));
-
 /* From coreboot */
 struct intel_ssdb {
 	uint8_t version;			/* Current version */
