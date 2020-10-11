@@ -1728,9 +1728,6 @@ static const struct v4l2_subdev_sensor_ops ov8865_sensor_ops = {
 };
 
 static const struct v4l2_subdev_core_ops ov8865_core_ops = {
-	.queryctrl = v4l2_subdev_queryctrl,
-	.g_ctrl = v4l2_subdev_g_ctrl,
-	.s_ctrl = v4l2_subdev_s_ctrl,
 	.s_power = ov8865_s_power,
 	.ioctl = ov8865_ioctl,
 	.init = ov8865_init,
