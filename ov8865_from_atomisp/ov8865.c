@@ -226,10 +226,10 @@ ov8865_write_reg(struct i2c_client *client, u16 data_length, u16 reg, u16 val)
 		u16 *wdata = (u16 *)&data[2];
 		*wdata = be16_to_cpu(val);
 	}
-	//printk("ov8865, ov8865_write_reg ,before ov8865_i2c_write\n");
+	//OV8865_LOG(1, "ov8865, ov8865_write_reg ,before ov8865_i2c_write\n");
 	ret = ov8865_i2c_write(client, len, data);
 	if (ret) {
-	  //  printk("ov8865_i2c_write error\n");
+	  //  OV8865_LOG(1, "ov8865_i2c_write error\n");
 		dev_err(&client->dev,
 			"write error: wrote 0x%x to offset 0x%x error %d",
 			val, reg, ret);
@@ -264,7 +264,7 @@ static int __ov8865_flush_reg_array(struct i2c_client *client,
 	size = sizeof(u16) + ctrl->index; /* 16-bit address + data */
 	ctrl->buffer.addr = cpu_to_be16(ctrl->buffer.addr);
 	ctrl->index = 0;
-	//printk("ov8865, __ov8865_flush_reg_array, before ov8865_i2c_write\n");
+	//OV8865_LOG(1, "ov8865, __ov8865_flush_reg_array, before ov8865_i2c_write\n");
 	return ov8865_i2c_write(client, size, (u8 *)&ctrl->buffer);
 }
 
@@ -348,7 +348,7 @@ static int ov8865_write_reg_array(struct i2c_client *client,
 			if (err) {
 				v4l2_err(client, "%s: write error, aborted\n",
 					 __func__);
-				//printk("ov8865, ov8865_write_reg_array ,error");
+				//OV8865_LOG(1, "ov8865, ov8865_write_reg_array ,error");
 				return err;
 			}
 			break;
@@ -487,7 +487,7 @@ static int bu64243_power_up(struct v4l2_subdev *sd)
 
 	/* shunyong for power on */
 	OV8865_LOG(1, "power is controlled via sensor control\n");
-	//printk("power is controlled via sensor control\n");
+	//OV8865_LOG(1, "power is controlled via sensor control\n");
 	return r;
 }
 
@@ -841,7 +841,7 @@ static int ov8865_init_registers(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
-	//printk("ov8865, ov8865_init_registers\n");
+	//OV8865_LOG(1, "ov8865, ov8865_init_registers\n");
 
 	dev->basic_settings_list = ov8865_BasicSettings;
 
@@ -943,7 +943,7 @@ static int __ov8865_s_power(struct v4l2_subdev *sd, int on)
 			ret = r;
 		dev->power = 0;
 	} else {
-		//printk("ov8865 start power-up");
+		//OV8865_LOG(1, "ov8865 start power-up");
 		ret = power_up(sd);
 		if (ret)
 			return ret;
@@ -953,11 +953,11 @@ static int __ov8865_s_power(struct v4l2_subdev *sd, int on)
 			power_down(sd);
 			return ret;
 		}
-		//printk("ov8865 before ov8865_init_registers\n");
+		//OV8865_LOG(1, "ov8865 before ov8865_init_registers\n");
 		ret = ov8865_init_registers(sd);
-	       // printk("ov8865 after ov8865_init_registers\n");
+	       // OV8865_LOG(1, "ov8865 after ov8865_init_registers\n");
 		if (ret) {
-	       // printk("ov8865 bu64243_power_down power_down ret = %d\n",ret);
+	       // OV8865_LOG(1, "ov8865 bu64243_power_down power_down ret = %d\n",ret);
 			bu64243_power_down(sd);
 			power_down(sd);
 		}
@@ -1262,7 +1262,7 @@ static int nearest_resolution_index(struct v4l2_subdev *sd, int w, int h)
 	const struct ov8865_resolution *tmp_res = NULL;
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 
-	printk("-%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
+	OV8865_LOG(1, "-%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
 	if ((dev->curr_res_table == ov8865_res_preview) ||
 		(dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 1332) && (h == 1092))) ||
@@ -1288,7 +1288,7 @@ static int nearest_resolution_index(struct v4l2_subdev *sd, int w, int h)
 		}
 	}
 #if 0
-	printk("%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
+	OV8865_LOG(1, "%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
 	if ((dev->curr_res_table == ov8865_res_preview) ||
 		(dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 1332) && (h == 1092))) ||
@@ -1496,12 +1496,12 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 	int ret;
 
 	mutex_lock(&dev->input_lock);
-	//printk("ov8865, ov8865_s_stream, before ov8865_write_reg\n");
+	//OV8865_LOG(1, "ov8865, ov8865_s_stream, before ov8865_write_reg\n");
 	ret = ov8865_write_reg(client, OV8865_8BIT, 0x0100, enable ? 1 : 0);
 	if (ret != 0) {
 		mutex_unlock(&dev->input_lock);
 		v4l2_err(client, "failed to set streaming\n");
-	//	printk("failed to set streaming\n");
+	//	OV8865_LOG(1, "failed to set streaming\n");
 		return ret;
 	}
 
@@ -1606,7 +1606,7 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 	}
 
 	OV8865_LOG(1, "%s %d ov8865 platform_init done\n", __func__, __LINE__);
-	//printk(" ov8865 platform_init done\n");
+	//OV8865_LOG(1, " ov8865 platform_init done\n");
 
 	ret = __ov8865_s_power(sd, 1);
 	if (ret) {
@@ -1625,13 +1625,13 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 		ov8865_write_reg(client, OV8865_8BIT, 0x5002, 0x08);
 		ov8865_write_reg(client, OV8865_8BIT, 0x0100, 0x00);
 		if (!ret) {
-			//printk("ov8865 otp read done\n");
+			//OV8865_LOG(1, "ov8865 otp read done\n");
 			ret = ov8865_otp_trans(ov8865_raw, ov8865_raw_size, ov8865_otp_data, &ov8865_otp_size);
 			if (!ret) {
-			//	printk("ov8865 otp trans done\n");
+			//	OV8865_LOG(1, "ov8865 otp trans done\n");
 				dev->otp_data = ov8865_otp_data;
 			} else
-				printk("ov8865 otp trans failed\n");
+				OV8865_LOG(1, "ov8865 otp trans failed\n");
 		}
 	//} else {
 	//	OV8865_LOG(2, "ov8865 load from user-space success size:0x%x\n", fw->size);
@@ -2058,12 +2058,12 @@ static int ov8865_probe(struct i2c_client *client,
 	int ret;
 
 	OV8865_LOG(2, "%s %d start\n", __func__, __LINE__);
-				//printk("ov8865 start\n");
+				//OV8865_LOG(1, "ov8865 start\n");
 	/* allocate sensor device & init sub device */
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev) {
 		v4l2_err(client, "%s: out of memory\n", __func__);
-				//printk("ov8865 out of memory\n");
+				//OV8865_LOG(1, "ov8865 out of memory\n");
 		return -ENOMEM;
 	}
 
@@ -2079,20 +2079,20 @@ static int ov8865_probe(struct i2c_client *client,
 		goto out_free;
 
 	OV8865_LOG(1, "%s %d vcm done\n", __func__, __LINE__);
-				//printk("ov8865 vcm done\n");
+				//OV8865_LOG(1, "ov8865 vcm done\n");
 	if (client->dev.platform_data) {
-				//printk("ov8865 dev.platform_data\n");
+				//OV8865_LOG(1, "ov8865 dev.platform_data\n");
 		ret = ov8865_s_config(&dev->sd, client->irq,
 				      client->dev.platform_data);
-				//printk("ov8865 end ov8865_s_config\n");
+				//OV8865_LOG(1, "ov8865 end ov8865_s_config\n");
 		if (ret) {
-		    //printk("ov8865 out_free\n");
+		    //OV8865_LOG(1, "ov8865 out_free\n");
 			goto out_free;
 		}
 	}
 
 	OV8865_LOG(1, "%s %d s_config done\n", __func__, __LINE__);
-				//printk("ov8865 s_config done\n");
+				//OV8865_LOG(1, "ov8865 s_config done\n");
 	dev->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
 	dev->sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV_SENSOR;
@@ -2105,7 +2105,7 @@ static int ov8865_probe(struct i2c_client *client,
 	}
 
 	OV8865_LOG(1, "%s %d handle init done\n", __func__, __LINE__);
-				//printk("ov8865 handle init done\n");
+				//OV8865_LOG(1, "ov8865 handle init done\n");
 	dev->run_mode = v4l2_ctrl_new_custom(&dev->ctrl_handler,
 					     &ctrl_run_mode, NULL);
 
@@ -2123,7 +2123,7 @@ static int ov8865_probe(struct i2c_client *client,
 	v4l2_ctrl_handler_setup(&dev->ctrl_handler);
 
 	OV8865_LOG(1, "%s %d ctrl added\n", __func__, __LINE__);
-				//printk("ov8865 ctrl added\n");
+				//OV8865_LOG(1, "ov8865 ctrl added\n");
 	ret = media_entity_init(&dev->sd.entity, 1, &dev->pad, 0);
 	if (ret) {
 		ov8865_remove(client);
@@ -2132,13 +2132,13 @@ static int ov8865_probe(struct i2c_client *client,
 
 	global_dev = dev;
 	OV8865_LOG(2, "%s %d done\n", __func__, __LINE__);
-				//printk("ov8865 done\n");
+				//OV8865_LOG(1, "ov8865 done\n");
 	return 0;
 
 out_free:
 
 	OV8865_LOG(1, "%s %d fail, free\n", __func__, __LINE__);
-				//printk("ov8865 fail, free\n");
+				//OV8865_LOG(1, "ov8865 fail, free\n");
 	v4l2_device_unregister_subdev(&dev->sd);
 	kfree(dev);
 	return ret;
