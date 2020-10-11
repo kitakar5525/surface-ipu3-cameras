@@ -1952,7 +1952,7 @@ static int ov8865_probe(struct i2c_client *client,
 
 	OV8865_LOG(1, "%s %d ctrl added\n", __func__, __LINE__);
 				//OV8865_LOG(1, "ov8865 ctrl added\n");
-	ret = media_entity_init(&dev->sd.entity, 1, &dev->pad, 0);
+	ret = media_entity_pads_init(&dev->sd.entity, 1, &dev->pad);
 	if (ret) {
 		ov8865_remove(client);
 		return ret;
