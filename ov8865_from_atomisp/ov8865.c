@@ -1923,7 +1923,7 @@ static int ov8865_probe(struct i2c_client *client,
 				//OV8865_LOG(1, "ov8865 s_config done\n");
 	dev->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	dev->pad.flags = MEDIA_PAD_FL_SOURCE;
-	dev->sd.entity.function = MEDIA_ENT_T_V4L2_SUBDEV_SENSOR;
+	dev->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	dev->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 
 	ret = v4l2_ctrl_handler_init(&dev->ctrl_handler, ARRAY_SIZE(ctrls) + 1);
