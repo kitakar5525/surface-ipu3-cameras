@@ -95,6 +95,7 @@ module_param(log_level, int, 0644);
 static int ov8865_dump_otp(const char *val, struct kernel_param *kp)
 {
 	int ret;
+
 	ret = ov8865_otp_save(ov8865_raw, ov8865_raw_size, OV8865_SAVE_RAW_DATA);
 	if (ret != 0)
 		OV8865_LOG(2, "Fail to save ov8865 RAW data\n");
@@ -450,6 +451,7 @@ static int bu64243_power_up(struct v4l2_subdev *sd)
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
 		unsigned int focus_far = ov8865_dev->otp_data[8] | ov8865_dev->otp_data[7];
+
 		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET))
 			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
 		dev->point_b = focus_far - VCM_ORIENTATION_OFFSET - INTEL_FOCUS_OFFSET - 1;			/*	lens loat */
@@ -498,6 +500,7 @@ static int bu64243_power_down(struct v4l2_subdev *sd)
 	struct ov8865_device *ov8865_dev = to_ov8865_sensor(sd);
 	int r, i;
 	s32 current_value, average, focus_value;
+
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
 		OV8865_LOG(1, "otp data valid !!!enter bu64243_power_down \n ");
@@ -1922,6 +1925,7 @@ static int ov8865_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
+
 	if (dev->platform_data->platform_deinit)
 		dev->platform_data->platform_deinit();
 
