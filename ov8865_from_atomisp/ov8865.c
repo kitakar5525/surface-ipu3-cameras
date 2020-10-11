@@ -1501,13 +1501,6 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static int ov8865_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned int index,
-				enum v4l2_mbus_pixelcode *code)
-{
-	*code = MEDIA_BUS_FMT_SBGGR10_1X10;
-	return 0;
-}
-
 static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
@@ -1850,7 +1843,6 @@ static int ov8865_g_skip_frames(struct v4l2_subdev *sd, u32 *frames)
 
 static const struct v4l2_subdev_video_ops ov8865_video_ops = {
 	.s_stream = ov8865_s_stream,
-	.enum_mbus_fmt = ov8865_enum_mbus_fmt,
 	.try_mbus_fmt = ov8865_try_mbus_fmt,
 	.g_mbus_fmt = ov8865_g_mbus_fmt,
 	.s_mbus_fmt = ov8865_s_mbus_fmt,
