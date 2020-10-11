@@ -564,16 +564,17 @@ static int bu64243_t_focus_abs(struct v4l2_subdev *sd, s32 value)
 
 static int bu64243_vcm_ctrl(const char *val, const struct kernel_param *kp)
 {
-	int ret;
 	int rv = param_set_int(val, kp);
 
 	OV8865_LOG(2, "%s %d\n", __func__, __LINE__);
 
 	if (rv)
 		return rv;
-		/* Enable power */
+
+	/* Enable power */
 	OV8865_LOG(2, "%s %d enable power\n", __func__, __LINE__);
-	ret = global_dev->platform_data->power_ctrl(&(global_dev->sd), 1);
+	/* TODO: need to do something for VCM here? */
+	// ret = global_dev->platform_data->power_ctrl(&(global_dev->sd), 1);
 	mdelay(200);
 	bu64243_power_up(&(global_dev->sd));
 	mdelay(10);
@@ -859,61 +860,19 @@ static void ov8865_uninit(struct v4l2_subdev *sd)
 
 static int power_up(struct v4l2_subdev *sd)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct ov8865_device *dev = to_ov8865_sensor(sd);
-	int ret;
-
-	/* Enable power */
-	ret = dev->platform_data->power_ctrl(sd, 1);
-	if (ret)
-		goto fail_power;
-
-	/* Release reset */
-	ret = dev->platform_data->gpio_ctrl(sd, 1);
-	if (ret)
-		dev_err(&client->dev, "gpio failed 1\n");
-
-	/* Enable clock */
-	ret = dev->platform_data->flisclk_ctrl(sd, 1);
-	if (ret)
-		goto fail_clk;
+	/* TODO: fill up later */
 
 	/* Minumum delay is 8192 clock cycles before first i2c transaction,
 	 * which is 1.37 ms at the lowest allowed clock rate 6 MHz
 	 */
 	usleep_range(2000, 2100);
 	return 0;
-
-fail_clk:
-	dev->platform_data->flisclk_ctrl(sd, 0);
-fail_power:
-	dev->platform_data->power_ctrl(sd, 0);
-	dev_err(&client->dev, "sensor power-up failed\n");
-
-	return ret;
 }
 
 static int power_down(struct v4l2_subdev *sd)
 {
-	struct ov8865_device *dev = to_ov8865_sensor(sd);
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	int ret;
-
-	ret = dev->platform_data->flisclk_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "flisclk failed\n");
-
-	/* gpio ctrl */
-	ret = dev->platform_data->gpio_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "gpio failed 1\n");
-
-	/* power control */
-	ret = dev->platform_data->power_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "vprog failed.\n");
-
-	return ret;
+	/* TODO: fill up later */
+	return 0;
 }
 
 static int __ov8865_s_power(struct v4l2_subdev *sd, int on)
@@ -1237,7 +1196,7 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
+static int ov8865_s_config(struct v4l2_subdev *sd, int irq)
 {
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1245,25 +1204,7 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 	u16 sensor_id;
 	int ret;
 
-//	OV8865_LOG(2, "%s %d pdata=%x\n", __func__, __LINE__, (unsigned int)pdata);
-	if (pdata == NULL)
-		return -ENODEV;
-
-	dev->platform_data = pdata;
-
 	mutex_lock(&dev->input_lock);
-
-	if (dev->platform_data->platform_init) {
-		ret = dev->platform_data->platform_init(client);
-		if (ret) {
-			mutex_unlock(&dev->input_lock);
-			v4l2_err(client, "ov8865 platform init err\n");
-			return ret;
-		}
-	}
-
-	OV8865_LOG(1, "%s %d ov8865 platform_init done\n", __func__, __LINE__);
-	//OV8865_LOG(1, " ov8865 platform_init done\n");
 
 	ret = __ov8865_s_power(sd, 1);
 	if (ret) {
@@ -1302,17 +1243,12 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 	//		OV8865_LOG(2, "ov8865 otp trans failed\n");
 	//}
 
-
-	ret = dev->platform_data->csi_cfg(sd, 1);
-	if (ret)
-		goto fail_csi_cfg;
-
 	OV8865_LOG(1, "%s %d ov8865 csi_cfg done\n", __func__, __LINE__);
 	/* config & detect sensor */
 	ret = ov8865_detect(client, &sensor_id, &sensor_revision);
 	if (ret) {
 		v4l2_err(client, "ov8865_detect err s_config.\n");
-		goto fail_detect;
+		goto out;
 	}
 	OV8865_LOG(1, "%s %d ov8865 detect done\n", __func__, __LINE__);
 	dev->sensor_id = sensor_id;
@@ -1329,9 +1265,7 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 	OV8865_LOG(1, "%s %d ov8865 s_config successfully\n", __func__, __LINE__);
 	return 0;
 
-fail_detect:
-	dev->platform_data->csi_cfg(sd, 0);
-fail_csi_cfg:
+out:
 	__ov8865_s_power(sd, 0);
 	mutex_unlock(&dev->input_lock);
 	dev_err(&client->dev, "sensor power-gating failed\n");
@@ -1582,12 +1516,8 @@ static int ov8865_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 
-	if (dev->platform_data->platform_deinit)
-		dev->platform_data->platform_deinit();
-
 	media_entity_cleanup(&dev->sd.entity);
 	v4l2_ctrl_handler_free(&dev->ctrl_handler);
-	dev->platform_data->csi_cfg(sd, 0);
 	v4l2_device_unregister_subdev(sd);
 	kfree(dev);
 
@@ -1767,15 +1697,12 @@ static int ov8865_probe(struct i2c_client *client)
 
 	OV8865_LOG(1, "%s %d vcm done\n", __func__, __LINE__);
 				//OV8865_LOG(1, "ov8865 vcm done\n");
-	if (client->dev.platform_data) {
-				//OV8865_LOG(1, "ov8865 dev.platform_data\n");
-		ret = ov8865_s_config(&dev->sd, client->irq,
-				      client->dev.platform_data);
-				//OV8865_LOG(1, "ov8865 end ov8865_s_config\n");
-		if (ret) {
-		    //OV8865_LOG(1, "ov8865 out_free\n");
-			goto out_free;
-		}
+
+	ret = ov8865_s_config(&dev->sd, client->irq);
+			//OV8865_LOG(1, "ov8865 end ov8865_s_config\n");
+	if (ret) {
+		//OV8865_LOG(1, "ov8865 out_free\n");
+		goto out_free;
 	}
 
 	OV8865_LOG(1, "%s %d s_config done\n", __func__, __LINE__);
