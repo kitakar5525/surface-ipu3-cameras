@@ -183,9 +183,8 @@ again:
 	 * mdelay(1) here.
 	 */
 
-	if (ret == num_msg) {
+	if (ret == num_msg)
 		return 0;
-	}
 
 	if (retry <= I2C_RETRY_COUNT) {
 		dev_err(&client->dev, "retrying i2c write transfer... %d",
@@ -503,7 +502,7 @@ static int bu64243_power_down(struct v4l2_subdev *sd)
 
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
-		OV8865_LOG(1, "otp data valid !!!enter bu64243_power_down\n ");
+		OV8865_LOG(1, "otp data valid !!!enter %s\n", __func__);
 		focus_far = ov8865_dev->otp_data[8] | ov8865_dev->otp_data[7];
 		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET))
 			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
@@ -521,8 +520,8 @@ static int bu64243_power_down(struct v4l2_subdev *sd)
 		OV8865_LOG(1, "focus_value = %d\n", focus_value);
 		r = bu64243_write8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, focus_value), BU64243_D_LO(focus_value));
 		if (r < 0)
-		      return r;
-	     mdelay(5);
+			return r;
+		mdelay(5);
 		}
 	/* shunyong for power on */
 	OV8865_LOG(1, "power is controlled via sensor control\n");
@@ -892,7 +891,8 @@ static int power_up(struct v4l2_subdev *sd)
 		goto fail_clk;
 
 	/* Minumum delay is 8192 clock cycles before first i2c transaction,
-	 * which is 1.37 ms at the lowest allowed clock rate 6 MHz */
+	 * which is 1.37 ms at the lowest allowed clock rate 6 MHz
+	 */
 	usleep_range(2000, 2100);
 	return 0;
 
@@ -1070,7 +1070,7 @@ static int ov8865_get_intg_factor(struct v4l2_subdev *sd,
 	pll1_sys_pre_div = 1 + ((int)val);
 	pll1_sys_divider = 1;	/* 0x030e[2:0] = 0x00*/
 
-	m->vt_pix_clk_freq_mhz = (ext_clk / (pll1_prediv0 * pll1_prediv * pll1_sys_pre_div * pll1_sys_divider)) * pll1_multiplier;;
+	m->vt_pix_clk_freq_mhz = (ext_clk / (pll1_prediv0 * pll1_prediv * pll1_sys_pre_div * pll1_sys_divider)) * pll1_multiplier;
 
 	/* HTS and VTS */
 	m->line_length_pck = res->fps_options[dev->fps_index].pixels_per_line;
@@ -1236,9 +1236,9 @@ static int distance(struct ov8865_resolution const *res, const u32 w,
 {
 	unsigned int w_ratio = ((res->width<<13)/w);
 	unsigned int h_ratio = ((res->height<<13)/h);
-	int match   = abs(((w_ratio<<13)/h_ratio) - ((int)8192));
+	int match   = abs(((w_ratio<<13)/h_ratio) - 8192);
 
-	if ((w_ratio < (int)8192) || (h_ratio < (int)8192)
+	if ((w_ratio < 8192) || (h_ratio < 8192)
 		|| (match > LARGEST_ALLOWED_RATIO_MISMATCH))
 		return -1;
 
@@ -1280,7 +1280,7 @@ static int nearest_resolution_index(struct v4l2_subdev *sd, int w, int h)
 			h = 1096;
 		}
 	}
-	if ((dev->curr_res_table == ov8865_res_still)) {
+	if (dev->curr_res_table == ov8865_res_still) {
 		if ((((w == 176) && (h == 144))) ||
 			(((w == 188) && (h == 156)))) {
 			w = 1632;
@@ -1297,7 +1297,7 @@ static int nearest_resolution_index(struct v4l2_subdev *sd, int w, int h)
 			h = 1224;
 		}
 	}
-	if ((dev->curr_res_table == ov8865_res_still)) {
+	if (dev->curr_res_table == ov8865_res_still) {
 		if ((((w == 176) && (h == 144))) ||
 			(((w == 188) && (h == 156)))) {
 			w = 1632;
