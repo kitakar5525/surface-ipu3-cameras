@@ -60,10 +60,10 @@
 #define DEBUG_GAIN_EXP	(1<<1)
 #define DEBUG_INTG_FACT	(1<<2)
 #define DEBUG_OTP	(1<<4)
-static unsigned int debug = 0x00;
+static unsigned int debug;
 module_param(debug, int, 0644);
 
-struct ov8865_device * global_dev;
+struct ov8865_device *global_dev;
 static unsigned int ctrl_value;
 static int bu64243_vcm_ctrl(const char *val, struct kernel_param *kp);
 static int bu64243_t_focus_abs(struct v4l2_subdev *sd, s32 value);
@@ -89,18 +89,18 @@ module_param(log_level, int, 0644);
 #define OV8865_LOG(level, a, ...) \
 	do { \
 		if (level < log_level) \
-			printk(a,## __VA_ARGS__); \
+			printk(a, ## __VA_ARGS__); \
 	} while (0)
 
 static int ov8865_dump_otp(const char *val, struct kernel_param *kp)
 {
 	int ret;
 	ret = ov8865_otp_save(ov8865_raw, ov8865_raw_size, OV8865_SAVE_RAW_DATA);
-	if(ret != 0)
+	if (ret != 0)
 		OV8865_LOG(2, "Fail to save ov8865 RAW data\n");
 
 	ret = ov8865_otp_save(ov8865_otp_data, ov8865_otp_size, OV8865_SAVE_OTP_DATA);
-	if(ret != 0)
+	if (ret != 0)
 		OV8865_LOG(2, "Fail to save ov8865 OTP data\n");
 
 	return 0;
@@ -364,7 +364,7 @@ static int bu64243_write8(struct v4l2_subdev *sd, int reg, int val)
 	struct bu64243_device *dev = to_bu64243_device(sd);
 	struct i2c_msg msg;
 
-	memset(&msg, 0 , sizeof(msg));
+	memset(&msg, 0, sizeof(msg));
 	msg.addr = BU64243_I2C_ADDR;
 	msg.len = 2;
 	msg.buf = dev->buffer;
@@ -375,7 +375,7 @@ static int bu64243_write8(struct v4l2_subdev *sd, int reg, int val)
 	return i2c_transfer(client->adapter, &msg, 1);
 }
 
-static int bu64243_read8(struct v4l2_subdev *sd, int reg, u8 * data)
+static int bu64243_read8(struct v4l2_subdev *sd, int reg, u8 *data)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct bu64243_device *dev = to_bu64243_device(sd);
@@ -383,7 +383,7 @@ static int bu64243_read8(struct v4l2_subdev *sd, int reg, u8 * data)
 	int r;
 
 	OV8865_LOG(1, "%s %d reg:0x%x\n", __func__, __LINE__, reg);
-	memset(msg, 0 , sizeof(msg));
+	memset(msg, 0, sizeof(msg));
 	msg[0].addr = BU64243_I2C_ADDR;
 	msg[0].flags = 0;
 	msg[0].len = 1;
@@ -450,9 +450,9 @@ static int bu64243_power_up(struct v4l2_subdev *sd)
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
 		unsigned int focus_far = ov8865_dev->otp_data[8] | ov8865_dev->otp_data[7];
-		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET +1 + POINT_AB_OFFSET))
-			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET +1 + POINT_AB_OFFSET;
-		dev->point_b = focus_far - VCM_ORIENTATION_OFFSET - INTEL_FOCUS_OFFSET -1;			/*	lens loat */
+		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET))
+			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
+		dev->point_b = focus_far - VCM_ORIENTATION_OFFSET - INTEL_FOCUS_OFFSET - 1;			/*	lens loat */
 		dev->point_a = dev->point_b - POINT_AB_OFFSET;			/* 0 um	*/
 		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d \n", __func__, focus_far, dev->point_a, dev->point_b);
 	}
@@ -493,29 +493,29 @@ static int bu64243_power_up(struct v4l2_subdev *sd)
 static int bu64243_power_down(struct v4l2_subdev *sd)
 {
 	struct bu64243_device *dev = to_bu64243_device(sd);
-	unsigned int focus_far =0;
+	unsigned int focus_far = 0;
 	u8 data[10];
 	struct ov8865_device *ov8865_dev = to_ov8865_sensor(sd);
-	int r,i;
-	s32 current_value,average,focus_value;
+	int r, i;
+	s32 current_value, average, focus_value;
 	if (ov8865_dev->otp_data != NULL) {
 		/*reprogram VCM point A, B*/
-		OV8865_LOG(1,"otp data valid !!!enter bu64243_power_down \n ");
+		OV8865_LOG(1, "otp data valid !!!enter bu64243_power_down \n ");
 		focus_far = ov8865_dev->otp_data[8] | ov8865_dev->otp_data[7];
-		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET +1 + POINT_AB_OFFSET))
-			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET +1 + POINT_AB_OFFSET;
+		if (focus_far < (VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET))
+			focus_far = VCM_ORIENTATION_OFFSET + INTEL_FOCUS_OFFSET + 1 + POINT_AB_OFFSET;
 		OV8865_LOG(1, "%s focus far in OTP:%d point a:%d b:%d \n", __func__, focus_far, dev->point_a, dev->point_b);
 	}
 	r = bu64243_write8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, focus_far), BU64243_D_LO(focus_far));
 	if (r < 0)
 		return r;
 	bu64243_read8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, 0), data);
-	current_value = ((data[0] &0x03)<<8) +data[1];
+	current_value = ((data[0] & 0x03)<<8) + data[1];
 	average = current_value/10;
-	OV8865_LOG(1, "current_value = %d  , average = %d\n",current_value,average);
-	for (i= 1; i < 11; i ++){
-		focus_value =current_value -average*i;
-		OV8865_LOG(1,"focus_value = %d\n",focus_value);
+	OV8865_LOG(1, "current_value = %d  , average = %d\n", current_value, average);
+	for (i = 1; i < 11; i++) {
+		focus_value = current_value - average * i;
+		OV8865_LOG(1, "focus_value = %d\n", focus_value);
 		r = bu64243_write8(sd, bu64243_cmd(sd, BU64243_VCM_CURRENT, focus_value), BU64243_D_LO(focus_value));
 		if (r < 0)
 		      return r;
@@ -533,7 +533,7 @@ static void bu64243_dump_regs(struct v4l2_subdev *sd)
 
 	OV8865_LOG(2, "%s %d\n", __func__, __LINE__);
 
-	for (i = 0; i < 5; i ++) {
+	for (i = 0; i < 5; i++) {
 		bu64243_read8(sd, bu64243_cmd(sd, i, 0), data);
 		OV8865_LOG(2, "%s %d reg:%d data[0]:0x%x data[1]:0x%x\n", __func__, __LINE__, i, data[0], data[1]);
 	}
@@ -625,7 +625,7 @@ static int ov8865_g_priv_int_data(struct v4l2_subdev *sd,
 	u32 read_size = priv->size;
 	int ret;
 	int i;
-	u8 * pdata;
+	u8 *pdata;
 
 	/* No need to copy data if size is 0 */
 	if (!read_size)
@@ -641,7 +641,8 @@ static int ov8865_g_priv_int_data(struct v4l2_subdev *sd,
 
 	pdata = (u8 *) dev->otp_data;
 
-	for (i = 0;i < 10; i ++) OV8865_LOG(2, "%d %x\n", i, pdata[i]);
+	for (i = 0; i < 10; i++)
+		OV8865_LOG(2, "%d %x\n", i, pdata[i]);
 
 	OV8865_LOG(2, "yangsy %s %d read:%d\n", __func__, __LINE__, read_size);
 	ret = copy_to_user(to, dev->otp_data, read_size);
@@ -1136,12 +1137,12 @@ static int ov8865_get_intg_factor(struct v4l2_subdev *sd,
 		/*consider output padding*/
 		m->crop_vertical_start = (OV8865_ISP_MAX_HEIGHT - ((m->output_height + ISP_PADDING_H) << res->bin_factor_y))/2;
 	} else {
-		m->crop_vertical_start = (OV8865_ISP_MAX_HEIGHT - m->output_height )/2;
+		m->crop_vertical_start = (OV8865_ISP_MAX_HEIGHT - m->output_height) / 2;
 	}
 
 	m->crop_vertical_end = OV8865_ISP_MAX_HEIGHT - m->crop_vertical_start - 1;
 
-	if(debug & DEBUG_INTG_FACT) {
+	if (debug & DEBUG_INTG_FACT) {
 		OV8865_LOG(2, "%s %d vt_pix_clk_freq_mhz:%d line_length_pck:%d frame_length_lines:%d\n", __func__, __LINE__,
 				m->vt_pix_clk_freq_mhz, m->line_length_pck,	m->frame_length_lines);
 		OV8865_LOG(2, "%s %d coarse_intg_min:%d coarse_intg_max_margin:%d fine_intg_min:%d fine_intg_max_margin:%d\n",
@@ -1258,44 +1259,44 @@ static int nearest_resolution_index(struct v4l2_subdev *sd, int w, int h)
 	const struct ov8865_resolution *tmp_res = NULL;
 	struct ov8865_device *dev = to_ov8865_sensor(sd);
 
-	printk("-%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long )ov8865_res_preview, w, h);
-	if ((dev->curr_res_table == ov8865_res_preview)||
+	printk("-%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
+	if ((dev->curr_res_table == ov8865_res_preview) ||
 		(dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 1332) && (h == 1092))) ||
-			(((w == 1320) && (h == 1080)))||(((w == 1280) &&(h == 720))) ||
-			(((w == 1292) &&(h == 732))) ||
-			(((w == 1024) &&(h == 576))) || (((w == 1036) &&(h == 588)))||
-			(((w == 720) &&(h == 480))) || (((w == 732) &&(h == 492)))||
-			(((w == 640) &&(h == 360))) || (((w == 652) &&(h == 372)))||
-			(((w == 320) &&(h == 180))) || (((w == 332) &&(h == 192)))){
+			(((w == 1320) && (h == 1080))) || (((w == 1280) && (h == 720))) ||
+			(((w == 1292) && (h == 732))) ||
+			(((w == 1024) && (h == 576))) || (((w == 1036) && (h == 588))) ||
+			(((w == 720) && (h == 480))) || (((w == 732) && (h == 492))) ||
+			(((w == 640) && (h == 360))) || (((w == 652) && (h == 372))) ||
+			(((w == 320) && (h == 180))) || (((w == 332) && (h == 192)))) {
 			w = 1632;
 			h = 1224;
 		}
-		if((((w == 1920) &&(h == 1080))) || (((w == 1932) &&(h == 1092)))){
+		if ((((w == 1920) && (h == 1080))) || (((w == 1932) && (h == 1092)))) {
 			w = 1936;
 			h = 1096;
 		}
 	}
 	if ((dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 176) && (h == 144))) ||
-			(((w == 188) && (h == 156)))){
+			(((w == 188) && (h == 156)))) {
 			w = 1632;
 			h = 1224;
 		}
 	}
 #if 0
-	printk("%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long )ov8865_res_preview, w, h);
-	if ((dev->curr_res_table == ov8865_res_preview)||
+	printk("%lx %lx  w:%d h:%d\r\n", (unsigned long)dev->curr_res_table, (unsigned long)ov8865_res_preview, w, h);
+	if ((dev->curr_res_table == ov8865_res_preview) ||
 		(dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 1332) && (h == 1092))) ||
-			(((w == 1320) && (h == 1080)))){
+			(((w == 1320) && (h == 1080)))) {
 			w = 1632;
 			h = 1224;
 		}
 	}
 	if ((dev->curr_res_table == ov8865_res_still)) {
 		if ((((w == 176) && (h == 144))) ||
-			(((w == 188) && (h == 156)))){
+			(((w == 188) && (h == 156)))) {
 			w = 1632;
 			h = 1224;
 		}
@@ -1614,7 +1615,7 @@ static int ov8865_s_config(struct v4l2_subdev *sd, int irq, void *pdata)
 	dev->otp_data = NULL;
 	//ret = request_firmware(&fw, OV8865_OTP_INPUT_NAME, &client->dev);
 	//if (ret) {
-		OV8865_LOG(2,"ov8865 load from user-space failed, load from sensor\n");
+		OV8865_LOG(2, "ov8865 load from user-space failed, load from sensor\n");
 		ov8865_write_reg(client, OV8865_8BIT, 0x5002, 0x00);
 		ov8865_write_reg(client, OV8865_8BIT, 0x0100, 0x01);
 		ret = ov8865_otp_read(client, ov8865_raw, &ov8865_raw_size);
@@ -1791,42 +1792,42 @@ static int ov8865_g_ctrl(struct v4l2_ctrl *ctrl)
 		ctrl->handler, struct ov8865_device, ctrl_handler);
 
 	switch (ctrl->id) {
-		/* shunyong, disable Focus when PO */
-		case V4L2_CID_FOCUS_STATUS: {
-			static const struct timespec move_time = {
-				/* The time required for focus motor to move the lens */
-				.tv_sec = 0,
-				.tv_nsec = 60000000,
-			};
-			struct bu64243_device *bu64243 = to_bu64243_device(&dev->sd);
-			struct timespec current_time, finish_time, delta_time;
+	/* shunyong, disable Focus when PO */
+	case V4L2_CID_FOCUS_STATUS: {
+		static const struct timespec move_time = {
+			/* The time required for focus motor to move the lens */
+			.tv_sec = 0,
+			.tv_nsec = 60000000,
+		};
+		struct bu64243_device *bu64243 = to_bu64243_device(&dev->sd);
+		struct timespec current_time, finish_time, delta_time;
 
-			getnstimeofday(&current_time);
-			finish_time = timespec_add(bu64243->focus_time, move_time);
-			delta_time = timespec_sub(current_time, finish_time);
-			if (delta_time.tv_sec >= 0 && delta_time.tv_nsec >= 0) {
-				/* VCM motor is not moving */
-				ctrl->val = ATOMISP_FOCUS_HP_COMPLETE |
-					ATOMISP_FOCUS_STATUS_ACCEPTS_NEW_MOVE;
-			} else {
-				/* VCM motor is still moving */
-				ctrl->val = ATOMISP_FOCUS_STATUS_MOVING |
-					ATOMISP_FOCUS_HP_IN_PROGRESS;
-			}
-			return 0;
+		getnstimeofday(&current_time);
+		finish_time = timespec_add(bu64243->focus_time, move_time);
+		delta_time = timespec_sub(current_time, finish_time);
+		if (delta_time.tv_sec >= 0 && delta_time.tv_nsec >= 0) {
+			/* VCM motor is not moving */
+			ctrl->val = ATOMISP_FOCUS_HP_COMPLETE |
+				ATOMISP_FOCUS_STATUS_ACCEPTS_NEW_MOVE;
+		} else {
+			/* VCM motor is still moving */
+			ctrl->val = ATOMISP_FOCUS_STATUS_MOVING |
+				ATOMISP_FOCUS_HP_IN_PROGRESS;
 		}
+		return 0;
+	}
 	break;
-		case V4L2_CID_EXPOSURE_ABSOLUTE:
-		     ctrl->val = exposure_time;
-		     return 0;
-		case V4L2_CID_BIN_FACTOR_HORZ:
-		case V4L2_CID_BIN_FACTOR_VERT: {
-			ctrl->val = ctrl->id == V4L2_CID_BIN_FACTOR_HORZ ?
-				dev->curr_res_table[dev->fmt_idx].bin_factor_x: dev->curr_res_table[dev->fmt_idx].bin_factor_y;
+	case V4L2_CID_EXPOSURE_ABSOLUTE:
+		ctrl->val = exposure_time;
+		return 0;
+	case V4L2_CID_BIN_FACTOR_HORZ:
+	case V4L2_CID_BIN_FACTOR_VERT: {
+		ctrl->val = ctrl->id == V4L2_CID_BIN_FACTOR_HORZ ?
+			dev->curr_res_table[dev->fmt_idx].bin_factor_x : dev->curr_res_table[dev->fmt_idx].bin_factor_y;
 
-			OV8865_LOG(1, "bin-factor for ISP:%d\n",  ctrl->val);
-			return 0;
-		}
+		OV8865_LOG(1, "bin-factor for ISP:%d\n",  ctrl->val);
+		return 0;
+	}
 	}
 
 	return 0;
