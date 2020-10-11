@@ -1979,7 +1979,6 @@ MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
 
 static struct i2c_driver ov8865_driver = {
 	.driver = {
-		.owner = THIS_MODULE,
 		.name = OV8865_NAME,
 		.acpi_match_table = ov8865_acpi_ids,
 	},
