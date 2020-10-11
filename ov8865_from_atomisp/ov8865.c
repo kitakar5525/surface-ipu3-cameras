@@ -816,20 +816,9 @@ out:
 	return ret;
 }
 
-static int ov8865_s_exposure(struct v4l2_subdev *sd,
-			     struct atomisp_exposure *exposure)
-{
-	return ov8865_set_exposure(sd, exposure->integration_time[0],
-				exposure->gain[0], exposure->gain[1]);
-}
-
 static long ov8865_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	switch (cmd) {
-	case ATOMISP_IOC_S_EXPOSURE:
-		return ov8865_s_exposure(sd, (struct atomisp_exposure *)arg);
-	case ATOMISP_IOC_G_SENSOR_PRIV_INT_DATA:
-		return ov8865_g_priv_int_data(sd, arg);
 	default:
 		return -EINVAL;
 	}
@@ -975,13 +964,6 @@ static int ov8865_s_power(struct v4l2_subdev *sd, int on)
 	ret = __ov8865_s_power(sd, on);
 	mutex_unlock(&dev->input_lock);
 
-	/*
-	 * FIXME: Compatibility with old behaviour: return to preview
-	 * when the device is power cycled.
-	 */
-	if (!ret && on)
-		v4l2_ctrl_s_ctrl(dev->run_mode, ATOMISP_RUN_MODE_PREVIEW);
-
 	return ret;
 }
 
@@ -1032,123 +1014,6 @@ static int ov8865_get_register_16bit(struct v4l2_subdev *sd, int reg,
 	return 0;
 }
 
-static int ov8865_get_intg_factor(struct v4l2_subdev *sd,
-				  struct camera_mipi_info *info,
-				  const struct ov8865_reg *reglist)
-{
-	/*shunyong: disable get_intg for PO*/
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	const int ext_clk = 19200000; /* MHz */
-	struct atomisp_sensor_mode_data *m = &info->data;
-	struct ov8865_device *dev = to_ov8865_sensor(sd);
-	const struct ov8865_resolution *res =
-				&dev->curr_res_table[dev->fmt_idx];
-	int pll1_prediv0, pll1_prediv;
-	int pll1_multiplier;
-	int pll1_sys_pre_div;
-	int pll1_sys_divider;
-	int ret;
-	u16 val;
-
-	memset(&info->data, 0, sizeof(info->data));
-
-	pll1_prediv0 = 1;		/* 0x0312[4] = 0*/
-	pll1_prediv = 4;		/* 0x030b[2:0] = 5*/
-	pll1_multiplier = 0x96; /* 0x030c[1:0]=0x0, 0x030d[7:0] = 0x96*/
-	ov8865_read_reg(client, OV8865_8BIT, PLL1_SYS_PRE_DIV, &val);
-	pll1_sys_pre_div = 1 + ((int)val);
-	pll1_sys_divider = 1;	/* 0x030e[2:0] = 0x00*/
-
-	m->vt_pix_clk_freq_mhz = (ext_clk / (pll1_prediv0 * pll1_prediv * pll1_sys_pre_div * pll1_sys_divider)) * pll1_multiplier;
-
-	/* HTS and VTS */
-	m->line_length_pck = res->fps_options[dev->fps_index].pixels_per_line;
-	m->frame_length_lines = res->fps_options[dev->fps_index].lines_per_frame;
-
-	m->coarse_integration_time_min = 0;
-	m->coarse_integration_time_max_margin = OV8865_INTEGRATION_TIME_MARGIN;
-
-	/* OV Sensor do not use fine integration time. */
-	m->fine_integration_time_min = 0;
-	m->fine_integration_time_max_margin = 0;
-
-	/*
-	 * read_mode indicate whether binning is used for calculating
-	 * the correct exposure value from the user side. So adapt the
-	 * read mode values accordingly.
-	 */
-	m->read_mode = res->bin_factor_x ?
-		OV8865_READ_MODE_BINNING_ON : OV8865_READ_MODE_BINNING_OFF;
-
-	ret = ov8865_get_register(sd, OV8865_TIMING_X_INC, res->regs);
-	if (ret < 0)
-		return ret;
-	m->binning_factor_x = res->bin_factor_x ? 2 : 1;
-
-	ret = ov8865_get_register(sd, OV8865_TIMING_Y_INC, res->regs);
-	if (ret < 0)
-		return ret;
-	m->binning_factor_y = res->bin_factor_y ? 2 : 1;
-
-	/* Get the cropping and output resolution to ISP for this mode. */
-	ret =  ov8865_get_register_16bit(sd, OV8865_HORIZONTAL_START_H,
-		res->regs, &m->crop_horizontal_start);
-	if (ret)
-		return ret;
-
-	ret = ov8865_get_register_16bit(sd, OV8865_VERTICAL_START_H,
-		res->regs, &m->crop_vertical_start);
-	if (ret)
-		return ret;
-
-	ret = ov8865_get_register_16bit(sd, OV8865_HORIZONTAL_OUTPUT_SIZE_H,
-		res->regs, &m->output_width);
-	if (ret)
-		return ret;
-	m->output_width = m->output_width - ISP_PADDING_W; /*remove ISP padding, real output*/
-
-	ret = ov8865_get_register_16bit(sd, OV8865_VERTICAL_OUTPUT_SIZE_H,
-		res->regs, &m->output_height);
-	if (ret)
-		return ret;
-	m->output_height = m->output_height - ISP_PADDING_H;
-
-	/*
-	 * As ov8865 is central crop, we calculate for 3264x2448 to meet IQ/OTP
-	 * requirement
-	 */
-	if (res->bin_factor_x) {
-		/*consider output padding*/
-		m->crop_horizontal_start = (OV8865_ISP_MAX_WIDTH - ((m->output_width + ISP_PADDING_W) << res->bin_factor_x))/2;
-	} else {
-		m->crop_horizontal_start = (OV8865_ISP_MAX_WIDTH - m->output_width)/2;
-	}
-	m->crop_horizontal_end = OV8865_ISP_MAX_WIDTH - m->crop_horizontal_start - 1;
-
-	if (res->bin_factor_y) {
-		/*consider output padding*/
-		m->crop_vertical_start = (OV8865_ISP_MAX_HEIGHT - ((m->output_height + ISP_PADDING_H) << res->bin_factor_y))/2;
-	} else {
-		m->crop_vertical_start = (OV8865_ISP_MAX_HEIGHT - m->output_height) / 2;
-	}
-
-	m->crop_vertical_end = OV8865_ISP_MAX_HEIGHT - m->crop_vertical_start - 1;
-
-	if (debug & DEBUG_INTG_FACT) {
-		OV8865_LOG(2, "%s %d vt_pix_clk_freq_mhz:%d line_length_pck:%d frame_length_lines:%d\n", __func__, __LINE__,
-				m->vt_pix_clk_freq_mhz, m->line_length_pck,	m->frame_length_lines);
-		OV8865_LOG(2, "%s %d coarse_intg_min:%d coarse_intg_max_margin:%d fine_intg_min:%d fine_intg_max_margin:%d\n",
-				__func__, __LINE__,
-				m->coarse_integration_time_min, m->coarse_integration_time_max_margin,
-				m->fine_integration_time_min, m->fine_integration_time_max_margin);
-		OV8865_LOG(2, "%s %d crop_x_start:%d crop_y_start:%d crop_x_end:%d crop_y_end:%d\n", __func__, __LINE__,
-				m->crop_horizontal_start, m->crop_vertical_start, m->crop_horizontal_end, m->crop_vertical_end);
-		OV8865_LOG(2, "%s %d output_width:%d output_height:%d\n", __func__, __LINE__, m->output_width, m->output_height);
-	}
-
-	return 0;
-}
-
 #if 0
 static int __ov8865_s_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_frame_interval *interval)
@@ -1192,11 +1057,6 @@ static int __ov8865_s_frame_interval(struct v4l2_subdev *sd,
 	/* update frametiming. Conside the curren exposure/gain as well */
 	ret = __ov8865_set_exposure(sd, dev->exposure, dev->gain,
 					dev->digital_gain, &hts, &vts);
-	if (ret)
-		return ret;
-
-	/* Update the new values so that user side knows the current settings */
-	ret = ov8865_get_intg_factor(sd, info, dev->basic_settings_list);
 	if (ret)
 		return ret;
 
@@ -1600,14 +1460,6 @@ static int ov8865_s_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_RUN_MODE:
 		switch (ctrl->val) {
-		case ATOMISP_RUN_MODE_VIDEO:
-			dev->curr_res_table = ov8865_res_video;
-			dev->entries_curr_table = ARRAY_SIZE(ov8865_res_video);
-			break;
-		case ATOMISP_RUN_MODE_STILL_CAPTURE:
-			dev->curr_res_table = ov8865_res_still;
-			dev->entries_curr_table = ARRAY_SIZE(ov8865_res_still);
-			break;
 		default:
 			dev->curr_res_table = ov8865_res_preview;
 			dev->entries_curr_table = ARRAY_SIZE(ov8865_res_preview);
@@ -1632,30 +1484,6 @@ static int ov8865_g_ctrl(struct v4l2_ctrl *ctrl)
 		ctrl->handler, struct ov8865_device, ctrl_handler);
 
 	switch (ctrl->id) {
-	/* shunyong, disable Focus when PO */
-	case V4L2_CID_FOCUS_STATUS: {
-		static const struct timespec move_time = {
-			/* The time required for focus motor to move the lens */
-			.tv_sec = 0,
-			.tv_nsec = 60000000,
-		};
-		struct bu64243_device *bu64243 = to_bu64243_device(&dev->sd);
-		struct timespec current_time, finish_time, delta_time;
-
-		getnstimeofday(&current_time);
-		finish_time = timespec_add(bu64243->focus_time, move_time);
-		delta_time = timespec_sub(current_time, finish_time);
-		if (delta_time.tv_sec >= 0 && delta_time.tv_nsec >= 0) {
-			/* VCM motor is not moving */
-			ctrl->val = ATOMISP_FOCUS_HP_COMPLETE |
-				ATOMISP_FOCUS_STATUS_ACCEPTS_NEW_MOVE;
-		} else {
-			/* VCM motor is still moving */
-			ctrl->val = ATOMISP_FOCUS_STATUS_MOVING |
-				ATOMISP_FOCUS_HP_IN_PROGRESS;
-		}
-		return 0;
-	}
 	break;
 	case V4L2_CID_EXPOSURE_ABSOLUTE:
 		ctrl->val = exposure_time;
