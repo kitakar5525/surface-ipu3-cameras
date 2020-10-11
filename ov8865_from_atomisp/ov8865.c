@@ -1576,7 +1576,7 @@ static int ov8865_remove(struct i2c_client *client)
 
 	media_entity_cleanup(&dev->sd.entity);
 	v4l2_ctrl_handler_free(&dev->ctrl_handler);
-	v4l2_device_unregister_subdev(sd);
+	v4l2_async_unregister_subdev(sd);
 	kfree(dev);
 
 	return 0;
@@ -1862,16 +1862,25 @@ static int ov8865_probe(struct i2c_client *client)
 		return ret;
 	}
 
+	ret = v4l2_async_register_subdev_sensor_common(&dev->sd);
+	if (ret) {
+		dev_err(&client->dev, "failed to register V4L2 subdev: %d", ret);
+		goto media_entity_cleanup;
+	}
+
 	global_dev = dev;
 	OV8865_LOG(2, "%s %d done\n", __func__, __LINE__);
 				//OV8865_LOG(1, "ov8865 done\n");
+
 	return 0;
 
+media_entity_cleanup:
+	media_entity_cleanup(&dev->sd.entity);
 out_free:
 
 	OV8865_LOG(1, "%s %d fail, free\n", __func__, __LINE__);
 				//OV8865_LOG(1, "ov8865 fail, free\n");
-	v4l2_device_unregister_subdev(&dev->sd);
+	v4l2_async_unregister_subdev(&dev->sd);
 	kfree(dev);
 	return ret;
 }
