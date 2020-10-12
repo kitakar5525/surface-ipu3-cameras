@@ -10,25 +10,64 @@ static void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
 
+	pr_info("full raw output of SSDB:\n");
 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
 		       data, data_len, true);
 
-	dev_info(dev, "link_used: %d\n", data->link_used);
-	dev_info(dev, "lanes_used: %d\n", data->lanes_used);
-	dev_info(dev, "vcm_type: %d\n", data->vcm_type);
-	dev_info(dev, "flash_support: %d\n", data->flash_support);
-	dev_info(dev, "degree: %d\n", data->degree);
-	dev_info(dev, "mclk_port: %d\n", data->mclk_port);
-	dev_info(dev, "mclk_speed: %d\n", data->mclk_speed);
+	pr_info("======= Important data =======\n");
+	pr_info("link_used:     %d\n", data->link_used);
+	pr_info("lanes_used:    %d\n", data->lanes_used);
+	pr_info("vcm_type:      %d\n", data->vcm_type);
+	pr_info("flash_support: %d\n", data->flash_support);
+	pr_info("degree:        %d\n", data->degree);
+	pr_info("mclk_speed:    %d\n", data->mclk_speed);
+	pr_info("mclk_port:     %d\n", data->mclk_port);
 
-	dev_info(dev, "/* Additional data */\n");
-	dev_info(dev, "lanes_clock_division: %d\n", data->lanes_clock_division);
-	dev_info(dev, "rom_type: %d\n", data->rom_type);
-	dev_info(dev, "privacy_led: %d\n", data->privacy_led);
-	dev_info(dev, "mipi_define: %d\n", data->mipi_define);
-	dev_info(dev, "control_logic_id: %d\n", data->control_logic_id);
-
-	dev_info(dev, "\n");
+	pr_info("========== All data ==========\n");
+	pr_info("version:                      %d\n", data->version);
+	pr_info("sensor_card_sku:              %d\n", data->sensor_card_sku);
+	pr_info("csi2_data_stream_interface:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data->csi2_data_stream_interface,
+		       sizeof(data->csi2_data_stream_interface), true);
+	pr_info("bdf_value:                    %d\n", data->bdf_value);
+	pr_info("dphy_link_en_fuses:           %d\n", data->dphy_link_en_fuses);
+	pr_info("lanes_clock_division:         %d\n", data->lanes_clock_division);
+	pr_info("link_used:                    %d\n", data->link_used);
+	pr_info("lanes_used:                   %d\n", data->lanes_used);
+	pr_info("csi_rx_dly_cnt_termen_clane:  %d\n", data->csi_rx_dly_cnt_termen_clane);
+	pr_info("csi_rx_dly_cnt_settle_clane:  %d\n", data->csi_rx_dly_cnt_settle_clane);
+	pr_info("csi_rx_dly_cnt_termen_dlane0: %d\n", data->csi_rx_dly_cnt_termen_dlane0);
+	pr_info("csi_rx_dly_cnt_settle_dlane0: %d\n", data->csi_rx_dly_cnt_settle_dlane0);
+	pr_info("csi_rx_dly_cnt_termen_dlane1: %d\n", data->csi_rx_dly_cnt_termen_dlane1);
+	pr_info("csi_rx_dly_cnt_settle_dlane1: %d\n", data->csi_rx_dly_cnt_settle_dlane1);
+	pr_info("csi_rx_dly_cnt_termen_dlane2: %d\n", data->csi_rx_dly_cnt_termen_dlane2);
+	pr_info("csi_rx_dly_cnt_settle_dlane2: %d\n", data->csi_rx_dly_cnt_settle_dlane2);
+	pr_info("csi_rx_dly_cnt_termen_dlane3: %d\n", data->csi_rx_dly_cnt_termen_dlane3);
+	pr_info("csi_rx_dly_cnt_settle_dlane3: %d\n", data->csi_rx_dly_cnt_settle_dlane3);
+	pr_info("max_lane_speed:               %d\n", data->max_lane_speed);
+	pr_info("sensor_cal_file_idx:          %d\n", data->sensor_cal_file_idx);
+	pr_info("sensor_cal_file_idx_mbz:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data->sensor_cal_file_idx_mbz,
+		       sizeof(data->sensor_cal_file_idx_mbz), true);
+	pr_info("rom_type:                     %d\n", data->rom_type);
+	pr_info("vcm_type:                     %d\n", data->vcm_type);
+	pr_info("platform:                     %d\n", data->platform);
+	pr_info("platform_sub:                 %d\n", data->platform_sub);
+	pr_info("flash_support:                %d\n", data->flash_support);
+	pr_info("privacy_led:                  %d\n", data->privacy_led);
+	pr_info("degree:                       %d\n", data->degree);
+	pr_info("mipi_define:                  %d\n", data->mipi_define);
+	pr_info("mclk_speed:                   %d\n", data->mclk_speed);
+	pr_info("control_logic_id:             %d\n", data->control_logic_id);
+	pr_info("mipi_data_format:             %d\n", data->mipi_data_format);
+	pr_info("silicon_version:              %d\n", data->silicon_version);
+	pr_info("customer_id:                  %d\n", data->customer_id);
+	pr_info("mclk_port:                    %d\n", data->mclk_port);
+	pr_info("reserved:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data->reserved, sizeof(data->reserved), true);
 }
 
 static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
