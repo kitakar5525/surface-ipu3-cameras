@@ -179,7 +179,7 @@ static int get_acpi_data(struct device *dev)
 	if (len < 0)
 		return len;
 
-	dump_cldb(dev, &pmic_data, len);
+	dump_cldb(dep_dev, &pmic_data, len);
 
 	/* FIXME: Calling this sometimes breaks next driver load. */
 	// put_device(dep_dev);
