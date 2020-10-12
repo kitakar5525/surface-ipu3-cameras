@@ -291,6 +291,7 @@ static int get_acpi_data(struct device *dev)
 	print_dep_acpi_paths(dev);
 	dump_crs(dev);
 	dump_ssdb(dev, &sensor_data, len);
+	pr_info("\n");
 
 	dep_dev = get_dep_dev(dev);
 	if (IS_ERR(dep_dev)) {
@@ -298,6 +299,9 @@ static int get_acpi_data(struct device *dev)
 		dev_err(dev, "cannot get dep_dev: ret %d\n", ret);
 		return ret;
 	}
+
+	dev_info(dep_dev, "-------------------- %s --------------------\n",
+		 dev_name(dep_dev));
 
 	len = read_acpi_block(dep_dev, "CLDB", &pmic_data, sizeof(pmic_data));
 	if (len < 0)
@@ -307,6 +311,7 @@ static int get_acpi_data(struct device *dev)
 	print_dep_acpi_paths(dep_dev);
 	dump_crs(dep_dev);
 	dump_cldb(dep_dev, &pmic_data, len);
+	pr_info("\n");
 
 	/* FIXME: Calling this sometimes breaks next driver load. */
 	// put_device(dep_dev);
