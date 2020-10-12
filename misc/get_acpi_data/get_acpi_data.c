@@ -192,6 +192,16 @@ static struct device *get_dep_dev(struct device *dev)
 	return dep_phys->dev;
 }
 
+static void print_acpi_path(struct device *dev)
+{
+	struct acpi_handle *handle = ACPI_HANDLE(dev);
+	char acpi_method_name[255] = { 0 };
+	struct acpi_buffer buffer = {sizeof(acpi_method_name), acpi_method_name};
+
+	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+	pr_info("ACPI path: %s\n", acpi_method_name);
+}
+
 static int get_acpi_data(struct device *dev)
 {
 	struct intel_ssdb sensor_data;
@@ -207,6 +217,7 @@ static int get_acpi_data(struct device *dev)
 	if (len < 0)
 		return len;
 
+	print_acpi_path(dev);
 	dump_ssdb(dev, &sensor_data, len);
 
 	dep_dev = get_dep_dev(dev);
@@ -220,6 +231,7 @@ static int get_acpi_data(struct device *dev)
 	if (len < 0)
 		return len;
 
+	print_acpi_path(dep_dev);
 	dump_cldb(dep_dev, &pmic_data, len);
 
 	/* FIXME: Calling this sometimes breaks next driver load. */
