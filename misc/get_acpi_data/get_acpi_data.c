@@ -87,6 +87,37 @@ static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
 		       data->reserved, sizeof(data->reserved), true);
 }
 
+static int dump_crs(struct device *dev)
+{
+	union acpi_object *obj;
+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	int status;
+
+	dev_info(dev, "========== %s() ==========\n", __func__);
+
+	status = acpi_evaluate_object(dev_handle, "_CRS", NULL, &buffer);
+	if (!ACPI_SUCCESS(status))
+		return -ENODEV;
+
+	obj = (union acpi_object *)buffer.pointer;
+	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
+		dev_err(dev, "Could't read acpi buffer\n");
+		status = -ENODEV;
+		goto err;
+	}
+
+	pr_info("full raw output of _CRS:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       obj->buffer.pointer, obj->buffer.length, true);
+	kfree(buffer.pointer);
+
+	return 0;
+err:
+	kfree(buffer.pointer);
+	return status;
+}
+
 static int read_acpi_block(struct device *dev, char *id, void *data, u32 size)
 {
 	union acpi_object *obj;
@@ -258,6 +289,7 @@ static int get_acpi_data(struct device *dev)
 
 	print_acpi_path(dev);
 	print_dep_acpi_paths(dev);
+	dump_crs(dev);
 	dump_ssdb(dev, &sensor_data, len);
 
 	dep_dev = get_dep_dev(dev);
@@ -273,6 +305,7 @@ static int get_acpi_data(struct device *dev)
 
 	print_acpi_path(dep_dev);
 	print_dep_acpi_paths(dep_dev);
+	dump_crs(dep_dev);
 	dump_cldb(dep_dev, &pmic_data, len);
 
 	/* FIXME: Calling this sometimes breaks next driver load. */
