@@ -74,15 +74,17 @@ static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
 
+	pr_info("full raw output of CLDB:\n");
 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
 		       data, data_len, true);
 
-	dev_info(dev, "version: %d\n", data->version);
-	dev_info(dev, "control_logic_type: %d\n", data->control_logic_type);
-	dev_info(dev, "control_logic_id: %d\n", data->control_logic_id);
-	dev_info(dev, "sensor_card_sku: %d\n", data->sensor_card_sku);
-
-	dev_info(dev, "\n");
+	pr_info("version:            %d\n", data->version);
+	pr_info("control_logic_type: %d\n", data->control_logic_type);
+	pr_info("control_logic_id:   %d\n", data->control_logic_id);
+	pr_info("sensor_card_sku:    %d\n", data->sensor_card_sku);
+	pr_info("reserved:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       data->reserved, sizeof(data->reserved), true);
 }
 
 static int read_acpi_block(struct device *dev, char *id, void *data, u32 size)
