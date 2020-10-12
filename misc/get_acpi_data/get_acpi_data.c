@@ -202,6 +202,45 @@ static void print_acpi_path(struct device *dev)
 	pr_info("ACPI path: %s\n", acpi_method_name);
 }
 
+static int print_dep_acpi_paths(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	int ret;
+	int i;
+
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		/* There may be no _DEP defined (especially for PMIC).
+		 * So, treat this as not an error.
+		 */
+		pr_info("%s(): No _DEP entry found\n", __func__);
+		return 0;
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return -ENODEV;
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		char acpi_method_name[255] = { 0 };
+		struct acpi_buffer buffer = {sizeof(acpi_method_name),
+					     acpi_method_name};
+
+		acpi_get_name(dep_devices.handles[i], ACPI_FULL_PATHNAME,
+			      &buffer);
+		pr_info("_DEP ACPI path (%d of %d): %s\n",
+			i + 1, dep_devices.count,
+			acpi_method_name);
+	}
+
+	if (!dep_devices.count)
+		pr_info("%s(): No dependent device found\n", __func__);
+
+	return 0;
+}
+
 static int get_acpi_data(struct device *dev)
 {
 	struct intel_ssdb sensor_data;
@@ -218,6 +257,7 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dev);
+	print_dep_acpi_paths(dev);
 	dump_ssdb(dev, &sensor_data, len);
 
 	dep_dev = get_dep_dev(dev);
@@ -232,6 +272,7 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dep_dev);
+	print_dep_acpi_paths(dep_dev);
 	dump_cldb(dep_dev, &pmic_data, len);
 
 	/* FIXME: Calling this sometimes breaks next driver load. */
