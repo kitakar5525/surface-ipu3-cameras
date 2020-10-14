@@ -5,6 +5,18 @@
 
 #include "get_acpi_data.h"
 
+/* Add your sensor's ACPI HID here if not listed */
+static const struct ipu3_sensor ipu3_sensors[] = {
+	{"INT33BE"}, // ov5693
+	{"INT3479"}, // ov5670
+	{"INT347A"}, // ov8865
+	{"INT347E"}, // ov7251
+	{"OVTI2680"}, // ov2680
+	{"OVTI5648"}, // ov5648
+	{"OVTI9734"}, // ov9734
+	{},
+};
+
 static void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 {
 	dev_info(dev, "========== %s() ==========\n", __func__);
@@ -346,40 +358,67 @@ static int get_acpi_data(struct device *dev)
 	return 0;
 }
 
-static int get_acpi_data_probe(struct i2c_client *client)
+/* to use acpi_driver.drv.bus (acpi_bus_type) */
+static struct acpi_driver get_acpi_data_driver = {
+	.name = DRV_NAME,
+	.class = DRV_NAME,
+};
+
+static int __init get_acpi_data_init(void)
 {
-	get_acpi_data(&client->dev);
+	struct acpi_device *sensor_adev;
+	struct device *sensor_dev;
+	int ret;
+	int i;
+
+	ret = acpi_bus_register_driver(&get_acpi_data_driver);
+	if (ret) {
+		pr_err(DRV_NAME": registering acpi driver failed\n");
+		return ret;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ipu3_sensors); i++) {
+		sensor_adev = acpi_dev_get_first_match_dev(ipu3_sensors[i].acpi_hid,
+							   NULL, -1);
+		if (!sensor_adev)
+			continue;
+		
+		/* acpi_bus_type is not exported. Use acpi_driver.drv.bus
+		 * instead.
+		 */
+		/*
+		 * FIXME: bus_find_device*() here will fail with
+		 * "acpi_driver.drv.bus" bus type anyway. I don't have
+		 * any idea what's wrong.
+		 *
+		 * Note: Also, i2c_bus_type works only when the real sensor
+		 * drivers are not loaded with the current bridge driver
+		 * (v2 version of ipu3-cio2-driver). I guess this is because
+		 * bus_find_device*() rely on dev->fwnode->ops being
+		 * acpi_device_fwnode_ops. But current bridge driver changed
+		 * them to software_node_ops in order for the graph parsing
+		 * to work.
+		 */
+		sensor_dev = bus_find_device_by_acpi_dev(&i2c_bus_type,
+							 sensor_adev);
+		if (!sensor_dev) {
+			dev_err(&sensor_adev->dev,
+				"Error getting sensor device\n");
+			continue;
+		}
+
+		get_acpi_data(sensor_dev);
+	}
 
 	return 0;
 }
 
-static int get_acpi_data_remove(struct i2c_client *client)
+static void __exit get_acpi_data_exit(void)
 {
-	return 0;
+	acpi_bus_unregister_driver(&get_acpi_data_driver);
 }
 
-/* Add your sensor's ACPI HID here if not listed */
-static const struct acpi_device_id get_acpi_data_acpi_ids[] = {
-	{"INT33BE"}, // ov5693
-	{"INT3479"}, // ov5670
-	{"INT347A"}, // ov8865
-	{"INT347E"}, // ov7251
-	{"OVTI2680"}, // ov2680
-	{"OVTI5648"}, // ov5648
-	{"OVTI9734"}, // ov9734
-	{},
-};
-MODULE_DEVICE_TABLE(acpi, get_acpi_data_acpi_ids);
-
-static struct i2c_driver get_acpi_data_i2c_driver = {
-	.driver = {
-		.acpi_match_table = ACPI_PTR(get_acpi_data_acpi_ids),
-		.name  = "get_acpi_data",
-	},
-	.probe_new  = get_acpi_data_probe,
-	.remove = get_acpi_data_remove,
-};
-
-module_i2c_driver(get_acpi_data_i2c_driver);
+module_init(get_acpi_data_init);
+module_exit(get_acpi_data_exit);
 
 MODULE_LICENSE("GPL v2");

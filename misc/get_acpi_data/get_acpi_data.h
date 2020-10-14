@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
+#define DRV_NAME "get_acpi_data"
+
 /* From coreboot */
 struct intel_ssdb {
 	uint8_t version;			/* Current version */
@@ -84,3 +86,7 @@ struct intel_cldb {
 	u8 sensor_card_sku;
 	u8 reserved[28];
 } __attribute__((__packed__));
+
+struct ipu3_sensor {
+	const char acpi_hid[20];
+};
