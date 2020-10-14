@@ -89,4 +89,5 @@ struct intel_cldb {
 
 struct ipu3_sensor {
 	const char acpi_hid[20];
+	const char sensor_name[20];
 };
