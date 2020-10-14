@@ -307,6 +307,25 @@ static int print_i2c_dev_name(struct device *dev)
 	return 0;
 }
 
+static void print_sensor_name(struct device *dev)
+{
+	struct acpi_device *adev = ACPI_COMPANION(dev);
+	int idx;
+
+	for (idx = 0; idx < ARRAY_SIZE(ipu3_sensors); idx++) {
+		if (!strcmp(ipu3_sensors[idx].acpi_hid, acpi_device_hid(adev)))
+			break;
+	}
+
+	if (idx >= ARRAY_SIZE(ipu3_sensors)) {
+		/* Should not happen, though */
+		dev_err(dev, "Couldn't find sensor name\n");
+		return;
+	}
+
+	pr_info("Sensor name: %s\n", ipu3_sensors[idx].sensor_name);
+}
+
 static int get_acpi_data(struct device *dev)
 {
 	struct intel_ssdb sensor_data;
@@ -322,6 +341,7 @@ static int get_acpi_data(struct device *dev)
 	if (len < 0)
 		return len;
 
+	print_sensor_name(dev);
 	print_acpi_path(dev);
 	pr_info("ACPI device name: %s\n", dev_name(&ACPI_COMPANION(dev)->dev));
 	print_i2c_dev_name(dev);
