@@ -18,9 +18,9 @@ static const struct ipu3_sensor ipu3_sensors[] = {
 	{},
 };
 
-static void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
+static void dump_ssdb(struct acpi_device *adev, struct intel_ssdb *data, int data_len)
 {
-	dev_info(dev, "========== %s() ==========\n", __func__);
+	dev_info(&adev->dev, "========== %s() ==========\n", __func__);
 
 	pr_info("full raw output of SSDB:\n");
 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
@@ -82,9 +82,9 @@ static void dump_ssdb(struct device *dev, struct intel_ssdb *data, int data_len)
 		       data->reserved, sizeof(data->reserved), true);
 }
 
-static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
+static void dump_cldb(struct acpi_device *adev, struct intel_cldb *data, int data_len)
 {
-	dev_info(dev, "========== %s() ==========\n", __func__);
+	dev_info(&adev->dev, "========== %s() ==========\n", __func__);
 
 	pr_info("full raw output of CLDB:\n");
 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
@@ -99,14 +99,14 @@ static void dump_cldb(struct device *dev, struct intel_cldb *data, int data_len)
 		       data->reserved, sizeof(data->reserved), true);
 }
 
-static int dump_crs(struct device *dev)
+static int dump_crs(struct acpi_device *adev)
 {
 	union acpi_object *obj;
 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle = adev->handle;
 	int status;
 
-	dev_info(dev, "========== %s() ==========\n", __func__);
+	dev_info(&adev->dev, "========== %s() ==========\n", __func__);
 
 	status = acpi_evaluate_object(dev_handle, "_CRS", NULL, &buffer);
 	if (!ACPI_SUCCESS(status))
@@ -114,7 +114,7 @@ static int dump_crs(struct device *dev)
 
 	obj = (union acpi_object *)buffer.pointer;
 	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
-		dev_err(dev, "Could't read acpi buffer\n");
+		dev_err(&adev->dev, "Could't read acpi buffer\n");
 		status = -ENODEV;
 		goto err;
 	}
@@ -130,29 +130,29 @@ err:
 	return status;
 }
 
-static int read_acpi_block(struct device *dev, char *id, void *data, u32 size)
+static int read_acpi_block(struct acpi_device *adev, char *id, void *data, u32 size)
 {
 	union acpi_object *obj;
 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle = adev->handle;
 	int status;
 	u32 buffer_length;
 
 	status = acpi_evaluate_object(dev_handle, id, NULL, &buffer);
 	if (!ACPI_SUCCESS(status)) {
-		dev_err(dev, "acpi_evaluate_object() failed\n");
+		dev_err(&adev->dev, "acpi_evaluate_object() failed\n");
 		return -ENODEV;
 	}
 
 	obj = (union acpi_object *)buffer.pointer;
 	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
-		dev_err(dev, "Could't read acpi buffer\n");
+		dev_err(&adev->dev, "Could't read acpi buffer\n");
 		status = -ENODEV;
 		goto err;
 	}
 
 	if (obj->buffer.length > size) {
-		dev_err(dev, "Given buffer is too small\n");
+		dev_err(&adev->dev, "Given buffer is too small\n");
 		status = -ENODEV;
 		goto err;
 	}
@@ -168,23 +168,22 @@ err:
 }
 
 /* Get dependent INT3472 device */
-static struct device *get_dep_dev(struct device *dev)
+static struct acpi_device *get_dep_adev(struct acpi_device *adev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle = adev->handle;
 	struct acpi_handle_list dep_devices;
 	struct acpi_device *dep_adev;
-	struct acpi_device_physical_node *dep_phys;
 	int ret;
 	int i;
 
 	if (!acpi_has_method(dev_handle, "_DEP")) {
-		dev_err(dev, "No dependent devices\n");
+		dev_err(&adev->dev, "No dependent devices\n");
 		return ERR_PTR(-ENODEV);
 	}
 
 	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
 	if (ACPI_FAILURE(ret)) {
-		dev_err(dev, "Failed to evaluate _DEP.\n");
+		dev_err(&adev->dev, "Failed to evaluate _DEP.\n");
 		return ERR_PTR(-ENODEV);
 	}
 
@@ -193,14 +192,14 @@ static struct device *get_dep_dev(struct device *dev)
 
 		ret = acpi_get_object_info(dep_devices.handles[i], &info);
 		if (ACPI_FAILURE(ret)) {
-			dev_err(dev, "Error reading _DEP device info\n");
+			dev_err(&adev->dev, "Error reading _DEP device info\n");
 			return ERR_PTR(-ENODEV);
 		}
 
 		if (info->valid & ACPI_VALID_HID &&
 		    !strcmp(info->hardware_id.string, "INT3472")) {
 			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
-				dev_err(dev, "Error getting adev of dep_dev\n");
+				dev_err(&adev->dev, "Error getting adev of dep_dev\n");
 				return ERR_PTR(-ENODEV);
 			}
 
@@ -210,36 +209,16 @@ static struct device *get_dep_dev(struct device *dev)
 	}
 
 	if (!dep_adev) {
-		dev_err(dev, "adev of dep_dev not found\n");
+		dev_err(&adev->dev, "adev of dep_dev not found\n");
 		return ERR_PTR(-ENODEV);
 	}
 
-	/*
-	 * HACK: We know that the PMIC is a "discrete" PMIC, an ACPI device
-	 * that just serves as a container to list system GPIOs.
-	 *
-	 * The ACPI device has no fwnode, nor does it have a platform device.
-	 * This prevents fetching GPIOs. It however seems to be backed by the
-	 * PCI root complex (pci0000:00/0000:00:00.0) as its physical device,
-	 * and that device has its fwnode set to \_SB.PCI0.DSC1. Whether this
-	 * is correct or not is unknown, let's just get the physical device and
-	 * move on for now.
-	 */
-	dep_phys = list_first_entry_or_null(&dep_adev->physical_node_list,
-					    struct acpi_device_physical_node, node);
-	if (!dep_phys) {
-		dev_info(dev, "Error getting physical node of dep_adev\n");
-		return ERR_PTR(-ENODEV);
-	}
-
-	dev_info(dev, "Dependent device found: %s\n", dev_name(dep_phys->dev));
-
-	return dep_phys->dev;
+	return dep_adev;
 }
 
-static void print_acpi_path(struct device *dev)
+static void print_acpi_path(struct acpi_device *adev)
 {
-	struct acpi_handle *handle = ACPI_HANDLE(dev);
+	struct acpi_handle *handle = adev->handle;
 	char acpi_method_name[255] = { 0 };
 	struct acpi_buffer buffer = {sizeof(acpi_method_name), acpi_method_name};
 
@@ -247,9 +226,9 @@ static void print_acpi_path(struct device *dev)
 	pr_info("ACPI path: %s\n", acpi_method_name);
 }
 
-static int print_dep_acpi_paths(struct device *dev)
+static int print_dep_acpi_paths(struct acpi_device *adev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle = adev->handle;
 	struct acpi_handle_list dep_devices;
 	int ret;
 	int i;
@@ -264,7 +243,7 @@ static int print_dep_acpi_paths(struct device *dev)
 
 	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
 	if (ACPI_FAILURE(ret)) {
-		dev_err(dev, "Failed to evaluate _DEP.\n");
+		dev_err(&adev->dev, "Failed to evaluate _DEP.\n");
 		return -ENODEV;
 	}
 
@@ -286,11 +265,11 @@ static int print_dep_acpi_paths(struct device *dev)
 	return 0;
 }
 
-static int print_i2c_dev_name(struct device *dev)
+static int print_i2c_dev_name(struct acpi_device *adev)
 {
 	struct device *i2c_dev;
 
-	i2c_dev = bus_find_device_by_acpi_dev(&i2c_bus_type, ACPI_COMPANION(dev));
+	i2c_dev = bus_find_device_by_acpi_dev(&i2c_bus_type, adev);
 	if (!i2c_dev) {
 		pr_info("%s(): i2c device not found. Possible reasons:\n",
 			__func__);
@@ -307,9 +286,8 @@ static int print_i2c_dev_name(struct device *dev)
 	return 0;
 }
 
-static void print_sensor_name(struct device *dev)
+static void print_sensor_name(struct acpi_device *adev)
 {
-	struct acpi_device *adev = ACPI_COMPANION(dev);
 	int idx;
 
 	for (idx = 0; idx < ARRAY_SIZE(ipu3_sensors); idx++) {
@@ -319,116 +297,75 @@ static void print_sensor_name(struct device *dev)
 
 	if (idx >= ARRAY_SIZE(ipu3_sensors)) {
 		/* Should not happen, though */
-		dev_err(dev, "Couldn't find sensor name\n");
+		dev_err(&adev->dev, "Couldn't find sensor name\n");
 		return;
 	}
 
 	pr_info("Sensor name: %s\n", ipu3_sensors[idx].sensor_name);
 }
 
-static int get_acpi_data(struct device *dev)
+static int get_acpi_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
 	struct intel_cldb pmic_data;
-	struct device *dep_dev;
+	struct acpi_device *dep_adev;
 	int len;
 	int ret;
 
-	dev_info(dev, "-------------------- %s --------------------\n",
-		 dev_name(dev));
+	dev_info(&adev->dev, "-------------------- %s --------------------\n",
+		 dev_name(&adev->dev));
 
-	len = read_acpi_block(dev, "SSDB", &sensor_data, sizeof(sensor_data));
+	len = read_acpi_block(adev, "SSDB", &sensor_data, sizeof(sensor_data));
 	if (len < 0)
 		return len;
 
-	print_sensor_name(dev);
-	print_acpi_path(dev);
-	pr_info("ACPI device name: %s\n", dev_name(&ACPI_COMPANION(dev)->dev));
-	print_i2c_dev_name(dev);
-	print_dep_acpi_paths(dev);
-	dump_crs(dev);
-	dump_ssdb(dev, &sensor_data, len);
+	print_sensor_name(adev);
+	print_acpi_path(adev);
+	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
+	print_i2c_dev_name(adev);
+	print_dep_acpi_paths(adev);
+	dump_crs(adev);
+	dump_ssdb(adev, &sensor_data, len);
 	pr_info("\n");
 
-	dep_dev = get_dep_dev(dev);
-	if (IS_ERR(dep_dev)) {
-		ret = PTR_ERR(dep_dev);
-		dev_err(dev, "cannot get dep_dev: ret %d\n", ret);
+	dep_adev = get_dep_adev(adev);
+	if (IS_ERR(dep_adev)) {
+		ret = PTR_ERR(dep_adev);
+		dev_err(&adev->dev, "cannot get dep_adev: ret %d\n", ret);
 		return ret;
 	}
 
-	dev_info(dep_dev, "-------------------- %s --------------------\n",
-		 dev_name(dep_dev));
+	dev_info(&dep_adev->dev, "-------------------- %s --------------------\n",
+		 dev_name(&dep_adev->dev));
 
-	len = read_acpi_block(dep_dev, "CLDB", &pmic_data, sizeof(pmic_data));
+	len = read_acpi_block(dep_adev, "CLDB", &pmic_data, sizeof(pmic_data));
 	if (len < 0)
 		return len;
 
-	print_acpi_path(dep_dev);
+	print_acpi_path(dep_adev);
 	pr_info("ACPI device name: %s\n",
-		dev_name(&ACPI_COMPANION(dep_dev)->dev));
-	print_i2c_dev_name(dep_dev);
-	print_dep_acpi_paths(dep_dev);
-	dump_crs(dep_dev);
-	dump_cldb(dep_dev, &pmic_data, len);
+		dev_name(&dep_adev->dev));
+	print_i2c_dev_name(dep_adev);
+	print_dep_acpi_paths(dep_adev);
+	dump_crs(dep_adev);
+	dump_cldb(dep_adev, &pmic_data, len);
 	pr_info("\n");
-
-	/* FIXME: Calling this sometimes breaks next driver load. */
-	// put_device(dep_dev);
 
 	return 0;
 }
 
-/* to use acpi_driver.drv.bus (acpi_bus_type) */
-static struct acpi_driver get_acpi_data_driver = {
-	.name = DRV_NAME,
-	.class = DRV_NAME,
-};
-
 static int __init get_acpi_data_init(void)
 {
 	struct acpi_device *sensor_adev;
-	struct device *sensor_dev;
-	int ret;
 	int i;
-
-	ret = acpi_bus_register_driver(&get_acpi_data_driver);
-	if (ret) {
-		pr_err(DRV_NAME": registering acpi driver failed\n");
-		return ret;
-	}
 
 	for (i = 0; i < ARRAY_SIZE(ipu3_sensors); i++) {
 		sensor_adev = acpi_dev_get_first_match_dev(ipu3_sensors[i].acpi_hid,
 							   NULL, -1);
 		if (!sensor_adev)
 			continue;
-		
-		/* acpi_bus_type is not exported. Use acpi_driver.drv.bus
-		 * instead.
-		 */
-		/*
-		 * FIXME: bus_find_device*() here will fail with
-		 * "acpi_driver.drv.bus" bus type anyway. I don't have
-		 * any idea what's wrong.
-		 *
-		 * Note: Also, i2c_bus_type works only when the real sensor
-		 * drivers are not loaded with the current bridge driver
-		 * (v2 version of ipu3-cio2-driver). I guess this is because
-		 * bus_find_device*() rely on dev->fwnode->ops being
-		 * acpi_device_fwnode_ops. But current bridge driver changed
-		 * them to software_node_ops in order for the graph parsing
-		 * to work.
-		 */
-		sensor_dev = bus_find_device_by_acpi_dev(&i2c_bus_type,
-							 sensor_adev);
-		if (!sensor_dev) {
-			dev_err(&sensor_adev->dev,
-				"Error getting sensor device\n");
-			continue;
-		}
 
-		get_acpi_data(sensor_dev);
+		get_acpi_data(sensor_adev);
 	}
 
 	return 0;
@@ -436,7 +373,6 @@ static int __init get_acpi_data_init(void)
 
 static void __exit get_acpi_data_exit(void)
 {
-	acpi_bus_unregister_driver(&get_acpi_data_driver);
 }
 
 module_init(get_acpi_data_init);
