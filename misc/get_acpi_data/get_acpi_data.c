@@ -7,13 +7,14 @@
 
 /* Add your sensor's ACPI HID here if not listed */
 static const struct ipu3_sensor ipu3_sensors[] = {
-	{"INT33BE"}, // ov5693
-	{"INT3479"}, // ov5670
-	{"INT347A"}, // ov8865
-	{"INT347E"}, // ov7251
-	{"OVTI2680"}, // ov2680
-	{"OVTI5648"}, // ov5648
-	{"OVTI9734"}, // ov9734
+	// {"ACPI_HID", "sensor_name"},
+	{"INT33BE", "ov5693"},
+	{"INT3479", "ov5670"},
+	{"INT347A", "ov8865"},
+	{"INT347E", "ov7251"},
+	{"OVTI2680", "ov2680"},
+	{"OVTI5648", "ov5648"},
+	{"OVTI9734", "ov9734"},
 	{},
 };
 
