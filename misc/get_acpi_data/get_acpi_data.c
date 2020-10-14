@@ -2,7 +2,6 @@
 
 #include <linux/acpi.h>
 #include <linux/i2c.h>
-#include <linux/platform_device.h>
 
 #include "get_acpi_data.h"
 
