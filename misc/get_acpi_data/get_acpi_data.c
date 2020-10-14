@@ -271,6 +271,27 @@ static int print_dep_acpi_paths(struct device *dev)
 	return 0;
 }
 
+static int print_i2c_dev_name(struct device *dev)
+{
+	struct device *i2c_dev;
+
+	i2c_dev = bus_find_device_by_acpi_dev(&i2c_bus_type, ACPI_COMPANION(dev));
+	if (!i2c_dev) {
+		pr_info("%s(): i2c device not found. Possible reasons:\n",
+			__func__);
+		pr_info("%s(): 1) It's a PMIC and the PMIC type is DISCRETE.\n",
+			__func__);
+		pr_info("%s(): 2) It's a sensor driver and the real sensor driver is loaded with the bridge driver.\n",
+			__func__);
+		pr_info("%s(): Otherwise, it might be a problem. Try adding acpi_enforce_resources=lax to your bootloader.\n",
+			__func__);
+	} else {
+		pr_info("i2c device name: %s\n", dev_name(i2c_dev));
+	}
+
+	return 0;
+}
+
 static int get_acpi_data(struct device *dev)
 {
 	struct intel_ssdb sensor_data;
@@ -287,6 +308,7 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dev);
+	print_i2c_dev_name(dev);
 	print_dep_acpi_paths(dev);
 	dump_crs(dev);
 	dump_ssdb(dev, &sensor_data, len);
@@ -307,6 +329,7 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dep_dev);
+	print_i2c_dev_name(dep_dev);
 	print_dep_acpi_paths(dep_dev);
 	dump_crs(dep_dev);
 	dump_cldb(dep_dev, &pmic_data, len);
