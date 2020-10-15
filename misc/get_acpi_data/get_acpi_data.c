@@ -330,6 +330,7 @@ static int get_acpi_data_remove(struct i2c_client *client)
 	return 0;
 }
 
+/* Add your sensor's ACPI HID here if not listed */
 static const struct acpi_device_id get_acpi_data_acpi_ids[] = {
 	{"INT33BE"}, // ov5693
 	{"INT3479"}, // ov5670
