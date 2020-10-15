@@ -308,6 +308,7 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dev);
+	pr_info("ACPI device name: %s\n", dev_name(&ACPI_COMPANION(dev)->dev));
 	print_i2c_dev_name(dev);
 	print_dep_acpi_paths(dev);
 	dump_crs(dev);
@@ -329,6 +330,8 @@ static int get_acpi_data(struct device *dev)
 		return len;
 
 	print_acpi_path(dep_dev);
+	pr_info("ACPI device name: %s\n",
+		dev_name(&ACPI_COMPANION(dep_dev)->dev));
 	print_i2c_dev_name(dep_dev);
 	print_dep_acpi_paths(dep_dev);
 	dump_crs(dep_dev);
