@@ -304,6 +304,28 @@ static void print_sensor_name(struct acpi_device *adev)
 	pr_info("Sensor name: %s\n", ipu3_sensors[idx].sensor_name);
 }
 
+static void print_pmic_type(struct acpi_device *adev, struct intel_cldb *data)
+{
+	switch (data->control_logic_type) {
+	case 0:
+		pr_warn("%s(): PMIC type is \"0: UNKNOWN\"\n", __func__);
+		return;
+	case 1:
+		pr_info("%s(): PMIC type is \"1: DISCRETE(CRD-D)\"\n",
+			__func__);
+		return;
+	case 2:
+		pr_warn("%s(): PMIC type is \"2: PMIC TPS68470\"\n", __func__);
+		return;
+	case 3:
+		pr_warn("%s(): PMIC type is \"3: PMIC uP6641\"\n", __func__);
+		return;
+	}
+
+	pr_err("%s(): PMIC type %d is not known type\n",
+	       __func__, data->control_logic_type);
+}
+
 static int get_acpi_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -349,6 +371,7 @@ static int get_acpi_data(struct acpi_device *adev)
 	print_dep_acpi_paths(dep_adev);
 	dump_crs(dep_adev);
 	dump_cldb(dep_adev, &pmic_data, len);
+	print_pmic_type(dep_adev, &pmic_data);
 	pr_info("\n");
 
 	return 0;
