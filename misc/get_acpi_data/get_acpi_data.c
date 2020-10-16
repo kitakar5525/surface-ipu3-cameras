@@ -326,6 +326,146 @@ static void print_pmic_type(struct acpi_device *adev, struct intel_cldb *data)
 	       __func__, data->control_logic_type);
 }
 
+static int __dump_subsys_id_dsm(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+
+	obj = acpi_evaluate_dsm_typed(handle, &subsys_id_dsm_guid,
+				      SUBSYS_ID_DSM_REV,
+				      SUBSYS_ID_DSM_RETURN_ID_FUNC,
+				      NULL, ACPI_TYPE_STRING);
+	if (!obj) {
+		pr_info("%s(): _DSM failed for getting subsystem ID func. Maybe it doesn't exist.\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): Subsystem ID: %s\n", __func__, obj->string.pointer);
+	ACPI_FREE(obj);
+
+	return 0;
+}
+
+static int __dump_i2c_dev_dsm(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+	int device_amount;
+	int device_dsm_data;
+	int i;
+
+	obj = acpi_evaluate_dsm_typed(handle, &i2c_dev_dsm_guid,
+				      I2C_DEV_DSM_REV,
+				      I2C_DEV_DSM_DEV_AMOUNT_FUNC,
+				      NULL, ACPI_TYPE_INTEGER);
+	if (!obj) {
+		pr_info("%s(): _DSM failed for getting i2c dev amount func. Maybe it doesn't exist.\n",
+			__func__);
+		return 0;
+	}
+	device_amount = obj->integer.value;
+	ACPI_FREE(obj);
+
+	pr_info("%s(): i2c device amount: %d\n", __func__, device_amount);
+
+	/* dump _DSM data for each device */
+	for (i = 1; i <= device_amount; i++) {
+		obj = acpi_evaluate_dsm_typed(handle, &i2c_dev_dsm_guid,
+					      I2C_DEV_DSM_REV,
+					      I2C_DEV_DSM_DEV_AMOUNT_FUNC + i,
+					      NULL, ACPI_TYPE_INTEGER);
+		if (!obj) {
+			dev_err(&adev->dev,
+				"_DSM failed for getting i2c dev %d data func\n", i);
+			return -EIO;
+		}
+		device_dsm_data = obj->integer.value;
+		ACPI_FREE(obj);
+
+		pr_info("%s(): i2c device _DSM data (%d of %d): 0x%08x\n",
+			__func__, i, device_amount, device_dsm_data);
+	}
+
+	return 0;
+}
+
+static int __dump_discrete_pmic_dsm(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+	int gpio_pin_amount;
+	int gpio_dsm_data;
+	int i;
+
+	obj = acpi_evaluate_dsm_typed(handle, &pmic_dsm_guid,
+				      DISCRETE_PMIC_DSM_REV,
+				      DISCRETE_PMIC_DSM_GPIO_AMOUNT_FUNC,
+				      NULL, ACPI_TYPE_INTEGER);
+	if (!obj) {
+		pr_info("%s(): _DSM failed for getting GPIO pin amount func. Maybe it doesn't exist.\n",
+			__func__);
+		return 0;
+	}
+	gpio_pin_amount = obj->integer.value;
+	ACPI_FREE(obj);
+
+	pr_info("%s(): GPIO pin amount: %d\n", __func__, gpio_pin_amount);
+
+	/* dump _DSM data for each GPIO pin */
+	for (i = 1; i <= gpio_pin_amount; i++) {
+		obj = acpi_evaluate_dsm_typed(handle, &pmic_dsm_guid,
+					      DISCRETE_PMIC_DSM_REV,
+					      DISCRETE_PMIC_DSM_GPIO_AMOUNT_FUNC + i,
+					      NULL, ACPI_TYPE_INTEGER);
+		if (!obj) {
+			dev_err(&adev->dev,
+				"_DSM failed for getting GPIO pin %d data func\n", i);
+			return -EIO;
+		}
+		gpio_dsm_data = obj->integer.value;
+		ACPI_FREE(obj);
+
+		pr_info("%s(): GPIO pin _DSM data (%d of %d): 0x%08x\n",
+			__func__, i, gpio_pin_amount, gpio_dsm_data);
+	}
+
+	return 0;
+}
+
+static int __dump_dsmb_dsm(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+
+	obj = acpi_evaluate_dsm_typed(handle, &dsmb_dsm_guid,
+				      DSMB_DSM_REV,
+				      DSMB_DSM_RETURN_BUF_FUNC,
+				      NULL, ACPI_TYPE_BUFFER);
+	if (!obj) {
+		pr_info("%s(): _DSM failed for getting DSMB buffer func. Maybe it doesn't exist.\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): full raw output of DSMB:\n", __func__);
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       obj->buffer.pointer, obj->buffer.length, true);
+
+	ACPI_FREE(obj);
+
+	return 0;
+}
+
+static void dump_dsm(struct acpi_device *adev)
+{
+	/* Some _DSM may not exist. So, not checking return values. */
+	__dump_subsys_id_dsm(adev);
+	__dump_i2c_dev_dsm(adev);
+	__dump_discrete_pmic_dsm(adev);
+	__dump_dsmb_dsm(adev);
+}
+
 static int get_acpi_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -348,6 +488,7 @@ static int get_acpi_data(struct acpi_device *adev)
 	print_dep_acpi_paths(adev);
 	dump_crs(adev);
 	dump_ssdb(adev, &sensor_data, len);
+	dump_dsm(adev);
 	pr_info("\n");
 
 	dep_adev = get_dep_adev(adev);
@@ -372,6 +513,7 @@ static int get_acpi_data(struct acpi_device *adev)
 	dump_crs(dep_adev);
 	dump_cldb(dep_adev, &pmic_data, len);
 	print_pmic_type(dep_adev, &pmic_data);
+	dump_dsm(dep_adev);
 	pr_info("\n");
 
 	return 0;
