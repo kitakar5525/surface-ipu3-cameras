@@ -275,7 +275,7 @@ static int print_i2c_dev_name(struct acpi_device *adev)
 			__func__);
 		pr_info("%s(): 1) It's a PMIC and the PMIC type is DISCRETE.\n",
 			__func__);
-		pr_info("%s(): 2) It's a sensor driver and the real sensor driver is loaded with the bridge driver.\n",
+		pr_info("%s(): 2) It's a sensor device and the real sensor driver is loaded with the bridge driver.\n",
 			__func__);
 		pr_info("%s(): Otherwise, it might be a problem. Try adding acpi_enforce_resources=lax to your bootloader.\n",
 			__func__);
