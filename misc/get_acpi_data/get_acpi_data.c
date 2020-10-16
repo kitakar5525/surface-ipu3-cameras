@@ -389,6 +389,7 @@ static int __init get_acpi_data_init(void)
 			continue;
 
 		get_acpi_data(sensor_adev);
+		acpi_dev_put(sensor_adev);
 	}
 
 	return 0;
