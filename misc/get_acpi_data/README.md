@@ -5,7 +5,14 @@ make
 
 #### loading module
 ```bash
-# make sure that sensor drivers are not loaded
+sudo insmod get_acpi_data.ko
+```
+
+Note that to print i2c device name with the current bridge driver (v2
+version), you still need to unload the real sensor drivers before loading
+this module (https://github.com/kitakar5525/surface-ipu3-cameras/commit/582c4ba3bba5812024f5efd33769c6eafd50f371#diff-7e53e40ecaeff527b241d9f9eaec4af11778953028b4bf510d61c9d34c3b4e70R394-R401):
+```bash
+# unload the real sensor drivers
 sudo modprobe -r ipu3_imgu
 sudo modprobe -r ipu3_cio2_driver
 sudo modprobe -r atomisp-ov5693
@@ -18,8 +25,6 @@ sudo modprobe -r ov5648
 sudo modprobe -r ov9734
 sudo modprobe ipu3_cio2_driver
 sudo modprobe ipu3_imgu
-
-sudo insmod get_acpi_data.ko
 ```
 
 #### References
