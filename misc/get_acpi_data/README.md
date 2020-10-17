@@ -3,9 +3,21 @@
 make
 ```
 
-#### loading module
+#### loading module and getting data from dmesg
 ```bash
+# Print your system info:
+# - do not use sudo so that it doesn't contain personal data
+# - ignoring errors
+grep . /sys/class/dmi/id/* 2>/dev/null
+
+# clear the kernel ring buffer so that dmesg doesn't contain unnecessary log
+sudo dmesg -C
+
+# load/unload module then output dmesg log
 sudo insmod get_acpi_data.ko
+sleep 1
+sudo rmmod get_acpi_data
+sudo dmesg
 ```
 
 Note that to print i2c device name with the current bridge driver (v2
