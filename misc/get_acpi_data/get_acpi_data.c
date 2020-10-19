@@ -519,26 +519,41 @@ static int get_acpi_data(struct acpi_device *adev)
 	return 0;
 }
 
+/* to use acpi_driver.drv.bus (acpi_bus_type) */
+static struct acpi_driver get_acpi_data_driver = {
+	.name = DRV_NAME,
+	.class = DRV_NAME,
+};
+
+static int acpi_dev_match_cb(struct device *dev, void *data)
+{
+	struct acpi_device *adev = to_acpi_device(dev);
+
+	get_acpi_data(adev);
+
+	return 0;
+}
+
 static int __init get_acpi_data_init(void)
 {
-	struct acpi_device *sensor_adev;
-	int i;
+	int ret;
 
-	for (i = 0; i < ARRAY_SIZE(ipu3_sensors); i++) {
-		sensor_adev = acpi_dev_get_first_match_dev(ipu3_sensors[i].acpi_hid,
-							   NULL, -1);
-		if (!sensor_adev)
-			continue;
-
-		get_acpi_data(sensor_adev);
-		acpi_dev_put(sensor_adev);
+	ret = acpi_bus_register_driver(&get_acpi_data_driver);
+	if (ret) {
+		pr_err(DRV_NAME": registering acpi driver failed\n");
+		return ret;
 	}
+
+	/* iterate over all ACPI devices  */
+	bus_for_each_dev(get_acpi_data_driver.drv.bus, NULL, NULL,
+			 acpi_dev_match_cb);
 
 	return 0;
 }
 
 static void __exit get_acpi_data_exit(void)
 {
+	acpi_bus_unregister_driver(&get_acpi_data_driver);
 }
 
 module_init(get_acpi_data_init);
