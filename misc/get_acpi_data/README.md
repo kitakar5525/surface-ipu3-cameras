@@ -20,6 +20,12 @@ sudo rmmod get_acpi_data
 sudo dmesg
 ```
 
+If you need, pass `dyndbg` option to `insmod`/`modprobe` to show debug
+level output. For example:
+```bash
+sudo insmod get_acpi_data.ko dyndbg
+```
+
 Note that to print i2c device name with the current bridge driver (v2
 version), you still need to unload the real sensor drivers before loading
 this module (https://github.com/kitakar5525/surface-ipu3-cameras/commit/582c4ba3bba5812024f5efd33769c6eafd50f371#diff-7e53e40ecaeff527b241d9f9eaec4af11778953028b4bf510d61c9d34c3b4e70R394-R401):
