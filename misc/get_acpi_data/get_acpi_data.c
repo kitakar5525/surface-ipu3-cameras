@@ -5,7 +5,9 @@
 
 #include "get_acpi_data.h"
 
-/* Add your sensor's ACPI HID here if not listed */
+/* This list will be used for printing sensor names. This list is needed
+ * because not all systems contain the sensor names data in its DSDT...
+ */
 static const struct ipu3_sensor ipu3_sensors[] = {
 	// {"ACPI_HID", "sensor_name"},
 	{"INT33BE", "ov5693"},
@@ -296,8 +298,7 @@ static void print_sensor_name(struct acpi_device *adev)
 	}
 
 	if (idx >= ARRAY_SIZE(ipu3_sensors)) {
-		/* Should not happen, though */
-		dev_err(&adev->dev, "Couldn't find sensor name\n");
+		pr_info("%s(): Couldn't find sensor name\n", __func__);
 		return;
 	}
 
