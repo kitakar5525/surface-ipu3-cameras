@@ -46,7 +46,8 @@ LNK0 INT3479 OV5670 # Rear cam
 
 First, build kernel with the following changes:
 
-0. Set the kernel config `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5)
+0. Set the kernel config `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5) to avoid kernel crash.
+   Another way is to apply patches currently under development by upstream kernel devs: [[v3,0/8] ipu3-cio2 format and other fixes](https://patchwork.kernel.org/project/linux-media/cover/20201012180414.11579-1-sakari.ailus@linux.intel.com/)
 1. Apply software node kernel patch
 2. Add bridge driver that builds software node
 
