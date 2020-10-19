@@ -56,6 +56,30 @@ Then, build sensor drivers:
 
 - Go to sensor drivers dir (e.g., ov5693) and follow the README there
 
+To try to capture images, you can use libcamera:
+```bash
+# If you use Arch Linux, libcamera-git is available in AUR. If not
+# available on your distro, build it yourself:
+
+# clone libcamera
+git clone git://linuxtv.org/libcamera.git
+cd libcamera
+# Dependencies are documented in README.rst file.
+# build libcamera with v4l2 compat layer library
+meson build -Dv4l2=true --reconfigure
+ninja -C build
+
+# to access /dev/media? without sudo, add user to video group:
+sudo gpasswd -a ${USER} video
+# then logout and login again for it to take effect
+
+# list available cameras:
+cam -l
+
+# try to capture images:
+qcam
+```
+
 Note:
 
 - About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
