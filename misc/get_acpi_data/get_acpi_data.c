@@ -423,12 +423,12 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	struct intel_ssdb sensor_data;
 	int len;
 
-	dev_info(&adev->dev, "-------------------- %s --------------------\n",
-		 dev_name(&adev->dev));
-
 	len = read_acpi_block(adev, "SSDB", &sensor_data, sizeof(sensor_data));
 	if (len < 0)
 		return len;
+
+	dev_info(&adev->dev, "-------------------- %s --------------------\n",
+		 dev_name(&adev->dev));
 
 	print_sensor_name(adev);
 	print_acpi_path(adev);
@@ -448,12 +448,12 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	struct intel_cldb pmic_data;
 	int len;
 
-	dev_info(&adev->dev, "-------------------- %s --------------------\n",
-		 dev_name(&adev->dev));
-
 	len = read_acpi_block(adev, "CLDB", &pmic_data, sizeof(pmic_data));
 	if (len < 0)
 		return len;
+
+	dev_info(&adev->dev, "-------------------- %s --------------------\n",
+		 dev_name(&adev->dev));
 
 	print_acpi_path(adev);
 	pr_info("ACPI device name: %s\n",
