@@ -169,55 +169,6 @@ err:
 	return status;
 }
 
-/* Get dependent INT3472 device */
-static struct acpi_device *get_dep_adev(struct acpi_device *adev)
-{
-	struct acpi_handle *dev_handle = adev->handle;
-	struct acpi_handle_list dep_devices;
-	struct acpi_device *dep_adev;
-	int ret;
-	int i;
-
-	if (!acpi_has_method(dev_handle, "_DEP")) {
-		dev_err(&adev->dev, "No dependent devices\n");
-		return ERR_PTR(-ENODEV);
-	}
-
-	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
-	if (ACPI_FAILURE(ret)) {
-		dev_err(&adev->dev, "Failed to evaluate _DEP.\n");
-		return ERR_PTR(-ENODEV);
-	}
-
-	for (i = 0; i < dep_devices.count; i++) {
-		struct acpi_device_info *info;
-
-		ret = acpi_get_object_info(dep_devices.handles[i], &info);
-		if (ACPI_FAILURE(ret)) {
-			dev_err(&adev->dev, "Error reading _DEP device info\n");
-			return ERR_PTR(-ENODEV);
-		}
-
-		if (info->valid & ACPI_VALID_HID &&
-		    !strcmp(info->hardware_id.string, "INT3472")) {
-			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
-				dev_err(&adev->dev, "Error getting adev of dep_dev\n");
-				return ERR_PTR(-ENODEV);
-			}
-
-			/* found adev of dep_dev */
-			break;
-		}
-	}
-
-	if (!dep_adev) {
-		dev_err(&adev->dev, "adev of dep_dev not found\n");
-		return ERR_PTR(-ENODEV);
-	}
-
-	return dep_adev;
-}
-
 static void print_acpi_path(struct acpi_device *adev)
 {
 	struct acpi_handle *handle = adev->handle;
@@ -467,13 +418,10 @@ static void dump_dsm(struct acpi_device *adev)
 	__dump_dsmb_dsm(adev);
 }
 
-static int get_acpi_data(struct acpi_device *adev)
+static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
-	struct intel_cldb pmic_data;
-	struct acpi_device *dep_adev;
 	int len;
-	int ret;
 
 	dev_info(&adev->dev, "-------------------- %s --------------------\n",
 		 dev_name(&adev->dev));
@@ -492,29 +440,30 @@ static int get_acpi_data(struct acpi_device *adev)
 	dump_dsm(adev);
 	pr_info("\n");
 
-	dep_adev = get_dep_adev(adev);
-	if (IS_ERR(dep_adev)) {
-		ret = PTR_ERR(dep_adev);
-		dev_err(&adev->dev, "cannot get dep_adev: ret %d\n", ret);
-		return ret;
-	}
+	return 0;
+}
 
-	dev_info(&dep_adev->dev, "-------------------- %s --------------------\n",
-		 dev_name(&dep_adev->dev));
+static int get_acpi_pmic_data(struct acpi_device *adev)
+{
+	struct intel_cldb pmic_data;
+	int len;
 
-	len = read_acpi_block(dep_adev, "CLDB", &pmic_data, sizeof(pmic_data));
+	dev_info(&adev->dev, "-------------------- %s --------------------\n",
+		 dev_name(&adev->dev));
+
+	len = read_acpi_block(adev, "CLDB", &pmic_data, sizeof(pmic_data));
 	if (len < 0)
 		return len;
 
-	print_acpi_path(dep_adev);
+	print_acpi_path(adev);
 	pr_info("ACPI device name: %s\n",
-		dev_name(&dep_adev->dev));
-	print_i2c_dev_name(dep_adev);
-	print_dep_acpi_paths(dep_adev);
-	dump_crs(dep_adev);
-	dump_cldb(dep_adev, &pmic_data, len);
-	print_pmic_type(dep_adev, &pmic_data);
-	dump_dsm(dep_adev);
+		dev_name(&adev->dev));
+	print_i2c_dev_name(adev);
+	print_dep_acpi_paths(adev);
+	dump_crs(adev);
+	dump_cldb(adev, &pmic_data, len);
+	print_pmic_type(adev, &pmic_data);
+	dump_dsm(adev);
 	pr_info("\n");
 
 	return 0;
@@ -530,7 +479,8 @@ static int acpi_dev_match_cb(struct device *dev, void *data)
 {
 	struct acpi_device *adev = to_acpi_device(dev);
 
-	get_acpi_data(adev);
+	get_acpi_sensor_data(adev);
+	get_acpi_pmic_data(adev);
 
 	return 0;
 }
