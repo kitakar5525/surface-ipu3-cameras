@@ -142,7 +142,8 @@ static int read_acpi_block(struct acpi_device *adev, char *id, void *data, u32 s
 
 	status = acpi_evaluate_object(dev_handle, id, NULL, &buffer);
 	if (!ACPI_SUCCESS(status)) {
-		dev_err(&adev->dev, "acpi_evaluate_object() failed\n");
+		dev_dbg(&adev->dev, "acpi_evaluate_object() failed. %s entry may not exist.\n",
+			 id);
 		return -ENODEV;
 	}
 
