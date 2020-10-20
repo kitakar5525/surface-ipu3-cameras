@@ -479,6 +479,18 @@ static struct acpi_driver get_acpi_data_driver = {
 static int acpi_dev_match_cb(struct device *dev, void *data)
 {
 	struct acpi_device *adev = to_acpi_device(dev);
+	int ret;
+
+	/* Check if the device really exists */
+	ret = acpi_bus_get_status(adev);
+	if (ret) {
+		dev_dbg(dev, "acpi_bus_get_status() failed, ret = %d\n", ret);
+		return 0;
+	}
+	if (!adev->status.present) {
+		dev_dbg(dev, "device not present\n");
+		return 0;
+	}
 
 	get_acpi_sensor_data(adev);
 	get_acpi_pmic_data(adev);
