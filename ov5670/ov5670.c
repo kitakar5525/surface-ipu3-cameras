@@ -1844,6 +1844,8 @@ struct ov5670 {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_rpm_supported;
 };
 
 #define to_ov5670(_sd)	container_of(_sd, struct ov5670, sd)
@@ -2433,7 +2435,44 @@ static int ov5670_stop_streaming(struct ov5670 *ov5670)
 	return 0;
 }
 
-static int ov5670_set_stream(struct v4l2_subdev *sd, int enable)
+static int __ov5670_set_stream_no_rpm(struct v4l2_subdev *sd, int enable)
+{
+	struct ov5670 *ov5670 = to_ov5670(sd);
+	int ret = 0;
+
+	mutex_lock(&ov5670->mutex);
+	if (ov5670->streaming == enable)
+		goto unlock_and_return;
+
+	if (enable) {
+		ret = __power_up(sd);
+		if (ret < 0) {
+			__power_down(sd);
+			goto unlock_and_return;
+		}
+
+		ret = ov5670_start_streaming(ov5670);
+		if (ret)
+			goto error;
+	} else {
+		ret = ov5670_stop_streaming(ov5670);
+		__power_down(sd);
+	}
+	ov5670->streaming = enable;
+	goto unlock_and_return;
+
+	return 0;
+
+error:
+	__power_down(sd);
+
+unlock_and_return:
+	mutex_unlock(&ov5670->mutex);
+
+	return ret;
+}
+
+static int __ov5670_set_stream_rpm(struct v4l2_subdev *sd, int enable)
 {
 	struct ov5670 *ov5670 = to_ov5670(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -2460,12 +2499,31 @@ static int ov5670_set_stream(struct v4l2_subdev *sd, int enable)
 	ov5670->streaming = enable;
 	goto unlock_and_return;
 
+	return 0;
+
 error:
 	pm_runtime_put(&client->dev);
 
 unlock_and_return:
 	mutex_unlock(&ov5670->mutex);
 
+	return ret;
+}
+
+static int ov5670_set_stream(struct v4l2_subdev *sd, int enable)
+{
+	struct ov5670 *ov5670 = to_ov5670(sd);
+	int ret;
+
+	/* Regular PCs designed for Windows don't support runtime PM.
+	 * In this case, do it ourselves.
+	 */
+	if (!ov5670->is_rpm_supported) {
+		ret = __ov5670_set_stream_no_rpm(sd, enable);
+		return ret;
+	}
+
+	ret = __ov5670_set_stream_rpm(sd, enable);
 	return ret;
 }
 
@@ -2736,11 +2794,16 @@ static int ov5670_probe(struct i2c_client *client)
 	pm_runtime_enable(&client->dev);
 	pm_runtime_idle(&client->dev);
 
-	/* turn off sensor, after probed */
-	ret = __power_down(&ov5670->sd);
-	if (ret) {
-		err_msg = "v4l2_async_register_subdev() error";
-		goto error_print;
+	/* TODO: how to determine if runtime PM is not supported? */
+	ov5670->is_rpm_supported = false;
+
+	/* Regular PCs designed for Windows don't support runtime PM.
+	 * In this case, do it ourselves.
+	 */
+	if (!ov5670->is_rpm_supported) {
+		dev_info(&client->dev,
+			 "Couldn't enable runtime PM, will handle it ourselves.\n");
+		__power_down(&ov5670->sd);
 	}
 
 	return 0;
