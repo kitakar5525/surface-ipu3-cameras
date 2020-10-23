@@ -1037,6 +1037,9 @@ struct ov8865 {
 
 	/* Streaming on/off */
 	bool streaming;
+
+	/* dependent device (PMIC) */
+	struct device *dep_dev;
 };
 
 static u64 to_pixel_rate(u32 f_index)
@@ -1748,9 +1751,80 @@ static int ov8865_remove(struct i2c_client *client)
 	return 0;
 }
 
+/* Get dependent INT3472 device */
+static struct device *get_dep_dev(struct device *dev)
+{
+	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle_list dep_devices;
+	struct acpi_device *dep_adev;
+	struct acpi_device_physical_node *dep_phys;
+	int ret;
+	int i;
+
+	if (!acpi_has_method(dev_handle, "_DEP")) {
+		dev_err(dev, "No dependent devices\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	ret = acpi_evaluate_reference(dev_handle, "_DEP", NULL, &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		dev_err(dev, "Failed to evaluate _DEP.\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		struct acpi_device_info *info;
+
+		ret = acpi_get_object_info(dep_devices.handles[i], &info);
+		if (ACPI_FAILURE(ret)) {
+			dev_err(dev, "Error reading _DEP device info\n");
+			return ERR_PTR(-ENODEV);
+		}
+
+		if (info->valid & ACPI_VALID_HID &&
+		    !strcmp(info->hardware_id.string, "INT3472")) {
+			if (acpi_bus_get_device(dep_devices.handles[i], &dep_adev)) {
+				dev_err(dev, "Error getting adev of dep_dev\n");
+				return ERR_PTR(-ENODEV);
+			}
+
+			/* found adev of dep_dev */
+			break;
+		}
+	}
+
+	if (!dep_adev) {
+		dev_err(dev, "adev of dep_dev not found\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	/*
+	 * HACK: We know that the PMIC is a "discrete" PMIC, an ACPI device
+	 * that just serves as a container to list system GPIOs.
+	 *
+	 * The ACPI device has no fwnode, nor does it have a platform device.
+	 * This prevents fetching GPIOs. It however seems to be backed by the
+	 * PCI root complex (pci0000:00/0000:00:00.0) as its physical device,
+	 * and that device has its fwnode set to \_SB.PCI0.DSC1. Whether this
+	 * is correct or not is unknown, let's just get the physical device and
+	 * move on for now.
+	 */
+	dep_phys = list_first_entry_or_null(&dep_adev->physical_node_list,
+					    struct acpi_device_physical_node, node);
+	if (!dep_phys) {
+		dev_info(dev, "Error getting physical node of dep_adev\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	dev_info(dev, "Dependent device found: %s\n", dev_name(dep_phys->dev));
+
+	return dep_phys->dev;
+}
+
 static int ov8865_probe(struct i2c_client *client)
 {
 	struct ov8865 *ov8865;
+	struct device *dep_dev;
 	int ret;
 
 	ov8865 = devm_kzalloc(&client->dev, sizeof(*ov8865), GFP_KERNEL);
@@ -1765,6 +1839,14 @@ static int ov8865_probe(struct i2c_client *client)
 	}
 
 	v4l2_i2c_subdev_init(&ov8865->sd, client, &ov8865_subdev_ops);
+
+	ov8865->dep_dev = get_dep_dev(&client->dev);
+	if (IS_ERR(ov8865->dep_dev)) {
+		ret = PTR_ERR(ov8865->dep_dev);
+		dev_err(&client->dev, "cannot get dep_dev: ret %d\n", ret);
+		return ret;
+	}
+	dep_dev = ov8865->dep_dev;
 
 	ret = __ov8865_power_on(ov8865);
 	if (ret) {
