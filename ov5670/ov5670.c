@@ -2445,18 +2445,6 @@ static int ov5670_set_stream(struct v4l2_subdev *sd, int enable)
 	if (ov5670->streaming == enable)
 		goto unlock_and_return;
 
-	/* Regular PCs came with Windows don't handle power via runtime_pm.
-	 * So, power_up() here before start_streaming.
-	 */
-	if (enable) {
-		ret = __power_up(&ov5670->sd);
-		if (ret) {
-			dev_err(&client->dev, "ov5670 power-up error\n");
-			__power_down(&ov5670->sd);
-			return ret;
-		}
-	}
-
 	if (enable) {
 		ret = pm_runtime_get_sync(&client->dev);
 		if (ret < 0) {
@@ -2471,16 +2459,6 @@ static int ov5670_set_stream(struct v4l2_subdev *sd, int enable)
 		ret = ov5670_stop_streaming(ov5670);
 		pm_runtime_put(&client->dev);
 	}
-
-	/* Regular PCs came with Windows don't handle power via runtime_pm.
-	 * So, power_down() here after stop_streaming().
-	 */
-	if (!enable) {
-		ret = __power_down(&ov5670->sd);
-		if (ret)
-			dev_info(&client->dev, "ov5670 power-off error\n");
-	}
-
 	ov5670->streaming = enable;
 	goto unlock_and_return;
 
