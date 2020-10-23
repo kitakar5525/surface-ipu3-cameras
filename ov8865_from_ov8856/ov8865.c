@@ -1040,6 +1040,13 @@ struct ov8865 {
 
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
+	 * depending on devices.
+	 */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 static u64 to_pixel_rate(u32 f_index)
@@ -1288,13 +1295,63 @@ static void ov8865_update_pad_format(const struct ov8865_mode *mode,
 	fmt->field = V4L2_FIELD_NONE;
 }
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov8865 *sensor, struct device *dep_dev)
+{
+	sensor->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(sensor->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	sensor->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(sensor->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(sensor->led_gpio))
+		dev_info(dep_dev,
+			 "Couldn't get GPIO LED. Maybe not exist, continue anyway.\n");
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov8865 *sensor)
+{
+	gpiod_put(sensor->xshutdn);
+	gpiod_put(sensor->pwdnb);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_put(sensor->led_gpio);
+}
+
+/* Control GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov8865 *sensor = to_ov8865(sd);
+
+	gpiod_set_value_cansleep(sensor->xshutdn, flag);
+	gpiod_set_value_cansleep(sensor->pwdnb, flag);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_set_value_cansleep(sensor->led_gpio, flag);
+
+	return 0;
+}
+
 static int __ov8865_power_on(struct ov8865 *ov8865)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	int ret;
 
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (is_acpi_node(dev_fwnode(&client->dev))) {
+		ret = gpio_crs_ctrl(&ov8865->sd, true);
+		if (ret)
+			goto fail_power;
+		usleep_range(1500, 1800);
 		return 0;
+	}
 
 	ret = clk_prepare_enable(ov8865->xvclk);
 	if (ret < 0) {
@@ -1322,6 +1379,9 @@ static int __ov8865_power_on(struct ov8865 *ov8865)
 disable_clk:
 	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
 	clk_disable_unprepare(ov8865->xvclk);
+fail_power:
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		gpio_crs_ctrl(&ov8865->sd, false);
 
 	return ret;
 }
@@ -1330,8 +1390,10 @@ static void __ov8865_power_off(struct ov8865 *ov8865)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (is_acpi_node(dev_fwnode(&client->dev))) {
+		gpio_crs_ctrl(&ov8865->sd, false);
 		return;
+	}
 
 	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
 	regulator_bulk_disable(ARRAY_SIZE(ov8865_supply_names),
@@ -1740,6 +1802,9 @@ static int ov8865_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov8865 *ov8865 = to_ov8865(sd);
 
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		gpio_crs_put(ov8865);
+
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(sd->ctrl_handler);
@@ -1848,10 +1913,16 @@ static int ov8865_probe(struct i2c_client *client)
 	}
 	dep_dev = ov8865->dep_dev;
 
+	ret = gpio_crs_get(ov8865, dep_dev);
+	if (ret) {
+		dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+		return ret;
+	}
+
 	ret = __ov8865_power_on(ov8865);
 	if (ret) {
 		dev_err(&client->dev, "failed to power on\n");
-		return ret;
+		goto error_gpio_crs_put;
 	}
 
 	ret = ov8865_identify_module(ov8865);
@@ -1905,6 +1976,10 @@ probe_error_v4l2_ctrl_handler_free:
 
 probe_power_off:
 	__ov8865_power_off(ov8865);
+
+error_gpio_crs_put:
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		gpio_crs_put(ov8865);
 
 	return ret;
 }
