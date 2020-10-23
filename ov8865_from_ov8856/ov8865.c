@@ -14,98 +14,98 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
 
-#define OV8856_REG_VALUE_08BIT		1
-#define OV8856_REG_VALUE_16BIT		2
-#define OV8856_REG_VALUE_24BIT		3
+#define OV8865_REG_VALUE_08BIT		1
+#define OV8865_REG_VALUE_16BIT		2
+#define OV8865_REG_VALUE_24BIT		3
 
-#define OV8856_LINK_FREQ_360MHZ		360000000ULL
-#define OV8856_LINK_FREQ_180MHZ		180000000ULL
-#define OV8856_SCLK			144000000ULL
-#define OV8856_XVCLK_19_2		19200000
-#define OV8856_DATA_LANES		4
-#define OV8856_RGB_DEPTH		10
+#define OV8865_LINK_FREQ_360MHZ		360000000ULL
+#define OV8865_LINK_FREQ_180MHZ		180000000ULL
+#define OV8865_SCLK			144000000ULL
+#define OV8865_XVCLK_19_2		19200000
+#define OV8865_DATA_LANES		4
+#define OV8865_RGB_DEPTH		10
 
-#define OV8856_REG_CHIP_ID		0x300a
-#define OV8856_CHIP_ID			0x00885a
+#define OV8865_REG_CHIP_ID		0x300a
+#define OV8865_CHIP_ID			0x00885a
 
-#define OV8856_REG_MODE_SELECT		0x0100
-#define OV8856_MODE_STANDBY		0x00
-#define OV8856_MODE_STREAMING		0x01
+#define OV8865_REG_MODE_SELECT		0x0100
+#define OV8865_MODE_STANDBY		0x00
+#define OV8865_MODE_STREAMING		0x01
 
 /* module revisions */
-#define OV8856_2A_MODULE		0x01
-#define OV8856_1B_MODULE		0x02
+#define OV8865_2A_MODULE		0x01
+#define OV8865_1B_MODULE		0x02
 
 /* the OTP read-out buffer is at 0x7000 and 0xf is the offset
  * of the byte in the OTP that means the module revision
  */
-#define OV8856_MODULE_REVISION		0x700f
-#define OV8856_OTP_MODE_CTRL		0x3d84
-#define OV8856_OTP_LOAD_CTRL		0x3d81
-#define OV8856_OTP_MODE_AUTO		0x00
-#define OV8856_OTP_LOAD_CTRL_ENABLE	BIT(0)
+#define OV8865_MODULE_REVISION		0x700f
+#define OV8865_OTP_MODE_CTRL		0x3d84
+#define OV8865_OTP_LOAD_CTRL		0x3d81
+#define OV8865_OTP_MODE_AUTO		0x00
+#define OV8865_OTP_LOAD_CTRL_ENABLE	BIT(0)
 
 /* vertical-timings from sensor */
-#define OV8856_REG_VTS			0x380e
-#define OV8856_VTS_MAX			0x7fff
+#define OV8865_REG_VTS			0x380e
+#define OV8865_VTS_MAX			0x7fff
 
 /* horizontal-timings from sensor */
-#define OV8856_REG_HTS			0x380c
+#define OV8865_REG_HTS			0x380c
 
 /* Exposure controls from sensor */
-#define OV8856_REG_EXPOSURE		0x3500
-#define	OV8856_EXPOSURE_MIN		6
-#define OV8856_EXPOSURE_MAX_MARGIN	6
-#define	OV8856_EXPOSURE_STEP		1
+#define OV8865_REG_EXPOSURE		0x3500
+#define	OV8865_EXPOSURE_MIN		6
+#define OV8865_EXPOSURE_MAX_MARGIN	6
+#define	OV8865_EXPOSURE_STEP		1
 
 /* Analog gain controls from sensor */
-#define OV8856_REG_ANALOG_GAIN		0x3508
-#define	OV8856_ANAL_GAIN_MIN		128
-#define	OV8856_ANAL_GAIN_MAX		2047
-#define	OV8856_ANAL_GAIN_STEP		1
+#define OV8865_REG_ANALOG_GAIN		0x3508
+#define	OV8865_ANAL_GAIN_MIN		128
+#define	OV8865_ANAL_GAIN_MAX		2047
+#define	OV8865_ANAL_GAIN_STEP		1
 
 /* Digital gain controls from sensor */
-#define OV8856_REG_MWB_R_GAIN		0x5019
-#define OV8856_REG_MWB_G_GAIN		0x501b
-#define OV8856_REG_MWB_B_GAIN		0x501d
-#define OV8856_DGTL_GAIN_MIN		0
-#define OV8856_DGTL_GAIN_MAX		4095
-#define OV8856_DGTL_GAIN_STEP		1
-#define OV8856_DGTL_GAIN_DEFAULT	1024
+#define OV8865_REG_MWB_R_GAIN		0x5019
+#define OV8865_REG_MWB_G_GAIN		0x501b
+#define OV8865_REG_MWB_B_GAIN		0x501d
+#define OV8865_DGTL_GAIN_MIN		0
+#define OV8865_DGTL_GAIN_MAX		4095
+#define OV8865_DGTL_GAIN_STEP		1
+#define OV8865_DGTL_GAIN_DEFAULT	1024
 
 /* Test Pattern Control */
-#define OV8856_REG_TEST_PATTERN		0x5e00
-#define OV8856_TEST_PATTERN_ENABLE	BIT(7)
-#define OV8856_TEST_PATTERN_BAR_SHIFT	2
+#define OV8865_REG_TEST_PATTERN		0x5e00
+#define OV8865_TEST_PATTERN_ENABLE	BIT(7)
+#define OV8865_TEST_PATTERN_BAR_SHIFT	2
 
-#define to_ov8856(_sd)			container_of(_sd, struct ov8856, sd)
+#define to_ov8865(_sd)			container_of(_sd, struct ov8865, sd)
 
-static const char * const ov8856_supply_names[] = {
+static const char * const ov8865_supply_names[] = {
 	"dovdd",	/* Digital I/O power */
 	"avdd",		/* Analog power */
 	"dvdd",		/* Digital core power */
 };
 
 enum {
-	OV8856_LINK_FREQ_720MBPS,
-	OV8856_LINK_FREQ_360MBPS,
+	OV8865_LINK_FREQ_720MBPS,
+	OV8865_LINK_FREQ_360MBPS,
 };
 
-struct ov8856_reg {
+struct ov8865_reg {
 	u16 address;
 	u8 val;
 };
 
-struct ov8856_reg_list {
+struct ov8865_reg_list {
 	u32 num_of_regs;
-	const struct ov8856_reg *regs;
+	const struct ov8865_reg *regs;
 };
 
-struct ov8856_link_freq_config {
-	const struct ov8856_reg_list reg_list;
+struct ov8865_link_freq_config {
+	const struct ov8865_reg_list reg_list;
 };
 
-struct ov8856_mode {
+struct ov8865_mode {
 	/* Frame width in pixels */
 	u32 width;
 
@@ -125,10 +125,10 @@ struct ov8856_mode {
 	u32 link_freq_index;
 
 	/* Sensor register settings for this resolution */
-	const struct ov8856_reg_list reg_list;
+	const struct ov8865_reg_list reg_list;
 };
 
-static const struct ov8856_reg mipi_data_rate_720mbps[] = {
+static const struct ov8865_reg mipi_data_rate_720mbps[] = {
 	{0x0103, 0x01},
 	{0x0100, 0x00},
 	{0x0302, 0x4b},
@@ -138,7 +138,7 @@ static const struct ov8856_reg mipi_data_rate_720mbps[] = {
 	{0x031e, 0x0c},
 };
 
-static const struct ov8856_reg mipi_data_rate_360mbps[] = {
+static const struct ov8865_reg mipi_data_rate_360mbps[] = {
 	{0x0103, 0x01},
 	{0x0100, 0x00},
 	{0x0302, 0x4b},
@@ -148,7 +148,7 @@ static const struct ov8856_reg mipi_data_rate_360mbps[] = {
 	{0x031e, 0x0c},
 };
 
-static const struct ov8856_reg mode_3280x2464_regs[] = {
+static const struct ov8865_reg mode_3280x2464_regs[] = {
 	{0x3000, 0x20},
 	{0x3003, 0x08},
 	{0x300e, 0x20},
@@ -338,7 +338,7 @@ static const struct ov8856_reg mode_3280x2464_regs[] = {
 	{0x5e00, 0x00}
 };
 
-static const struct ov8856_reg mode_3264x2448_regs[] = {
+static const struct ov8865_reg mode_3264x2448_regs[] = {
 	{0x0103, 0x01},
 	{0x0302, 0x3c},
 	{0x0303, 0x01},
@@ -541,7 +541,7 @@ static const struct ov8856_reg mode_3264x2448_regs[] = {
 	{0x5e10, 0xfc}
 };
 
-static const struct ov8856_reg mode_1640x1232_regs[] = {
+static const struct ov8865_reg mode_1640x1232_regs[] = {
 	{0x3000, 0x20},
 	{0x3003, 0x08},
 	{0x300e, 0x20},
@@ -731,7 +731,7 @@ static const struct ov8856_reg mode_1640x1232_regs[] = {
 	{0x5e00, 0x00}
 };
 
-static const struct ov8856_reg mode_1632x1224_regs[] = {
+static const struct ov8865_reg mode_1632x1224_regs[] = {
 	{0x0103, 0x01},
 	{0x0302, 0x3c},
 	{0x0303, 0x01},
@@ -934,7 +934,7 @@ static const struct ov8856_reg mode_1632x1224_regs[] = {
 	{0x5e10, 0xfc}
 };
 
-static const char * const ov8856_test_pattern_menu[] = {
+static const char * const ov8865_test_pattern_menu[] = {
 	"Disabled",
 	"Standard Color Bar",
 	"Top-Bottom Darker Color Bar",
@@ -943,18 +943,18 @@ static const char * const ov8856_test_pattern_menu[] = {
 };
 
 static const s64 link_freq_menu_items[] = {
-	OV8856_LINK_FREQ_360MHZ,
-	OV8856_LINK_FREQ_180MHZ
+	OV8865_LINK_FREQ_360MHZ,
+	OV8865_LINK_FREQ_180MHZ
 };
 
-static const struct ov8856_link_freq_config link_freq_configs[] = {
-	[OV8856_LINK_FREQ_720MBPS] = {
+static const struct ov8865_link_freq_config link_freq_configs[] = {
+	[OV8865_LINK_FREQ_720MBPS] = {
 		.reg_list = {
 			.num_of_regs = ARRAY_SIZE(mipi_data_rate_720mbps),
 			.regs = mipi_data_rate_720mbps,
 		}
 	},
-	[OV8856_LINK_FREQ_360MBPS] = {
+	[OV8865_LINK_FREQ_360MBPS] = {
 		.reg_list = {
 			.num_of_regs = ARRAY_SIZE(mipi_data_rate_360mbps),
 			.regs = mipi_data_rate_360mbps,
@@ -962,7 +962,7 @@ static const struct ov8856_link_freq_config link_freq_configs[] = {
 	}
 };
 
-static const struct ov8856_mode supported_modes[] = {
+static const struct ov8865_mode supported_modes[] = {
 	{
 		.width = 3280,
 		.height = 2464,
@@ -973,7 +973,7 @@ static const struct ov8856_mode supported_modes[] = {
 			.num_of_regs = ARRAY_SIZE(mode_3280x2464_regs),
 			.regs = mode_3280x2464_regs,
 		},
-		.link_freq_index = OV8856_LINK_FREQ_720MBPS,
+		.link_freq_index = OV8865_LINK_FREQ_720MBPS,
 	},
 	{
 		.width = 3264,
@@ -985,7 +985,7 @@ static const struct ov8856_mode supported_modes[] = {
 			.num_of_regs = ARRAY_SIZE(mode_3264x2448_regs),
 			.regs = mode_3264x2448_regs,
 		},
-		.link_freq_index = OV8856_LINK_FREQ_720MBPS,
+		.link_freq_index = OV8865_LINK_FREQ_720MBPS,
 	},
 	{
 		.width = 1640,
@@ -997,7 +997,7 @@ static const struct ov8856_mode supported_modes[] = {
 			.num_of_regs = ARRAY_SIZE(mode_1640x1232_regs),
 			.regs = mode_1640x1232_regs,
 		},
-		.link_freq_index = OV8856_LINK_FREQ_360MBPS,
+		.link_freq_index = OV8865_LINK_FREQ_360MBPS,
 	},
 	{
 		.width = 1632,
@@ -1009,18 +1009,18 @@ static const struct ov8856_mode supported_modes[] = {
 			.num_of_regs = ARRAY_SIZE(mode_1632x1224_regs),
 			.regs = mode_1632x1224_regs,
 		},
-		.link_freq_index = OV8856_LINK_FREQ_360MBPS,
+		.link_freq_index = OV8865_LINK_FREQ_360MBPS,
 	}
 };
 
-struct ov8856 {
+struct ov8865 {
 	struct v4l2_subdev sd;
 	struct media_pad pad;
 	struct v4l2_ctrl_handler ctrl_handler;
 
 	struct clk		*xvclk;
 	struct gpio_desc	*reset_gpio;
-	struct regulator_bulk_data supplies[ARRAY_SIZE(ov8856_supply_names)];
+	struct regulator_bulk_data supplies[ARRAY_SIZE(ov8865_supply_names)];
 
 	/* V4L2 Controls */
 	struct v4l2_ctrl *link_freq;
@@ -1030,7 +1030,7 @@ struct ov8856 {
 	struct v4l2_ctrl *exposure;
 
 	/* Current mode */
-	const struct ov8856_mode *cur_mode;
+	const struct ov8865_mode *cur_mode;
 
 	/* To serialize asynchronus callbacks */
 	struct mutex mutex;
@@ -1041,9 +1041,9 @@ struct ov8856 {
 
 static u64 to_pixel_rate(u32 f_index)
 {
-	u64 pixel_rate = link_freq_menu_items[f_index] * 2 * OV8856_DATA_LANES;
+	u64 pixel_rate = link_freq_menu_items[f_index] * 2 * OV8865_DATA_LANES;
 
-	do_div(pixel_rate, OV8856_RGB_DEPTH);
+	do_div(pixel_rate, OV8865_RGB_DEPTH);
 
 	return pixel_rate;
 }
@@ -1052,14 +1052,14 @@ static u64 to_pixels_per_line(u32 hts, u32 f_index)
 {
 	u64 ppl = hts * to_pixel_rate(f_index);
 
-	do_div(ppl, OV8856_SCLK);
+	do_div(ppl, OV8865_SCLK);
 
 	return ppl;
 }
 
-static int ov8856_read_reg(struct ov8856 *ov8856, u16 reg, u16 len, u32 *val)
+static int ov8865_read_reg(struct ov8865 *ov8865, u16 reg, u16 len, u32 *val)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	struct i2c_msg msgs[2];
 	u8 addr_buf[2];
 	u8 data_buf[4] = {0};
@@ -1087,9 +1087,9 @@ static int ov8856_read_reg(struct ov8856 *ov8856, u16 reg, u16 len, u32 *val)
 	return 0;
 }
 
-static int ov8856_write_reg(struct ov8856 *ov8856, u16 reg, u16 len, u32 val)
+static int ov8865_write_reg(struct ov8865 *ov8865, u16 reg, u16 len, u32 val)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	u8 buf[6];
 
 	if (len > 4)
@@ -1103,15 +1103,15 @@ static int ov8856_write_reg(struct ov8856 *ov8856, u16 reg, u16 len, u32 val)
 	return 0;
 }
 
-static int ov8856_write_reg_list(struct ov8856 *ov8856,
-				 const struct ov8856_reg_list *r_list)
+static int ov8865_write_reg_list(struct ov8865 *ov8865,
+				 const struct ov8865_reg_list *r_list)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	unsigned int i;
 	int ret;
 
 	for (i = 0; i < r_list->num_of_regs; i++) {
-		ret = ov8856_write_reg(ov8856, r_list->regs[i].address, 1,
+		ret = ov8865_write_reg(ov8865, r_list->regs[i].address, 1,
 				       r_list->regs[i].val);
 		if (ret) {
 			dev_err_ratelimited(&client->dev,
@@ -1124,50 +1124,50 @@ static int ov8856_write_reg_list(struct ov8856 *ov8856,
 	return 0;
 }
 
-static int ov8856_update_digital_gain(struct ov8856 *ov8856, u32 d_gain)
+static int ov8865_update_digital_gain(struct ov8865 *ov8865, u32 d_gain)
 {
 	int ret;
 
-	ret = ov8856_write_reg(ov8856, OV8856_REG_MWB_R_GAIN,
-			       OV8856_REG_VALUE_16BIT, d_gain);
+	ret = ov8865_write_reg(ov8865, OV8865_REG_MWB_R_GAIN,
+			       OV8865_REG_VALUE_16BIT, d_gain);
 	if (ret)
 		return ret;
 
-	ret = ov8856_write_reg(ov8856, OV8856_REG_MWB_G_GAIN,
-			       OV8856_REG_VALUE_16BIT, d_gain);
+	ret = ov8865_write_reg(ov8865, OV8865_REG_MWB_G_GAIN,
+			       OV8865_REG_VALUE_16BIT, d_gain);
 	if (ret)
 		return ret;
 
-	return ov8856_write_reg(ov8856, OV8856_REG_MWB_B_GAIN,
-				OV8856_REG_VALUE_16BIT, d_gain);
+	return ov8865_write_reg(ov8865, OV8865_REG_MWB_B_GAIN,
+				OV8865_REG_VALUE_16BIT, d_gain);
 }
 
-static int ov8856_test_pattern(struct ov8856 *ov8856, u32 pattern)
+static int ov8865_test_pattern(struct ov8865 *ov8865, u32 pattern)
 {
 	if (pattern)
-		pattern = (pattern - 1) << OV8856_TEST_PATTERN_BAR_SHIFT |
-			  OV8856_TEST_PATTERN_ENABLE;
+		pattern = (pattern - 1) << OV8865_TEST_PATTERN_BAR_SHIFT |
+			  OV8865_TEST_PATTERN_ENABLE;
 
-	return ov8856_write_reg(ov8856, OV8856_REG_TEST_PATTERN,
-				OV8856_REG_VALUE_08BIT, pattern);
+	return ov8865_write_reg(ov8865, OV8865_REG_TEST_PATTERN,
+				OV8865_REG_VALUE_08BIT, pattern);
 }
 
-static int ov8856_set_ctrl(struct v4l2_ctrl *ctrl)
+static int ov8865_set_ctrl(struct v4l2_ctrl *ctrl)
 {
-	struct ov8856 *ov8856 = container_of(ctrl->handler,
-					     struct ov8856, ctrl_handler);
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct ov8865 *ov8865 = container_of(ctrl->handler,
+					     struct ov8865, ctrl_handler);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	s64 exposure_max;
 	int ret = 0;
 
 	/* Propagate change of current control to all related controls */
 	if (ctrl->id == V4L2_CID_VBLANK) {
 		/* Update max exposure while meeting expected vblanking */
-		exposure_max = ov8856->cur_mode->height + ctrl->val -
-			       OV8856_EXPOSURE_MAX_MARGIN;
-		__v4l2_ctrl_modify_range(ov8856->exposure,
-					 ov8856->exposure->minimum,
-					 exposure_max, ov8856->exposure->step,
+		exposure_max = ov8865->cur_mode->height + ctrl->val -
+			       OV8865_EXPOSURE_MAX_MARGIN;
+		__v4l2_ctrl_modify_range(ov8865->exposure,
+					 ov8865->exposure->minimum,
+					 exposure_max, ov8865->exposure->step,
 					 exposure_max);
 	}
 
@@ -1177,28 +1177,28 @@ static int ov8856_set_ctrl(struct v4l2_ctrl *ctrl)
 
 	switch (ctrl->id) {
 	case V4L2_CID_ANALOGUE_GAIN:
-		ret = ov8856_write_reg(ov8856, OV8856_REG_ANALOG_GAIN,
-				       OV8856_REG_VALUE_16BIT, ctrl->val);
+		ret = ov8865_write_reg(ov8865, OV8865_REG_ANALOG_GAIN,
+				       OV8865_REG_VALUE_16BIT, ctrl->val);
 		break;
 
 	case V4L2_CID_DIGITAL_GAIN:
-		ret = ov8856_update_digital_gain(ov8856, ctrl->val);
+		ret = ov8865_update_digital_gain(ov8865, ctrl->val);
 		break;
 
 	case V4L2_CID_EXPOSURE:
 		/* 4 least significant bits of expsoure are fractional part */
-		ret = ov8856_write_reg(ov8856, OV8856_REG_EXPOSURE,
-				       OV8856_REG_VALUE_24BIT, ctrl->val << 4);
+		ret = ov8865_write_reg(ov8865, OV8865_REG_EXPOSURE,
+				       OV8865_REG_VALUE_24BIT, ctrl->val << 4);
 		break;
 
 	case V4L2_CID_VBLANK:
-		ret = ov8856_write_reg(ov8856, OV8856_REG_VTS,
-				       OV8856_REG_VALUE_16BIT,
-				       ov8856->cur_mode->height + ctrl->val);
+		ret = ov8865_write_reg(ov8865, OV8865_REG_VTS,
+				       OV8865_REG_VALUE_16BIT,
+				       ov8865->cur_mode->height + ctrl->val);
 		break;
 
 	case V4L2_CID_TEST_PATTERN:
-		ret = ov8856_test_pattern(ov8856, ctrl->val);
+		ret = ov8865_test_pattern(ov8865, ctrl->val);
 		break;
 
 	default:
@@ -1211,72 +1211,72 @@ static int ov8856_set_ctrl(struct v4l2_ctrl *ctrl)
 	return ret;
 }
 
-static const struct v4l2_ctrl_ops ov8856_ctrl_ops = {
-	.s_ctrl = ov8856_set_ctrl,
+static const struct v4l2_ctrl_ops ov8865_ctrl_ops = {
+	.s_ctrl = ov8865_set_ctrl,
 };
 
-static int ov8856_init_controls(struct ov8856 *ov8856)
+static int ov8865_init_controls(struct ov8865 *ov8865)
 {
 	struct v4l2_ctrl_handler *ctrl_hdlr;
 	s64 exposure_max, h_blank;
 	int ret;
 
-	ctrl_hdlr = &ov8856->ctrl_handler;
+	ctrl_hdlr = &ov8865->ctrl_handler;
 	ret = v4l2_ctrl_handler_init(ctrl_hdlr, 8);
 	if (ret)
 		return ret;
 
-	ctrl_hdlr->lock = &ov8856->mutex;
-	ov8856->link_freq = v4l2_ctrl_new_int_menu(ctrl_hdlr, &ov8856_ctrl_ops,
+	ctrl_hdlr->lock = &ov8865->mutex;
+	ov8865->link_freq = v4l2_ctrl_new_int_menu(ctrl_hdlr, &ov8865_ctrl_ops,
 					   V4L2_CID_LINK_FREQ,
 					   ARRAY_SIZE(link_freq_menu_items) - 1,
 					   0, link_freq_menu_items);
-	if (ov8856->link_freq)
-		ov8856->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+	if (ov8865->link_freq)
+		ov8865->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
-	ov8856->pixel_rate = v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops,
+	ov8865->pixel_rate = v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops,
 				       V4L2_CID_PIXEL_RATE, 0,
-				       to_pixel_rate(OV8856_LINK_FREQ_720MBPS),
+				       to_pixel_rate(OV8865_LINK_FREQ_720MBPS),
 				       1,
-				       to_pixel_rate(OV8856_LINK_FREQ_720MBPS));
-	ov8856->vblank = v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops,
+				       to_pixel_rate(OV8865_LINK_FREQ_720MBPS));
+	ov8865->vblank = v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops,
 			  V4L2_CID_VBLANK,
-			  ov8856->cur_mode->vts_min - ov8856->cur_mode->height,
-			  OV8856_VTS_MAX - ov8856->cur_mode->height, 1,
-			  ov8856->cur_mode->vts_def - ov8856->cur_mode->height);
-	h_blank = to_pixels_per_line(ov8856->cur_mode->hts,
-		  ov8856->cur_mode->link_freq_index) - ov8856->cur_mode->width;
-	ov8856->hblank = v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops,
+			  ov8865->cur_mode->vts_min - ov8865->cur_mode->height,
+			  OV8865_VTS_MAX - ov8865->cur_mode->height, 1,
+			  ov8865->cur_mode->vts_def - ov8865->cur_mode->height);
+	h_blank = to_pixels_per_line(ov8865->cur_mode->hts,
+		  ov8865->cur_mode->link_freq_index) - ov8865->cur_mode->width;
+	ov8865->hblank = v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops,
 					   V4L2_CID_HBLANK, h_blank, h_blank, 1,
 					   h_blank);
-	if (ov8856->hblank)
-		ov8856->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+	if (ov8865->hblank)
+		ov8865->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
-	v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops, V4L2_CID_ANALOGUE_GAIN,
-			  OV8856_ANAL_GAIN_MIN, OV8856_ANAL_GAIN_MAX,
-			  OV8856_ANAL_GAIN_STEP, OV8856_ANAL_GAIN_MIN);
-	v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops, V4L2_CID_DIGITAL_GAIN,
-			  OV8856_DGTL_GAIN_MIN, OV8856_DGTL_GAIN_MAX,
-			  OV8856_DGTL_GAIN_STEP, OV8856_DGTL_GAIN_DEFAULT);
-	exposure_max = ov8856->cur_mode->vts_def - OV8856_EXPOSURE_MAX_MARGIN;
-	ov8856->exposure = v4l2_ctrl_new_std(ctrl_hdlr, &ov8856_ctrl_ops,
+	v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops, V4L2_CID_ANALOGUE_GAIN,
+			  OV8865_ANAL_GAIN_MIN, OV8865_ANAL_GAIN_MAX,
+			  OV8865_ANAL_GAIN_STEP, OV8865_ANAL_GAIN_MIN);
+	v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops, V4L2_CID_DIGITAL_GAIN,
+			  OV8865_DGTL_GAIN_MIN, OV8865_DGTL_GAIN_MAX,
+			  OV8865_DGTL_GAIN_STEP, OV8865_DGTL_GAIN_DEFAULT);
+	exposure_max = ov8865->cur_mode->vts_def - OV8865_EXPOSURE_MAX_MARGIN;
+	ov8865->exposure = v4l2_ctrl_new_std(ctrl_hdlr, &ov8865_ctrl_ops,
 					     V4L2_CID_EXPOSURE,
-					     OV8856_EXPOSURE_MIN, exposure_max,
-					     OV8856_EXPOSURE_STEP,
+					     OV8865_EXPOSURE_MIN, exposure_max,
+					     OV8865_EXPOSURE_STEP,
 					     exposure_max);
-	v4l2_ctrl_new_std_menu_items(ctrl_hdlr, &ov8856_ctrl_ops,
+	v4l2_ctrl_new_std_menu_items(ctrl_hdlr, &ov8865_ctrl_ops,
 				     V4L2_CID_TEST_PATTERN,
-				     ARRAY_SIZE(ov8856_test_pattern_menu) - 1,
-				     0, 0, ov8856_test_pattern_menu);
+				     ARRAY_SIZE(ov8865_test_pattern_menu) - 1,
+				     0, 0, ov8865_test_pattern_menu);
 	if (ctrl_hdlr->error)
 		return ctrl_hdlr->error;
 
-	ov8856->sd.ctrl_handler = ctrl_hdlr;
+	ov8865->sd.ctrl_handler = ctrl_hdlr;
 
 	return 0;
 }
 
-static void ov8856_update_pad_format(const struct ov8856_mode *mode,
+static void ov8865_update_pad_format(const struct ov8865_mode *mode,
 				     struct v4l2_mbus_framefmt *fmt)
 {
 	fmt->width = mode->width;
@@ -1285,33 +1285,33 @@ static void ov8856_update_pad_format(const struct ov8856_mode *mode,
 	fmt->field = V4L2_FIELD_NONE;
 }
 
-static int ov8856_start_streaming(struct ov8856 *ov8856)
+static int ov8865_start_streaming(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
-	const struct ov8856_reg_list *reg_list;
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
+	const struct ov8865_reg_list *reg_list;
 	int link_freq_index, ret;
 
-	link_freq_index = ov8856->cur_mode->link_freq_index;
+	link_freq_index = ov8865->cur_mode->link_freq_index;
 	reg_list = &link_freq_configs[link_freq_index].reg_list;
-	ret = ov8856_write_reg_list(ov8856, reg_list);
+	ret = ov8865_write_reg_list(ov8865, reg_list);
 	if (ret) {
 		dev_err(&client->dev, "failed to set plls");
 		return ret;
 	}
 
-	reg_list = &ov8856->cur_mode->reg_list;
-	ret = ov8856_write_reg_list(ov8856, reg_list);
+	reg_list = &ov8865->cur_mode->reg_list;
+	ret = ov8865_write_reg_list(ov8865, reg_list);
 	if (ret) {
 		dev_err(&client->dev, "failed to set mode");
 		return ret;
 	}
 
-	ret = __v4l2_ctrl_handler_setup(ov8856->sd.ctrl_handler);
+	ret = __v4l2_ctrl_handler_setup(ov8865->sd.ctrl_handler);
 	if (ret)
 		return ret;
 
-	ret = ov8856_write_reg(ov8856, OV8856_REG_MODE_SELECT,
-			       OV8856_REG_VALUE_08BIT, OV8856_MODE_STREAMING);
+	ret = ov8865_write_reg(ov8865, OV8865_REG_MODE_SELECT,
+			       OV8865_REG_VALUE_08BIT, OV8865_MODE_STREAMING);
 	if (ret) {
 		dev_err(&client->dev, "failed to set stream");
 		return ret;
@@ -1320,148 +1320,148 @@ static int ov8856_start_streaming(struct ov8856 *ov8856)
 	return 0;
 }
 
-static void ov8856_stop_streaming(struct ov8856 *ov8856)
+static void ov8865_stop_streaming(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 
-	if (ov8856_write_reg(ov8856, OV8856_REG_MODE_SELECT,
-			     OV8856_REG_VALUE_08BIT, OV8856_MODE_STANDBY))
+	if (ov8865_write_reg(ov8865, OV8865_REG_MODE_SELECT,
+			     OV8865_REG_VALUE_08BIT, OV8865_MODE_STANDBY))
 		dev_err(&client->dev, "failed to set stream");
 }
 
-static int ov8856_set_stream(struct v4l2_subdev *sd, int enable)
+static int ov8865_set_stream(struct v4l2_subdev *sd, int enable)
 {
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
 
-	if (ov8856->streaming == enable)
+	if (ov8865->streaming == enable)
 		return 0;
 
-	mutex_lock(&ov8856->mutex);
+	mutex_lock(&ov8865->mutex);
 	if (enable) {
 		ret = pm_runtime_get_sync(&client->dev);
 		if (ret < 0) {
 			pm_runtime_put_noidle(&client->dev);
-			mutex_unlock(&ov8856->mutex);
+			mutex_unlock(&ov8865->mutex);
 			return ret;
 		}
 
-		ret = ov8856_start_streaming(ov8856);
+		ret = ov8865_start_streaming(ov8865);
 		if (ret) {
 			enable = 0;
-			ov8856_stop_streaming(ov8856);
+			ov8865_stop_streaming(ov8865);
 			pm_runtime_put(&client->dev);
 		}
 	} else {
-		ov8856_stop_streaming(ov8856);
+		ov8865_stop_streaming(ov8865);
 		pm_runtime_put(&client->dev);
 	}
 
-	ov8856->streaming = enable;
-	mutex_unlock(&ov8856->mutex);
+	ov8865->streaming = enable;
+	mutex_unlock(&ov8865->mutex);
 
 	return ret;
 }
 
-static int __ov8856_power_on(struct ov8856 *ov8856)
+static int __ov8865_power_on(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	int ret;
 
 	if (is_acpi_node(dev_fwnode(&client->dev)))
 		return 0;
 
-	ret = clk_prepare_enable(ov8856->xvclk);
+	ret = clk_prepare_enable(ov8865->xvclk);
 	if (ret < 0) {
 		dev_err(&client->dev, "failed to enable xvclk\n");
 		return ret;
 	}
 
-	if (ov8856->reset_gpio) {
-		gpiod_set_value_cansleep(ov8856->reset_gpio, 1);
+	if (ov8865->reset_gpio) {
+		gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
 		usleep_range(1000, 2000);
 	}
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(ov8856_supply_names),
-				    ov8856->supplies);
+	ret = regulator_bulk_enable(ARRAY_SIZE(ov8865_supply_names),
+				    ov8865->supplies);
 	if (ret < 0) {
 		dev_err(&client->dev, "failed to enable regulators\n");
 		goto disable_clk;
 	}
 
-	gpiod_set_value_cansleep(ov8856->reset_gpio, 0);
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 0);
 	usleep_range(1500, 1800);
 
 	return 0;
 
 disable_clk:
-	gpiod_set_value_cansleep(ov8856->reset_gpio, 1);
-	clk_disable_unprepare(ov8856->xvclk);
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
+	clk_disable_unprepare(ov8865->xvclk);
 
 	return ret;
 }
 
-static void __ov8856_power_off(struct ov8856 *ov8856)
+static void __ov8865_power_off(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 
 	if (is_acpi_node(dev_fwnode(&client->dev)))
 		return;
 
-	gpiod_set_value_cansleep(ov8856->reset_gpio, 1);
-	regulator_bulk_disable(ARRAY_SIZE(ov8856_supply_names),
-			       ov8856->supplies);
-	clk_disable_unprepare(ov8856->xvclk);
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(ov8865_supply_names),
+			       ov8865->supplies);
+	clk_disable_unprepare(ov8865->xvclk);
 }
 
-static int __maybe_unused ov8856_suspend(struct device *dev)
+static int __maybe_unused ov8865_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 
-	mutex_lock(&ov8856->mutex);
-	if (ov8856->streaming)
-		ov8856_stop_streaming(ov8856);
+	mutex_lock(&ov8865->mutex);
+	if (ov8865->streaming)
+		ov8865_stop_streaming(ov8865);
 
-	__ov8856_power_off(ov8856);
-	mutex_unlock(&ov8856->mutex);
+	__ov8865_power_off(ov8865);
+	mutex_unlock(&ov8865->mutex);
 
 	return 0;
 }
 
-static int __maybe_unused ov8856_resume(struct device *dev)
+static int __maybe_unused ov8865_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 	int ret;
 
-	mutex_lock(&ov8856->mutex);
+	mutex_lock(&ov8865->mutex);
 
-	__ov8856_power_on(ov8856);
-	if (ov8856->streaming) {
-		ret = ov8856_start_streaming(ov8856);
+	__ov8865_power_on(ov8865);
+	if (ov8865->streaming) {
+		ret = ov8865_start_streaming(ov8865);
 		if (ret) {
-			ov8856->streaming = false;
-			ov8856_stop_streaming(ov8856);
-			mutex_unlock(&ov8856->mutex);
+			ov8865->streaming = false;
+			ov8865_stop_streaming(ov8865);
+			mutex_unlock(&ov8865->mutex);
 			return ret;
 		}
 	}
 
-	mutex_unlock(&ov8856->mutex);
+	mutex_unlock(&ov8865->mutex);
 
 	return 0;
 }
 
-static int ov8856_set_format(struct v4l2_subdev *sd,
+static int ov8865_set_format(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *fmt)
 {
-	struct ov8856 *ov8856 = to_ov8856(sd);
-	const struct ov8856_mode *mode;
+	struct ov8865 *ov8865 = to_ov8865(sd);
+	const struct ov8865_mode *mode;
 	s32 vblank_def, h_blank;
 
 	mode = v4l2_find_nearest_size(supported_modes,
@@ -1469,53 +1469,53 @@ static int ov8856_set_format(struct v4l2_subdev *sd,
 				      height, fmt->format.width,
 				      fmt->format.height);
 
-	mutex_lock(&ov8856->mutex);
-	ov8856_update_pad_format(mode, &fmt->format);
+	mutex_lock(&ov8865->mutex);
+	ov8865_update_pad_format(mode, &fmt->format);
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
 		*v4l2_subdev_get_try_format(sd, cfg, fmt->pad) = fmt->format;
 	} else {
-		ov8856->cur_mode = mode;
-		__v4l2_ctrl_s_ctrl(ov8856->link_freq, mode->link_freq_index);
-		__v4l2_ctrl_s_ctrl_int64(ov8856->pixel_rate,
+		ov8865->cur_mode = mode;
+		__v4l2_ctrl_s_ctrl(ov8865->link_freq, mode->link_freq_index);
+		__v4l2_ctrl_s_ctrl_int64(ov8865->pixel_rate,
 					 to_pixel_rate(mode->link_freq_index));
 
 		/* Update limits and set FPS to default */
 		vblank_def = mode->vts_def - mode->height;
-		__v4l2_ctrl_modify_range(ov8856->vblank,
+		__v4l2_ctrl_modify_range(ov8865->vblank,
 					 mode->vts_min - mode->height,
-					 OV8856_VTS_MAX - mode->height, 1,
+					 OV8865_VTS_MAX - mode->height, 1,
 					 vblank_def);
-		__v4l2_ctrl_s_ctrl(ov8856->vblank, vblank_def);
+		__v4l2_ctrl_s_ctrl(ov8865->vblank, vblank_def);
 		h_blank = to_pixels_per_line(mode->hts, mode->link_freq_index) -
 			  mode->width;
-		__v4l2_ctrl_modify_range(ov8856->hblank, h_blank, h_blank, 1,
+		__v4l2_ctrl_modify_range(ov8865->hblank, h_blank, h_blank, 1,
 					 h_blank);
 	}
 
-	mutex_unlock(&ov8856->mutex);
+	mutex_unlock(&ov8865->mutex);
 
 	return 0;
 }
 
-static int ov8856_get_format(struct v4l2_subdev *sd,
+static int ov8865_get_format(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *fmt)
 {
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 
-	mutex_lock(&ov8856->mutex);
+	mutex_lock(&ov8865->mutex);
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
-		fmt->format = *v4l2_subdev_get_try_format(&ov8856->sd, cfg,
+		fmt->format = *v4l2_subdev_get_try_format(&ov8865->sd, cfg,
 							  fmt->pad);
 	else
-		ov8856_update_pad_format(ov8856->cur_mode, &fmt->format);
+		ov8865_update_pad_format(ov8865->cur_mode, &fmt->format);
 
-	mutex_unlock(&ov8856->mutex);
+	mutex_unlock(&ov8865->mutex);
 
 	return 0;
 }
 
-static int ov8856_enum_mbus_code(struct v4l2_subdev *sd,
+static int ov8865_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
@@ -1528,7 +1528,7 @@ static int ov8856_enum_mbus_code(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov8856_enum_frame_size(struct v4l2_subdev *sd,
+static int ov8865_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
@@ -1546,94 +1546,94 @@ static int ov8856_enum_frame_size(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov8856_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+static int ov8865_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 
-	mutex_lock(&ov8856->mutex);
-	ov8856_update_pad_format(&supported_modes[0],
+	mutex_lock(&ov8865->mutex);
+	ov8865_update_pad_format(&supported_modes[0],
 				 v4l2_subdev_get_try_format(sd, fh->pad, 0));
-	mutex_unlock(&ov8856->mutex);
+	mutex_unlock(&ov8865->mutex);
 
 	return 0;
 }
 
-static const struct v4l2_subdev_video_ops ov8856_video_ops = {
-	.s_stream = ov8856_set_stream,
+static const struct v4l2_subdev_video_ops ov8865_video_ops = {
+	.s_stream = ov8865_set_stream,
 };
 
-static const struct v4l2_subdev_pad_ops ov8856_pad_ops = {
-	.set_fmt = ov8856_set_format,
-	.get_fmt = ov8856_get_format,
-	.enum_mbus_code = ov8856_enum_mbus_code,
-	.enum_frame_size = ov8856_enum_frame_size,
+static const struct v4l2_subdev_pad_ops ov8865_pad_ops = {
+	.set_fmt = ov8865_set_format,
+	.get_fmt = ov8865_get_format,
+	.enum_mbus_code = ov8865_enum_mbus_code,
+	.enum_frame_size = ov8865_enum_frame_size,
 };
 
-static const struct v4l2_subdev_ops ov8856_subdev_ops = {
-	.video = &ov8856_video_ops,
-	.pad = &ov8856_pad_ops,
+static const struct v4l2_subdev_ops ov8865_subdev_ops = {
+	.video = &ov8865_video_ops,
+	.pad = &ov8865_pad_ops,
 };
 
-static const struct media_entity_operations ov8856_subdev_entity_ops = {
+static const struct media_entity_operations ov8865_subdev_entity_ops = {
 	.link_validate = v4l2_subdev_link_validate,
 };
 
-static const struct v4l2_subdev_internal_ops ov8856_internal_ops = {
-	.open = ov8856_open,
+static const struct v4l2_subdev_internal_ops ov8865_internal_ops = {
+	.open = ov8865_open,
 };
 
-static int ov8856_identify_module(struct ov8856 *ov8856)
+static int ov8865_identify_module(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8856->sd);
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	int ret;
 	u32 val;
 
-	ret = ov8856_read_reg(ov8856, OV8856_REG_CHIP_ID,
-			      OV8856_REG_VALUE_24BIT, &val);
+	ret = ov8865_read_reg(ov8865, OV8865_REG_CHIP_ID,
+			      OV8865_REG_VALUE_24BIT, &val);
 	if (ret)
 		return ret;
 
-	if (val != OV8856_CHIP_ID) {
+	if (val != OV8865_CHIP_ID) {
 		dev_err(&client->dev, "chip id mismatch: %x!=%x",
-			OV8856_CHIP_ID, val);
+			OV8865_CHIP_ID, val);
 		return -ENXIO;
 	}
 
-	ret = ov8856_write_reg(ov8856, OV8856_REG_MODE_SELECT,
-			       OV8856_REG_VALUE_08BIT, OV8856_MODE_STREAMING);
+	ret = ov8865_write_reg(ov8865, OV8865_REG_MODE_SELECT,
+			       OV8865_REG_VALUE_08BIT, OV8865_MODE_STREAMING);
 	if (ret)
 		return ret;
 
-	ret = ov8856_write_reg(ov8856, OV8856_OTP_MODE_CTRL,
-			       OV8856_REG_VALUE_08BIT, OV8856_OTP_MODE_AUTO);
+	ret = ov8865_write_reg(ov8865, OV8865_OTP_MODE_CTRL,
+			       OV8865_REG_VALUE_08BIT, OV8865_OTP_MODE_AUTO);
 	if (ret) {
 		dev_err(&client->dev, "failed to set otp mode");
 		return ret;
 	}
 
-	ret = ov8856_write_reg(ov8856, OV8856_OTP_LOAD_CTRL,
-			       OV8856_REG_VALUE_08BIT,
-			       OV8856_OTP_LOAD_CTRL_ENABLE);
+	ret = ov8865_write_reg(ov8865, OV8865_OTP_LOAD_CTRL,
+			       OV8865_REG_VALUE_08BIT,
+			       OV8865_OTP_LOAD_CTRL_ENABLE);
 	if (ret) {
 		dev_err(&client->dev, "failed to enable load control");
 		return ret;
 	}
 
-	ret = ov8856_read_reg(ov8856, OV8856_MODULE_REVISION,
-			      OV8856_REG_VALUE_08BIT, &val);
+	ret = ov8865_read_reg(ov8865, OV8865_MODULE_REVISION,
+			      OV8865_REG_VALUE_08BIT, &val);
 	if (ret) {
 		dev_err(&client->dev, "failed to read module revision");
 		return ret;
 	}
 
-	dev_info(&client->dev, "OV8856 revision %x (%s) at address 0x%02x\n",
+	dev_info(&client->dev, "OV8865 revision %x (%s) at address 0x%02x\n",
 		 val,
-		 val == OV8856_2A_MODULE ? "2A" :
-		 val == OV8856_1B_MODULE ? "1B" : "unknown revision",
+		 val == OV8865_2A_MODULE ? "2A" :
+		 val == OV8865_1B_MODULE ? "1B" : "unknown revision",
 		 client->addr);
 
-	ret = ov8856_write_reg(ov8856, OV8856_REG_MODE_SELECT,
-			       OV8856_REG_VALUE_08BIT, OV8856_MODE_STANDBY);
+	ret = ov8865_write_reg(ov8865, OV8865_REG_MODE_SELECT,
+			       OV8865_REG_VALUE_08BIT, OV8865_MODE_STANDBY);
 	if (ret) {
 		dev_err(&client->dev, "failed to exit streaming mode");
 		return ret;
@@ -1642,7 +1642,7 @@ static int ov8856_identify_module(struct ov8856 *ov8856)
 	return 0;
 }
 
-static int ov8856_get_hwcfg(struct ov8856 *ov8856, struct device *dev)
+static int ov8865_get_hwcfg(struct ov8865 *ov8865, struct device *dev)
 {
 	struct fwnode_handle *ep;
 	struct fwnode_handle *fwnode = dev_fwnode(dev);
@@ -1661,31 +1661,31 @@ static int ov8856_get_hwcfg(struct ov8856 *ov8856, struct device *dev)
 		return ret;
 
 	if (!is_acpi_node(fwnode)) {
-		ov8856->xvclk = devm_clk_get(dev, "xvclk");
-		if (IS_ERR(ov8856->xvclk)) {
+		ov8865->xvclk = devm_clk_get(dev, "xvclk");
+		if (IS_ERR(ov8865->xvclk)) {
 			dev_err(dev, "could not get xvclk clock (%pe)\n",
-				ov8856->xvclk);
-			return PTR_ERR(ov8856->xvclk);
+				ov8865->xvclk);
+			return PTR_ERR(ov8865->xvclk);
 		}
 
-		clk_set_rate(ov8856->xvclk, xvclk_rate);
-		xvclk_rate = clk_get_rate(ov8856->xvclk);
+		clk_set_rate(ov8865->xvclk, xvclk_rate);
+		xvclk_rate = clk_get_rate(ov8865->xvclk);
 	}
 
-	if (xvclk_rate != OV8856_XVCLK_19_2)
+	if (xvclk_rate != OV8865_XVCLK_19_2)
 		dev_warn(dev, "external clock rate %u is unsupported",
 			 xvclk_rate);
 
-	ov8856->reset_gpio = devm_gpiod_get_optional(dev, "reset",
+	ov8865->reset_gpio = devm_gpiod_get_optional(dev, "reset",
 						     GPIOD_OUT_LOW);
-	if (IS_ERR(ov8856->reset_gpio))
-		return PTR_ERR(ov8856->reset_gpio);
+	if (IS_ERR(ov8865->reset_gpio))
+		return PTR_ERR(ov8865->reset_gpio);
 
-	for (i = 0; i < ARRAY_SIZE(ov8856_supply_names); i++)
-		ov8856->supplies[i].supply = ov8856_supply_names[i];
+	for (i = 0; i < ARRAY_SIZE(ov8865_supply_names); i++)
+		ov8865->supplies[i].supply = ov8865_supply_names[i];
 
-	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ov8856_supply_names),
-				      ov8856->supplies);
+	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ov8865_supply_names),
+				      ov8865->supplies);
 	if (ret)
 		return ret;
 
@@ -1698,7 +1698,7 @@ static int ov8856_get_hwcfg(struct ov8856 *ov8856, struct device *dev)
 	if (ret)
 		return ret;
 
-	if (bus_cfg.bus.mipi_csi2.num_data_lanes != OV8856_DATA_LANES) {
+	if (bus_cfg.bus.mipi_csi2.num_data_lanes != OV8865_DATA_LANES) {
 		dev_err(dev, "number of CSI2 data lanes %d is not supported",
 			bus_cfg.bus.mipi_csi2.num_data_lanes);
 		ret = -EINVAL;
@@ -1732,72 +1732,72 @@ check_hwcfg_error:
 	return ret;
 }
 
-static int ov8856_remove(struct i2c_client *client)
+static int ov8865_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov8856 *ov8856 = to_ov8856(sd);
+	struct ov8865 *ov8865 = to_ov8865(sd);
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(sd->ctrl_handler);
 	pm_runtime_disable(&client->dev);
-	mutex_destroy(&ov8856->mutex);
+	mutex_destroy(&ov8865->mutex);
 
-	__ov8856_power_off(ov8856);
+	__ov8865_power_off(ov8865);
 
 	return 0;
 }
 
-static int ov8856_probe(struct i2c_client *client)
+static int ov8865_probe(struct i2c_client *client)
 {
-	struct ov8856 *ov8856;
+	struct ov8865 *ov8865;
 	int ret;
 
-	ov8856 = devm_kzalloc(&client->dev, sizeof(*ov8856), GFP_KERNEL);
-	if (!ov8856)
+	ov8865 = devm_kzalloc(&client->dev, sizeof(*ov8865), GFP_KERNEL);
+	if (!ov8865)
 		return -ENOMEM;
 
-	ret = ov8856_get_hwcfg(ov8856, &client->dev);
+	ret = ov8865_get_hwcfg(ov8865, &client->dev);
 	if (ret) {
 		dev_err(&client->dev, "failed to get HW configuration: %d",
 			ret);
 		return ret;
 	}
 
-	v4l2_i2c_subdev_init(&ov8856->sd, client, &ov8856_subdev_ops);
+	v4l2_i2c_subdev_init(&ov8865->sd, client, &ov8865_subdev_ops);
 
-	ret = __ov8856_power_on(ov8856);
+	ret = __ov8865_power_on(ov8865);
 	if (ret) {
 		dev_err(&client->dev, "failed to power on\n");
 		return ret;
 	}
 
-	ret = ov8856_identify_module(ov8856);
+	ret = ov8865_identify_module(ov8865);
 	if (ret) {
 		dev_err(&client->dev, "failed to find sensor: %d", ret);
 		goto probe_power_off;
 	}
 
-	mutex_init(&ov8856->mutex);
-	ov8856->cur_mode = &supported_modes[0];
-	ret = ov8856_init_controls(ov8856);
+	mutex_init(&ov8865->mutex);
+	ov8865->cur_mode = &supported_modes[0];
+	ret = ov8865_init_controls(ov8865);
 	if (ret) {
 		dev_err(&client->dev, "failed to init controls: %d", ret);
 		goto probe_error_v4l2_ctrl_handler_free;
 	}
 
-	ov8856->sd.internal_ops = &ov8856_internal_ops;
-	ov8856->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-	ov8856->sd.entity.ops = &ov8856_subdev_entity_ops;
-	ov8856->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
-	ov8856->pad.flags = MEDIA_PAD_FL_SOURCE;
-	ret = media_entity_pads_init(&ov8856->sd.entity, 1, &ov8856->pad);
+	ov8865->sd.internal_ops = &ov8865_internal_ops;
+	ov8865->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	ov8865->sd.entity.ops = &ov8865_subdev_entity_ops;
+	ov8865->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+	ov8865->pad.flags = MEDIA_PAD_FL_SOURCE;
+	ret = media_entity_pads_init(&ov8865->sd.entity, 1, &ov8865->pad);
 	if (ret) {
 		dev_err(&client->dev, "failed to init entity pads: %d", ret);
 		goto probe_error_v4l2_ctrl_handler_free;
 	}
 
-	ret = v4l2_async_register_subdev_sensor_common(&ov8856->sd);
+	ret = v4l2_async_register_subdev_sensor_common(&ov8865->sd);
 	if (ret < 0) {
 		dev_err(&client->dev, "failed to register V4L2 subdev: %d",
 			ret);
@@ -1815,50 +1815,50 @@ static int ov8856_probe(struct i2c_client *client)
 	return 0;
 
 probe_error_media_entity_cleanup:
-	media_entity_cleanup(&ov8856->sd.entity);
+	media_entity_cleanup(&ov8865->sd.entity);
 
 probe_error_v4l2_ctrl_handler_free:
-	v4l2_ctrl_handler_free(ov8856->sd.ctrl_handler);
-	mutex_destroy(&ov8856->mutex);
+	v4l2_ctrl_handler_free(ov8865->sd.ctrl_handler);
+	mutex_destroy(&ov8865->mutex);
 
 probe_power_off:
-	__ov8856_power_off(ov8856);
+	__ov8865_power_off(ov8865);
 
 	return ret;
 }
 
-static const struct dev_pm_ops ov8856_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(ov8856_suspend, ov8856_resume)
+static const struct dev_pm_ops ov8865_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(ov8865_suspend, ov8865_resume)
 };
 
 #ifdef CONFIG_ACPI
-static const struct acpi_device_id ov8856_acpi_ids[] = {
-	{"OVTI8856"},
+static const struct acpi_device_id ov8865_acpi_ids[] = {
+	{"OVTI8865"},
 	{}
 };
 
-MODULE_DEVICE_TABLE(acpi, ov8856_acpi_ids);
+MODULE_DEVICE_TABLE(acpi, ov8865_acpi_ids);
 #endif
 
-static const struct of_device_id ov8856_of_match[] = {
-	{ .compatible = "ovti,ov8856" },
+static const struct of_device_id ov8865_of_match[] = {
+	{ .compatible = "ovti,ov8865" },
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, ov8856_of_match);
+MODULE_DEVICE_TABLE(of, ov8865_of_match);
 
-static struct i2c_driver ov8856_i2c_driver = {
+static struct i2c_driver ov8865_i2c_driver = {
 	.driver = {
-		.name = "ov8856",
-		.pm = &ov8856_pm_ops,
-		.acpi_match_table = ACPI_PTR(ov8856_acpi_ids),
-		.of_match_table = ov8856_of_match,
+		.name = "ov8865",
+		.pm = &ov8865_pm_ops,
+		.acpi_match_table = ACPI_PTR(ov8865_acpi_ids),
+		.of_match_table = ov8865_of_match,
 	},
-	.probe_new = ov8856_probe,
-	.remove = ov8856_remove,
+	.probe_new = ov8865_probe,
+	.remove = ov8865_remove,
 };
 
-module_i2c_driver(ov8856_i2c_driver);
+module_i2c_driver(ov8865_i2c_driver);
 
 MODULE_AUTHOR("Ben Kao <ben.kao@intel.com>");
-MODULE_DESCRIPTION("OmniVision OV8856 sensor driver");
+MODULE_DESCRIPTION("OmniVision OV8865 sensor driver");
 MODULE_LICENSE("GPL v2");
