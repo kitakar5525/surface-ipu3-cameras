@@ -700,6 +700,7 @@ struct ov8865 {
 	struct gpio_desc *led_gpio;
 
 	bool is_acpi_based;
+	bool is_rpm_supported;
 };
 
 static u64 to_pixel_rate(u32 f_index)
@@ -1103,14 +1104,42 @@ static void ov8865_stop_streaming(struct ov8865 *ov8865)
 		dev_err(&client->dev, "failed to set stream");
 }
 
-static int ov8865_set_stream(struct v4l2_subdev *sd, int enable)
+static int __ov8865_set_stream_no_rpm(struct v4l2_subdev *sd, int enable)
+{
+	struct ov8865 *ov8865 = to_ov8865(sd);
+	int ret;
+
+	mutex_lock(&ov8865->mutex);
+	if (enable) {
+		ret = __ov8865_power_on(ov8865);
+		if (ret) {
+			__ov8865_power_off(ov8865);
+			mutex_unlock(&ov8865->mutex);
+			return ret;
+		}
+
+		ret = ov8865_start_streaming(ov8865);
+		if (ret) {
+			enable = 0;
+			ov8865_stop_streaming(ov8865);
+			__ov8865_power_off(ov8865);
+		}
+	} else {
+		ov8865_stop_streaming(ov8865);
+		__ov8865_power_off(ov8865);
+	}
+
+	ov8865->streaming = enable;
+	mutex_unlock(&ov8865->mutex);
+
+	return 0;
+}
+
+static int __ov8865_set_stream_rpm(struct v4l2_subdev *sd, int enable)
 {
 	struct ov8865 *ov8865 = to_ov8865(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	int ret = 0;
-
-	if (ov8865->streaming == enable)
-		return 0;
+	int ret;
 
 	mutex_lock(&ov8865->mutex);
 	if (enable) {
@@ -1135,6 +1164,26 @@ static int ov8865_set_stream(struct v4l2_subdev *sd, int enable)
 	ov8865->streaming = enable;
 	mutex_unlock(&ov8865->mutex);
 
+	return 0;
+}
+
+static int ov8865_set_stream(struct v4l2_subdev *sd, int enable)
+{
+	struct ov8865 *ov8865 = to_ov8865(sd);
+	int ret = 0;
+
+	if (ov8865->streaming == enable)
+		return 0;
+
+	/* Regular PCs designed for Windows don't support runtime PM.
+	 * In this case, do it ourselves.
+	 */
+	if (!ov8865->is_rpm_supported) {
+		ret = __ov8865_set_stream_no_rpm(sd, enable);
+		return ret;
+	}
+
+	ret = __ov8865_set_stream_rpm(sd, enable);
 	return ret;
 }
 
@@ -1629,6 +1678,18 @@ static int ov8865_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_enable(&client->dev);
 	pm_runtime_idle(&client->dev);
+
+	/* TODO: how to determine if runtime PM is not supported? */
+	ov8865->is_rpm_supported = false;
+
+	/* Regular PCs designed for Windows don't support runtime PM.
+	 * In this case, do it ourselves.
+	 */
+	if (!ov8865->is_rpm_supported) {
+		dev_info(&client->dev,
+			 "Couldn't enable runtime PM, will handle it ourselves.\n");
+		__ov8865_power_off(ov8865);
+	}
 
 	return 0;
 
