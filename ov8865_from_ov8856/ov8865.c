@@ -1686,19 +1686,6 @@ static int ov8865_identify_module(struct ov8865 *ov8865)
 		return ret;
 	}
 
-	ret = ov8865_read_reg(ov8865, OV8865_MODULE_REVISION,
-			      OV8865_REG_VALUE_08BIT, &val);
-	if (ret) {
-		dev_err(&client->dev, "failed to read module revision");
-		return ret;
-	}
-
-	dev_info(&client->dev, "OV8865 revision %x (%s) at address 0x%02x\n",
-		 val,
-		 val == OV8865_2A_MODULE ? "2A" :
-		 val == OV8865_1B_MODULE ? "1B" : "unknown revision",
-		 client->addr);
-
 	ret = ov8865_write_reg(ov8865, OV8865_REG_MODE_SELECT,
 			       OV8865_REG_VALUE_08BIT, OV8865_MODE_STANDBY);
 	if (ret) {
