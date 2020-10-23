@@ -2715,10 +2715,6 @@ static int ov8865_probe(struct i2c_client *client)
 		ret = ov8865_get_regulators(sensor);
 		if (ret)
 			return ret;
-	} else {
-		/* For ACPI-based systems */
-		/* TODO: read from fwnode or SSDB */
-		sensor->xclk_freq = 19200000;
 	}
 
 	/* For ACPI-based systems */
