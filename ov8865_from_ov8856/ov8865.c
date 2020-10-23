@@ -1833,7 +1833,7 @@ static const struct dev_pm_ops ov8865_pm_ops = {
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id ov8865_acpi_ids[] = {
-	{"OVTI8865"},
+	{"INT347A"},
 	{}
 };
 
