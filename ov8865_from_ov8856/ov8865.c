@@ -1709,6 +1709,7 @@ static int ov8865_identify_module(struct ov8865 *ov8865)
 	return 0;
 }
 
+#if 0
 static int ov8865_get_hwcfg(struct ov8865 *ov8865, struct device *dev)
 {
 	struct fwnode_handle *ep;
@@ -1798,6 +1799,7 @@ check_hwcfg_error:
 
 	return ret;
 }
+#endif
 
 static int ov8865_remove(struct i2c_client *client)
 {
@@ -1944,12 +1946,14 @@ static int ov8865_probe(struct i2c_client *client)
 		dev_info(&client->dev, "system is not acpi-based\n");
 	}
 
+#if 0
 	ret = ov8865_get_hwcfg(ov8865, &client->dev);
 	if (ret) {
 		dev_err(&client->dev, "failed to get HW configuration: %d",
 			ret);
 		return ret;
 	}
+#endif
 
 	v4l2_i2c_subdev_init(&ov8865->sd, client, &ov8865_subdev_ops);
 
