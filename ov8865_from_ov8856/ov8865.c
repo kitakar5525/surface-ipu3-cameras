@@ -14,6 +14,8 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
 
+#define OV8865_ACPI_HID "INT347A"
+
 #define OV8865_REG_VALUE_08BIT		1
 #define OV8865_REG_VALUE_16BIT		2
 #define OV8865_REG_VALUE_24BIT		3
@@ -1047,6 +1049,8 @@ struct ov8865 {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 static u64 to_pixel_rate(u32 f_index)
@@ -1345,7 +1349,7 @@ static int __ov8865_power_on(struct ov8865 *ov8865)
 	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
 	int ret;
 
-	if (is_acpi_node(dev_fwnode(&client->dev))) {
+	if (ov8865->is_acpi_based) {
 		ret = gpio_crs_ctrl(&ov8865->sd, true);
 		if (ret)
 			goto fail_power;
@@ -1380,7 +1384,7 @@ disable_clk:
 	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
 	clk_disable_unprepare(ov8865->xvclk);
 fail_power:
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (ov8865->is_acpi_based)
 		gpio_crs_ctrl(&ov8865->sd, false);
 
 	return ret;
@@ -1388,9 +1392,7 @@ fail_power:
 
 static void __ov8865_power_off(struct ov8865 *ov8865)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
-
-	if (is_acpi_node(dev_fwnode(&client->dev))) {
+	if (ov8865->is_acpi_based) {
 		gpio_crs_ctrl(&ov8865->sd, false);
 		return;
 	}
@@ -1725,7 +1727,7 @@ static int ov8865_get_hwcfg(struct ov8865 *ov8865, struct device *dev)
 	if (ret)
 		return ret;
 
-	if (!is_acpi_node(fwnode)) {
+	if (!ov8865->is_acpi_based) {
 		ov8865->xvclk = devm_clk_get(dev, "xvclk");
 		if (IS_ERR(ov8865->xvclk)) {
 			dev_err(dev, "could not get xvclk clock (%pe)\n",
@@ -1802,7 +1804,7 @@ static int ov8865_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov8865 *ov8865 = to_ov8865(sd);
 
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (ov8865->is_acpi_based)
 		gpio_crs_put(ov8865);
 
 	v4l2_async_unregister_subdev(sd);
@@ -1896,6 +1898,13 @@ static int ov8865_probe(struct i2c_client *client)
 	if (!ov8865)
 		return -ENOMEM;
 
+	if (acpi_dev_present(OV8865_ACPI_HID, NULL, -1)) {
+		dev_info(&client->dev, "system is acpi-based\n");
+		ov8865->is_acpi_based = true;
+	} else {
+		dev_info(&client->dev, "system is not acpi-based\n");
+	}
+
 	ret = ov8865_get_hwcfg(ov8865, &client->dev);
 	if (ret) {
 		dev_err(&client->dev, "failed to get HW configuration: %d",
@@ -1978,7 +1987,7 @@ probe_power_off:
 	__ov8865_power_off(ov8865);
 
 error_gpio_crs_put:
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (ov8865->is_acpi_based)
 		gpio_crs_put(ov8865);
 
 	return ret;
