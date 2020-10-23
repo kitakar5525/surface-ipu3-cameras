@@ -1821,12 +1821,21 @@ static int ov8865_remove(struct i2c_client *client)
 /* Get acpi_device of dependent INT3472 device */
 static struct acpi_device *get_dep_adev(struct device *dev)
 {
-	struct acpi_handle *dev_handle = ACPI_HANDLE(dev);
+	struct acpi_handle *dev_handle;
+	struct acpi_device *sensor_adev;
 	struct acpi_handle_list dep_devices;
 	struct acpi_device *dep_adev;
 	acpi_status status;
 	const char *dep_hid = "INT3472";
 	int i;
+
+	sensor_adev = acpi_dev_get_first_match_dev(OV8865_ACPI_HID, NULL, -1);
+	if (!sensor_adev) {
+		dev_err(dev, "Couldn't get sensor ACPI device\n");
+		return ERR_PTR(-ENODEV);
+	}
+	dev_handle = sensor_adev->handle;
+	acpi_dev_put(sensor_adev);
 
 	if (!acpi_has_method(dev_handle, "_DEP")) {
 		dev_err(dev, "No _DEP entry found\n");
