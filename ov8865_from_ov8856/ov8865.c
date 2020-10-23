@@ -1285,6 +1285,57 @@ static void ov8865_update_pad_format(const struct ov8865_mode *mode,
 	fmt->field = V4L2_FIELD_NONE;
 }
 
+static int __ov8865_power_on(struct ov8865 *ov8865)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
+	int ret;
+
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		return 0;
+
+	ret = clk_prepare_enable(ov8865->xvclk);
+	if (ret < 0) {
+		dev_err(&client->dev, "failed to enable xvclk\n");
+		return ret;
+	}
+
+	if (ov8865->reset_gpio) {
+		gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
+		usleep_range(1000, 2000);
+	}
+
+	ret = regulator_bulk_enable(ARRAY_SIZE(ov8865_supply_names),
+				    ov8865->supplies);
+	if (ret < 0) {
+		dev_err(&client->dev, "failed to enable regulators\n");
+		goto disable_clk;
+	}
+
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 0);
+	usleep_range(1500, 1800);
+
+	return 0;
+
+disable_clk:
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
+	clk_disable_unprepare(ov8865->xvclk);
+
+	return ret;
+}
+
+static void __ov8865_power_off(struct ov8865 *ov8865)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
+
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		return;
+
+	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(ov8865_supply_names),
+			       ov8865->supplies);
+	clk_disable_unprepare(ov8865->xvclk);
+}
+
 static int ov8865_start_streaming(struct ov8865 *ov8865)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
@@ -1362,57 +1413,6 @@ static int ov8865_set_stream(struct v4l2_subdev *sd, int enable)
 	mutex_unlock(&ov8865->mutex);
 
 	return ret;
-}
-
-static int __ov8865_power_on(struct ov8865 *ov8865)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
-	int ret;
-
-	if (is_acpi_node(dev_fwnode(&client->dev)))
-		return 0;
-
-	ret = clk_prepare_enable(ov8865->xvclk);
-	if (ret < 0) {
-		dev_err(&client->dev, "failed to enable xvclk\n");
-		return ret;
-	}
-
-	if (ov8865->reset_gpio) {
-		gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
-		usleep_range(1000, 2000);
-	}
-
-	ret = regulator_bulk_enable(ARRAY_SIZE(ov8865_supply_names),
-				    ov8865->supplies);
-	if (ret < 0) {
-		dev_err(&client->dev, "failed to enable regulators\n");
-		goto disable_clk;
-	}
-
-	gpiod_set_value_cansleep(ov8865->reset_gpio, 0);
-	usleep_range(1500, 1800);
-
-	return 0;
-
-disable_clk:
-	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
-	clk_disable_unprepare(ov8865->xvclk);
-
-	return ret;
-}
-
-static void __ov8865_power_off(struct ov8865 *ov8865)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
-
-	if (is_acpi_node(dev_fwnode(&client->dev)))
-		return;
-
-	gpiod_set_value_cansleep(ov8865->reset_gpio, 1);
-	regulator_bulk_disable(ARRAY_SIZE(ov8865_supply_names),
-			       ov8865->supplies);
-	clk_disable_unprepare(ov8865->xvclk);
 }
 
 static int __maybe_unused ov8865_suspend(struct device *dev)
