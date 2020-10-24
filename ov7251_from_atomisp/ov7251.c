@@ -949,19 +949,22 @@ static int ov7251_s_stream(struct v4l2_subdev *sd, int enable)
 	return ret;
 }
 
-static int ov7251_enum_frameintervals(struct v4l2_subdev *sd,
-				      struct v4l2_frmivalenum *fival)
+static int ov7251_enum_frame_interval(struct v4l2_subdev *sd,
+				      struct v4l2_subdev_pad_config *cfg,
+				      struct v4l2_subdev_frame_interval_enum *fie)
 {
-	unsigned int index = fival->index;
+	unsigned int index = fie->index;
 
 	if (index >= N_RES)
 		return -EINVAL;
 
-	fival->type = V4L2_FRMIVAL_TYPE_DISCRETE;
-	fival->width = ov7251_res[index].width;
-	fival->height = ov7251_res[index].height;
-	fival->discrete.numerator = 1;
-	fival->discrete.denominator = ov7251_res[index].fps;
+	/* TODO: can we really drop this? */
+	// fie->type = V4L2_FRMIVAL_TYPE_DISCRETE;
+
+	fie->width = ov7251_res[index].width;
+	fie->height = ov7251_res[index].height;
+	fie->interval.numerator = 1;
+	fie->interval.denominator = ov7251_res[index].fps;
 
 	return 0;
 }
@@ -1200,7 +1203,6 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 	.s_stream = ov7251_s_stream,
 	.g_parm = ov7251_g_parm,
 	.s_parm = ov7251_s_parm,
-	.enum_frameintervals = ov7251_enum_frameintervals,
 	.enum_mbus_fmt = ov7251_enum_mbus_fmt,
 	.try_mbus_fmt = ov7251_try_mbus_fmt,
 	.g_mbus_fmt = ov7251_g_mbus_fmt,
@@ -1219,6 +1221,7 @@ static const struct v4l2_subdev_core_ops ov7251_core_ops = {
 static const struct v4l2_subdev_pad_ops ov7251_pad_ops = {
 	.enum_mbus_code = ov7251_enum_mbus_code,
 	.enum_frame_size = ov7251_enum_frame_size,
+	.enum_frame_interval = ov7251_enum_frame_interval,
 	.get_fmt = ov7251_get_pad_format,
 	.set_fmt = ov7251_set_pad_format,
 };
