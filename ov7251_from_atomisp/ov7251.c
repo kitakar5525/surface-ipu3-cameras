@@ -30,7 +30,6 @@
 #include <linux/gpio.h>
 #include <linux/moduleparam.h>
 #include <media/v4l2-device.h>
-#include <linux/atomisp_platform.h>
 
 #include <linux/acpi.h>
 #include <linux/io.h>
@@ -278,111 +277,6 @@ static int ov7251_g_fnumber_range(struct v4l2_subdev *sd, s32 *val)
 	*val = (OV7251_F_NUMBER_DEFAULT_NUM << 24) |
 		(OV7251_F_NUMBER_DEM << 16) |
 		(OV7251_F_NUMBER_DEFAULT_NUM << 8) | OV7251_F_NUMBER_DEM;
-	return 0;
-}
-
-static int ov7251_get_intg_factor(struct i2c_client *client,
-				struct camera_mipi_info *info,
-				const struct ov7251_resolution *res)
-{
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-	struct atomisp_sensor_mode_data *buf = &info->data;
-	const unsigned int ext_clk_freq_hz = 19200000;
-	const unsigned int pll_invariant_div = 10;
-	unsigned int pix_clk_freq_hz;
-	u16 pre_pll_clk_div;
-	u16 pll_multiplier;
-	u16 op_pix_clk_div;
-	u16 reg_val;
-	int ret;
-
-	if (info == NULL)
-		return -EINVAL;
-
-	/* pixel clock calculation */
-	ret =  ov7251_read_reg(client, OV7251_8BIT,
-				OV7251_SC_CMMN_PLL_CTRL3, &pre_pll_clk_div);
-	if (ret)
-		return ret;
-
-	ret =  ov7251_read_reg(client, OV7251_8BIT,
-				OV7251_SC_CMMN_PLL_MULTIPLIER, &pll_multiplier);
-	if (ret)
-		return ret;
-
-	ret =  ov7251_read_reg(client, OV7251_8BIT,
-				OV7251_SC_CMMN_PLL_DEBUG_OPT, &op_pix_clk_div);
-	if (ret)
-		return ret;
-
-	pre_pll_clk_div = (pre_pll_clk_div & 0x70) >> 4;
-	if (pre_pll_clk_div == 0)
-		return -EINVAL;
-
-	pll_multiplier = pll_multiplier & 0x7f;
-	op_pix_clk_div = op_pix_clk_div & 0x03;
-	pix_clk_freq_hz = ext_clk_freq_hz / pre_pll_clk_div * pll_multiplier
-				* op_pix_clk_div/pll_invariant_div;
-
-	dev->vt_pix_clk_freq_mhz = pix_clk_freq_hz;
-	buf->vt_pix_clk_freq_mhz = pix_clk_freq_hz;
-
-	/* get integration time */
-	buf->coarse_integration_time_min = OV7251_COARSE_INTG_TIME_MIN;
-	buf->coarse_integration_time_max_margin =
-					OV7251_COARSE_INTG_TIME_MAX_MARGIN;
-
-	buf->fine_integration_time_min = OV7251_FINE_INTG_TIME_MIN;
-	buf->fine_integration_time_max_margin =
-					OV7251_FINE_INTG_TIME_MAX_MARGIN;
-
-	buf->fine_integration_time_def = OV7251_FINE_INTG_TIME_MIN;
-	buf->frame_length_lines = res->lines_per_frame;
-	buf->line_length_pck = res->pixels_per_line;
-	buf->read_mode = res->bin_mode;
-
-	/* get the cropping and output resolution to ISP for this mode. */
-	ret =  ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_H_CROP_START_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->crop_horizontal_start = reg_val;
-
-	ret =  ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_V_CROP_START_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->crop_vertical_start = reg_val;
-
-	ret = ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_H_CROP_END_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->crop_horizontal_end = reg_val;
-
-	ret = ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_V_CROP_END_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->crop_vertical_end = reg_val;
-
-	ret = ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_H_OUTSIZE_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->output_width = reg_val;
-
-	ret = ov7251_read_reg(client, OV7251_16BIT,
-					OV7251_V_OUTSIZE_H, &reg_val);
-	if (ret)
-		return ret;
-	buf->output_height = reg_val;
-
-	buf->binning_factor_x = res->bin_factor_x ?
-					res->bin_factor_x : 1;
-	buf->binning_factor_y = res->bin_factor_y ?
-					res->bin_factor_y : 1;
 	return 0;
 }
 
@@ -1075,11 +969,6 @@ static int ov7251_s_mbus_fmt(struct v4l2_subdev *sd,
 		goto err;
 	}
 
-	ret = ov7251_get_intg_factor(client, ov7251_info,
-					&ov7251_res[dev->fmt_idx]);
-	if (ret)
-		dev_err(&client->dev, "failed to get integration_factor\n");
-
 err:
 	mutex_unlock(&dev->input_lock);
 	return ret;
@@ -1667,12 +1556,6 @@ static int ov7251_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(&dev->sd, client, &ov7251_ops);
 
 	ovpdev = client->dev.platform_data;
-#ifdef CONFIG_INTEL_MID_ISP
-	if (ACPI_COMPANION(&client->dev))
-		ovpdev = gmin_camera_platform_data(&dev->sd,
-						   ATOMISP_INPUT_FORMAT_RAW_10,
-						   atomisp_bayer_order_bggr);
-#endif
 	ret = ov7251_s_config(&dev->sd, client->irq, ovpdev);
 	if (ret)
 		goto out_free;
@@ -1719,11 +1602,6 @@ static int ov7251_probe(struct i2c_client *client)
 		dev_err(&client->dev, "sysfs_create_group failed");
 
 	}
-#endif
-
-#ifdef CONFIG_INTEL_MID_ISP
-	if (ACPI_HANDLE(&client->dev))
-		ret = atomisp_register_i2c_module(&dev->sd, ovpdev, RAW_CAMERA);
 #endif
 
 	return ret;
