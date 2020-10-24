@@ -599,58 +599,6 @@ static struct ov7251_control *ov7251_find_control(u32 id)
 	return NULL;
 }
 
-static int ov7251_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
-{
-	struct ov7251_control *ctrl = ov7251_find_control(qc->id);
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-
-	if (ctrl == NULL)
-		return -EINVAL;
-
-	mutex_lock(&dev->input_lock);
-	*qc = ctrl->qc;
-	mutex_unlock(&dev->input_lock);
-
-	return 0;
-}
-
-/* imx control set/get */
-static int ov7251_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
-{
-	struct ov7251_control *s_ctrl;
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-	int ret;
-
-	if (!ctrl)
-		return -EINVAL;
-
-	s_ctrl = ov7251_find_control(ctrl->id);
-	if ((s_ctrl == NULL) || (s_ctrl->query == NULL))
-		return -EINVAL;
-
-	mutex_lock(&dev->input_lock);
-	ret = s_ctrl->query(sd, &ctrl->value);
-	mutex_unlock(&dev->input_lock);
-
-	return ret;
-}
-
-static int ov7251_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
-{
-	struct ov7251_control *octrl = ov7251_find_control(ctrl->id);
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-	int ret;
-
-	if ((octrl == NULL) || (octrl->tweak == NULL))
-		return -EINVAL;
-
-	mutex_lock(&dev->input_lock);
-	ret = octrl->tweak(sd, ctrl->value);
-	mutex_unlock(&dev->input_lock);
-
-	return ret;
-}
-
 static int ov7251_init(struct v4l2_subdev *sd)
 {
 	struct ov7251_device *dev = to_ov7251_sensor(sd);
@@ -1122,9 +1070,6 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 
 static const struct v4l2_subdev_core_ops ov7251_core_ops = {
 	.s_power = ov7251_s_power,
-	.queryctrl = ov7251_queryctrl,
-	.g_ctrl = ov7251_g_ctrl,
-	.s_ctrl = ov7251_s_ctrl,
 	.ioctl = ov7251_ioctl,
 };
 
