@@ -802,28 +802,6 @@ static int get_resolution_index(int w, int h)
 	return -1;
 }
 
-static int ov7251_try_mbus_fmt(struct v4l2_subdev *sd,
-			struct v4l2_mbus_framefmt *fmt)
-{
-	int idx;
-
-	if (!fmt)
-		return -EINVAL;
-	idx = nearest_resolution_index(fmt->width,
-					fmt->height);
-	if (idx == -1) {
-		/* return the largest resolution */
-		fmt->width = ov7251_res[N_RES - 1].width;
-		fmt->height = ov7251_res[N_RES - 1].height;
-	} else {
-		fmt->width = ov7251_res[idx].width;
-		fmt->height = ov7251_res[idx].height;
-	}
-	fmt->code = MEDIA_BUS_FMT_SGRBG10_1X10;
-
-	return 0;
-}
-
 /* TODO: remove it. */
 static int startup(struct v4l2_subdev *sd)
 {
@@ -849,46 +827,6 @@ static int startup(struct v4l2_subdev *sd)
 	return ret;
 }
 
-static int ov7251_s_mbus_fmt(struct v4l2_subdev *sd,
-			     struct v4l2_mbus_framefmt *fmt)
-{
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct camera_mipi_info *ov7251_info = NULL;
-	int ret = 0;
-
-	ov7251_info = v4l2_get_subdev_hostdata(sd);
-	if (ov7251_info == NULL)
-		return -EINVAL;
-
-	mutex_lock(&dev->input_lock);
-	ret = ov7251_try_mbus_fmt(sd, fmt);
-	if (ret == -1) {
-		dev_err(&client->dev, "try fmt fail\n");
-		goto err;
-	}
-
-	dev->fmt_idx = get_resolution_index(fmt->width,
-					    fmt->height);
-	if (dev->fmt_idx == -1) {
-		dev_err(&client->dev, "get resolution fail\n");
-		mutex_unlock(&dev->input_lock);
-		return -EINVAL;
-	}
-
-	dev->pixels_per_line = ov7251_res[dev->fmt_idx].pixels_per_line;
-	dev->lines_per_frame = ov7251_res[dev->fmt_idx].lines_per_frame;
-
-	ret = startup(sd);
-	if (ret) {
-		dev_err(&client->dev, "ov7251 startup err\n");
-		goto err;
-	}
-
-err:
-	mutex_unlock(&dev->input_lock);
-	return ret;
-}
 static int ov7251_g_mbus_fmt(struct v4l2_subdev *sd,
 			     struct v4l2_mbus_framefmt *fmt)
 {
@@ -1194,9 +1132,7 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 	.s_stream = ov7251_s_stream,
 	.g_parm = ov7251_g_parm,
 	.s_parm = ov7251_s_parm,
-	.try_mbus_fmt = ov7251_try_mbus_fmt,
 	.g_mbus_fmt = ov7251_g_mbus_fmt,
-	.s_mbus_fmt = ov7251_s_mbus_fmt,
 	.g_frame_interval = ov7251_g_frame_interval,
 };
 
