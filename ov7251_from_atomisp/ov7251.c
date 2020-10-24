@@ -949,23 +949,6 @@ static int ov7251_s_stream(struct v4l2_subdev *sd, int enable)
 	return ret;
 }
 
-/* ov7251 enum frame size, frame intervals */
-static int ov7251_enum_framesizes(struct v4l2_subdev *sd,
-				  struct v4l2_frmsizeenum *fsize)
-{
-	unsigned int index = fsize->index;
-
-	if (index >= N_RES)
-		return -EINVAL;
-
-	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
-	fsize->discrete.width = ov7251_res[index].width;
-	fsize->discrete.height = ov7251_res[index].height;
-	fsize->reserved[0] = ov7251_res[index].used;
-
-	return 0;
-}
-
 static int ov7251_enum_frameintervals(struct v4l2_subdev *sd,
 				      struct v4l2_frmivalenum *fival)
 {
@@ -1217,7 +1200,6 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 	.s_stream = ov7251_s_stream,
 	.g_parm = ov7251_g_parm,
 	.s_parm = ov7251_s_parm,
-	.enum_framesizes = ov7251_enum_framesizes,
 	.enum_frameintervals = ov7251_enum_frameintervals,
 	.enum_mbus_fmt = ov7251_enum_mbus_fmt,
 	.try_mbus_fmt = ov7251_try_mbus_fmt,
