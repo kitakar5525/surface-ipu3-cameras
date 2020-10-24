@@ -14,7 +14,6 @@
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
-#include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/sysfs.h>
 #include <media/media-entity.h>
@@ -994,6 +993,9 @@ static const char * const ov569x_test_pattern_menu[] = {
 	"Vertical Color Bar Type 4"
 };
 
+static int __ov569x_power_on(struct ov569x *ov569x);
+static void __ov569x_power_off(struct ov569x *ov569x);
+
 /* Write registers up to 4 at a time */
 static int ov569x_write_reg(struct i2c_client *client, u16 reg,
 			    u32 len, u32 val)
@@ -1279,21 +1281,21 @@ static int ov569x_s_stream(struct v4l2_subdev *sd, int on)
 		goto unlock_and_return;
 
 	if (on) {
-		ret = pm_runtime_get_sync(&client->dev);
+		ret = __ov569x_power_on(ov569x);
 		if (ret < 0) {
-			pm_runtime_put_noidle(&client->dev);
+			dev_err(&client->dev, "__ov569x_power_on failed\n");
 			goto unlock_and_return;
 		}
 
 		ret = __ov569x_start_stream(ov569x);
 		if (ret) {
 			v4l2_err(sd, "start stream failed while write regs\n");
-			pm_runtime_put(&client->dev);
+			__ov569x_power_off(ov569x);
 			goto unlock_and_return;
 		}
 	} else {
 		__ov569x_stop_stream(ov569x);
-		pm_runtime_put(&client->dev);
+		__ov569x_power_off(ov569x);
 	}
 
 	ov569x->streaming = on;
@@ -1428,26 +1430,6 @@ static void __ov569x_power_off(struct ov569x *ov569x)
 		gpio_crs_ctrl(sd, false);
 }
 
-static int __maybe_unused ov569x_runtime_resume(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov569x *ov569x = to_ov569x(sd);
-
-	return __ov569x_power_on(ov569x);
-}
-
-static int __maybe_unused ov569x_runtime_suspend(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov569x *ov569x = to_ov569x(sd);
-
-	__ov569x_power_off(ov569x);
-
-	return 0;
-}
-
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 static int ov569x_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
@@ -1478,11 +1460,6 @@ static int ov569x_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 #endif
-
-static const struct dev_pm_ops ov569x_pm_ops = {
-	SET_RUNTIME_PM_OPS(ov569x_runtime_suspend,
-			   ov569x_runtime_resume, NULL)
-};
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 static const struct v4l2_subdev_internal_ops ov569x_internal_ops = {
@@ -1526,9 +1503,6 @@ static int ov569x_set_ctrl(struct v4l2_ctrl *ctrl)
 		break;
 	}
 
-	if (!pm_runtime_get_if_in_use(&client->dev))
-		return 0;
-
 	switch (ctrl->id) {
 	case V4L2_CID_EXPOSURE:
 		/* 4 least significant bits of expsoure are fractional part */
@@ -1560,8 +1534,6 @@ static int ov569x_set_ctrl(struct v4l2_ctrl *ctrl)
 			 __func__, ctrl->id, ctrl->val);
 		break;
 	}
-
-	pm_runtime_put(&client->dev);
 
 	return ret;
 }
@@ -1872,9 +1844,8 @@ static int ov569x_probe(struct i2c_client *client)
 		goto err_clean_entity;
 	}
 
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
-	pm_runtime_idle(dev);
+	/* power off after probe */
+	__ov569x_power_off(ov569x);
 
 	return 0;
 
@@ -1914,11 +1885,6 @@ static int ov569x_remove(struct i2c_client *client)
 	v4l2_ctrl_handler_free(&ov569x->ctrl_handler);
 	mutex_destroy(&ov569x->mutex);
 
-	pm_runtime_disable(&client->dev);
-	if (!pm_runtime_status_suspended(&client->dev))
-		__ov569x_power_off(ov569x);
-	pm_runtime_set_suspended(&client->dev);
-
 	return 0;
 }
 
@@ -1941,7 +1907,6 @@ MODULE_DEVICE_TABLE(acpi, ov569x_acpi_ids);
 static struct i2c_driver ov569x_i2c_driver = {
 	.driver = {
 		.name = "ov569x",
-		.pm = &ov569x_pm_ops,
 		.of_match_table = of_match_ptr(ov569x_of_match),
 		.acpi_match_table = ACPI_PTR(ov569x_acpi_ids),
 	},
