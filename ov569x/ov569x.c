@@ -111,6 +111,7 @@ struct ov569x {
 	struct mutex		mutex;
 	bool			streaming;
 	const struct ov569x_mode *cur_mode;
+	u32 			chip_id;
 
 	/* For DT-based systems */
 	struct clk		*xvclk;
@@ -1334,6 +1335,7 @@ static int ov569x_check_sensor_id(struct ov569x *ov569x,
 	switch(id) {
 	case CHIP_ID_OV5693:
 	case CHIP_ID_OV5695:
+		ov569x->chip_id = id;
 		break;
 	default:
 		dev_err(dev, "Unexpected sensor id(%06x), ret(%d)\n", id, ret);
