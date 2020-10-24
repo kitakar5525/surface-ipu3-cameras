@@ -1754,20 +1754,7 @@ static struct i2c_driver ov7251_driver = {
 	.probe_new = ov7251_probe,
 	.remove = ov7251_remove,
 };
-
-static int init_ov7251(void)
-{
-	pr_err(OV7251_NAME": tal init called");
-	return i2c_add_driver(&ov7251_driver);
-}
-
-static void exit_ov7251(void)
-{
-	i2c_del_driver(&ov7251_driver);
-}
-
-late_initcall(init_ov7251);
-module_exit(exit_ov7251);
+module_i2c_driver(ov7251_driver);
 
 MODULE_AUTHOR("Wei Liu <wei.liu@intel.com>");
 MODULE_DESCRIPTION("A low-level driver for OmniVision 7251 sensors");
