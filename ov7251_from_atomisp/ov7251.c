@@ -666,80 +666,17 @@ static int ov7251_init(struct v4l2_subdev *sd)
 	return 0;
 }
 
-static int power_ctrl(struct v4l2_subdev *sd, bool flag)
-{
-	int ret = -1;
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-
-	if (!dev || !dev->platform_data)
-		return -ENODEV;
-
-	/* Non-gmin platforms use the legacy callback */
-	if (dev->platform_data->power_ctrl)
-		return dev->platform_data->power_ctrl(sd, flag);
-
-#ifdef CONFIG_INTEL_MID_ISP
-	if (flag) {
-		ret = dev->platform_data->v2p8_ctrl(sd, 1);
-		if (ret == 0) {
-			ret = dev->platform_data->v1p8_ctrl(sd, 1);
-			if (ret)
-				dev->platform_data->v2p8_ctrl(sd, 0);
-		}
-	} else {
-
-
-		ret = dev->platform_data->v1p8_ctrl(sd, 0);
-		ret |= dev->platform_data->v2p8_ctrl(sd, 0);
-	}
-
-#endif
-
-	return ret;
-}
-
 static int gpio_ctrl(struct v4l2_subdev *sd, bool flag)
 {
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-	int ret = -1;
+	/* To be added */
 
-	if (!dev || !dev->platform_data)
-		return -ENODEV;
-
-	/* Non-gmin platforms use the legacy callback */
-	if (dev->platform_data->gpio_ctrl)
-		return dev->platform_data->gpio_ctrl(sd, flag);
-
-#ifdef CONFIG_INTEL_MID_ISP
-
-	/* motion module reset */
-	ret = dev->platform_data->gpio0_ctrl(sd, flag);
-
-	/* mipi mux select - OPTIONAL */
-	if (!ret)
-		dev->platform_data->gpio1_ctrl(sd, flag);
-#endif
-	return ret;
+	return 0;
 }
 
 static int power_up(struct v4l2_subdev *sd)
 {
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
-
-	if (dev->platform_data == NULL) {
-		dev_err(&client->dev,
-			"no camera_sensor_platform_data");
-		return -ENODEV;
-	}
-
-	/*tanstamp_gpio_ctrl(client,1); */
-
-	/* power control */
-	ret = power_ctrl(sd, 1);
-	if (ret)
-		goto fail_power;
 
 	/* according to DS, at least 5ms is needed between DOVDD and PWDN */
 	usleep_range(5000, 6000);
@@ -752,21 +689,13 @@ static int power_up(struct v4l2_subdev *sd)
 			goto fail_power;
 	}
 
-	ret = dev->platform_data->flisclk_ctrl(sd, 1);
-	if (ret)
-		goto fail_clk;
-
 	/* according to DS, 20ms is needed between PWDN and i2c access */
 	msleep(20);
 
-
 	return 0;
 
-fail_clk:
-	gpio_ctrl(sd, 0);
 fail_power:
 
-	power_ctrl(sd, 0);
 	dev_err(&client->dev, "sensor power-up failed\n");
 
 	return ret;
@@ -774,18 +703,8 @@ fail_power:
 
 static int power_down(struct v4l2_subdev *sd)
 {
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
-
-	if (dev->platform_data == NULL) {
-		dev_err(&client->dev,
-			"no camera_sensor_platform_data");
-		return -ENODEV;
-	}
-	ret = dev->platform_data->flisclk_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "flisclk failed\n");
 
 	/* gpio ctrl */
 	ret = gpio_ctrl(sd, 0);
@@ -794,10 +713,7 @@ static int power_down(struct v4l2_subdev *sd)
 		if (ret)
 			dev_err(&client->dev, "gpio failed 2\n");
 	}
-	/* power control */
-	ret = power_ctrl(sd, 0);
-	if (ret)
-		dev_err(&client->dev, "vprog failed.\n");
+
 	return ret;
 }
 
@@ -1076,25 +992,13 @@ static int ov7251_enum_mbus_fmt(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov7251_s_config(struct v4l2_subdev *sd,
-			   int irq, void *platform_data)
+static int ov7251_s_config(struct v4l2_subdev *sd)
 {
 	struct ov7251_device *dev = to_ov7251_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
 
-	if (platform_data == NULL)
-		return -ENODEV;
-	dev->platform_data =
-		(struct camera_sensor_platform_data *)platform_data;
 	mutex_lock(&dev->input_lock);
-	if (dev->platform_data->platform_init) {
-		ret = dev->platform_data->platform_init(client);
-		if (ret) {
-			dev_err(&client->dev, "platform init err\n");
-			goto platform_init_failed;
-		}
-	}
 
 	/* power off the module, then power on it in future
 	 * as first power on by board may not fulfill the
@@ -1109,41 +1013,29 @@ static int ov7251_s_config(struct v4l2_subdev *sd,
 	ret = power_up(sd);
 	if (ret) {
 		dev_err(&client->dev, "ov7251 power-up err.\n");
-		goto fail_power_on;
+		goto fail_power_off;
 	}
-
-
-
-	ret = dev->platform_data->csi_cfg(sd, 1);
-	if (ret)
-		goto fail_csi_cfg;
 
 	/* config & detect sensor */
 	ret = ov7251_detect(client);
 	if (ret) {
 		dev_err(&client->dev, "ov7251_detect err s_config.\n");
-		goto fail_csi_cfg;
+		goto fail_power_off;
 	}
 
 	/* turn off sensor, after probed */
 	ret = power_down(sd);
 	if (ret) {
 		dev_err(&client->dev, "ov7251 power-off err.\n");
-		goto fail_csi_cfg;
+		goto fail_power_off;
 	}
 	mutex_unlock(&dev->input_lock);
 
 	return 0;
 
-fail_csi_cfg:
-	dev->platform_data->csi_cfg(sd, 0);
-fail_power_on:
+fail_power_off:
 	power_down(sd);
 	dev_err(&client->dev, "sensor power-gating failed\n");
-fail_power_off:
-	if (dev->platform_data->platform_deinit)
-		dev->platform_data->platform_deinit();
-platform_init_failed:
 	mutex_unlock(&dev->input_lock);
 	return ret;
 }
@@ -1363,10 +1255,6 @@ static int ov7251_remove(struct i2c_client *client)
 
 	dev_dbg(&client->dev, "%s...\n", __func__);
 
-	if (dev->platform_data->platform_deinit)
-		dev->platform_data->platform_deinit();
-
-	dev->platform_data->csi_cfg(sd, 0);
 	v4l2_ctrl_handler_free(&dev->ctrl_handler);
 	v4l2_device_unregister_subdev(sd);
 	media_entity_cleanup(&dev->sd.entity);
@@ -1540,7 +1428,6 @@ static struct attribute_group ov_attribute_group = {
 static int ov7251_probe(struct i2c_client *client)
 {
 	struct ov7251_device *dev;
-	void *ovpdev;
 	int ret;
 
 	dev_info(&client->dev, "tal test probe called");
@@ -1555,8 +1442,7 @@ static int ov7251_probe(struct i2c_client *client)
 	dev->fmt_idx = 0;
 	v4l2_i2c_subdev_init(&dev->sd, client, &ov7251_ops);
 
-	ovpdev = client->dev.platform_data;
-	ret = ov7251_s_config(&dev->sd, client->irq, ovpdev);
+	ret = ov7251_s_config(&dev->sd);
 	if (ret)
 		goto out_free;
 
