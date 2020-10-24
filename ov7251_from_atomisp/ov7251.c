@@ -1134,7 +1134,7 @@ static int ov7251_s_stream(struct v4l2_subdev *sd, int enable)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
 
-	printk(KERN_ERR "tal test stream called %d\n", enable);
+	dev_info(&client->dev, "tal test stream called %d\n", enable);
 	mutex_lock(&dev->input_lock);
 
 	ret = ov7251_write_reg(client, OV7251_8BIT, OV7251_SW_STREAM,
@@ -1520,14 +1520,14 @@ static ssize_t value_show(struct device *dev,
 	ret = ov7251_read_reg(ov->ov_i2c_client, OV7251_8BIT,
 					OV7251_SC_CMMN_CHIP_ID_H, &high);
 	if (ret) {
-		printk(KERN_ERR "i2c error");
+		dev_err(dev, "i2c error");
 		return 0;
 	}
 	ret = ov7251_read_reg(ov->ov_i2c_client, OV7251_8BIT,
 					OV7251_SC_CMMN_CHIP_ID_L, &low);
 
 	if (ret) {
-		printk(KERN_ERR "i2c error");
+		dev_err(dev, "i2c error");
 		return 0;
 	}
 
@@ -1569,7 +1569,7 @@ static ssize_t reg_show(struct device *dev,
 	ret = ov7251_read_reg(ov->ov_i2c_client, OV7251_8BIT,
 					tmp_reg, &value);
 	if (ret) {
-		printk(KERN_ERR "i2c error");
+		dev_err(dev, "i2c error");
 		return 0;
 	}
 	return sprintf(buf, "%d\r\n", (int)value);
@@ -1648,7 +1648,7 @@ static int ov7251_probe(struct i2c_client *client,
 	void *ovpdev;
 	int ret;
 
-	printk(KERN_ERR " tal test probe called");
+	dev_info(&client->dev, "tal test probe called");
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev) {
 		dev_err(&client->dev, "out of memory\n");
@@ -1692,7 +1692,7 @@ static int ov7251_probe(struct i2c_client *client,
 
 	idev = input_allocate_device();
 	if (!idev) {
-		printk(KERN_ERR " input allocation1 failed");
+		dev_err(&client->dev, "input allocation1 failed");
 		return -ENOMEM;
 	}
 
@@ -1706,11 +1706,11 @@ static int ov7251_probe(struct i2c_client *client,
 	input_set_drvdata(idev, dev);
 	ret = input_register_device(idev);
 	if (ret < 0)
-		printk(KERN_ERR " input_register_device failed");
+		dev_err(&client->dev, "input_register_device failed");
 
 	ret = sysfs_create_group(&idev->dev.kobj, &ov_attribute_group);
 	if (ret < 0)
-		printk(KERN_ERR " sysfs_create_group failed");
+		dev_err(&client->dev, "sysfs_create_group failed");
 
 	}
 #endif
@@ -1753,7 +1753,7 @@ static struct i2c_driver ov7251_driver = {
 
 static int init_ov7251(void)
 {
-	printk(KERN_ERR " tal init called");
+	pr_err(OV7251_NAME": tal init called");
 	return i2c_add_driver(&ov7251_driver);
 }
 
