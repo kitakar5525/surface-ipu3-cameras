@@ -1532,6 +1532,10 @@ err_free_handler:
 err_destroy_mutex:
 	mutex_destroy(&ov569x->mutex);
 
+	/* For ACPI-based systems */
+	if (ov569x->is_acpi_based)
+		gpio_crs_put(ov569x);
+
 	return ret;
 }
 
