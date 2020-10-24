@@ -1548,8 +1548,11 @@ static ssize_t spower_store(struct device *dev,
 	int enable;
 	struct input_dev *input = to_input_dev(dev);
 	struct ov7251_device *ov = input_get_drvdata(input);
+	int ret;
 
-	sscanf(buf, "%d", &enable);
+	ret = kstrtoint(buf, 0, &enable);
+	if (ret)
+		return ret;
 
 	ov7251_s_power(&(ov->sd), enable);
 	return count;
@@ -1586,7 +1589,8 @@ static ssize_t reg_store(struct device *dev,
 	struct input_dev *input = to_input_dev(dev);
 	struct ov7251_device *ov = input_get_drvdata(input);
 
-	sscanf(buf, "%hd %hd", &reg, &value);
+	if (sscanf(buf, "%hd %hd", &reg, &value) != 2)
+		return -EINVAL;
 
 	if (value == 0xffff) {
 		tmp_reg = reg;
@@ -1606,8 +1610,11 @@ static ssize_t init_store(struct device *dev,
 	int enable;
 	struct input_dev *input = to_input_dev(dev);
 	struct ov7251_device *ov = input_get_drvdata(input);
+	int ret;
 
-	sscanf(buf, "%d", &enable);
+	ret = kstrtoint(buf, 0, &enable);
+	if (ret)
+		return ret;
 
 	if (enable)
 		startup(&(ov->sd));
