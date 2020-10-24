@@ -1427,6 +1427,8 @@ static int ov569x_probe(struct i2c_client *client)
 	struct device *dep_dev;
 	int ret;
 
+	dev_info(dev, "%s() called\n", __func__);
+
 	ov569x = devm_kzalloc(dev, sizeof(*ov569x), GFP_KERNEL);
 	if (!ov569x)
 		return -ENOMEM;
@@ -1537,6 +1539,8 @@ static int ov569x_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov569x *ov569x = to_ov569x(sd);
+
+	dev_info(&client->dev, "%s() called\n", __func__);
 
 	/* For ACPI-based systems */
 	if (is_acpi_node(dev_fwnode(&client->dev)))
