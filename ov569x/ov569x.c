@@ -96,9 +96,6 @@ struct ov569x_mode {
 
 struct ov569x {
 	struct i2c_client	*client;
-	struct clk		*xvclk;
-	struct gpio_desc	*reset_gpio;
-	struct regulator_bulk_data supplies[OV569X_NUM_SUPPLIES];
 
 	struct v4l2_subdev	subdev;
 	struct media_pad	pad;
@@ -112,6 +109,11 @@ struct ov569x {
 	struct mutex		mutex;
 	bool			streaming;
 	const struct ov569x_mode *cur_mode;
+
+	/* For DT-based systems */
+	struct clk		*xvclk;
+	struct gpio_desc	*reset_gpio;
+	struct regulator_bulk_data supplies[OV569X_NUM_SUPPLIES];
 };
 
 #define to_ov569x(sd) container_of(sd, struct ov569x, subdev)
@@ -978,37 +980,43 @@ static int __ov569x_power_on(struct ov569x *ov569x)
 	int i, ret;
 	struct device *dev = &ov569x->client->dev;
 
-	ret = clk_prepare_enable(ov569x->xvclk);
-	if (ret < 0) {
-		dev_err(dev, "Failed to enable xvclk\n");
-		return ret;
-	}
-
-	gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
-
-	/*
-	 * The hardware requires the regulators to be powered on in order,
-	 * so enable them one by one.
-	 */
-	for (i = 0; i < OV569X_NUM_SUPPLIES; i++) {
-		ret = regulator_enable(ov569x->supplies[i].consumer);
-		if (ret) {
-			dev_err(dev, "Failed to enable %s: %d\n",
-				ov569x->supplies[i].supply, ret);
-			goto disable_reg_clk;
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(dev))) {
+		ret = clk_prepare_enable(ov569x->xvclk);
+		if (ret < 0) {
+			dev_err(dev, "Failed to enable xvclk\n");
+			return ret;
 		}
-	}
 
-	gpiod_set_value_cansleep(ov569x->reset_gpio, 0);
+		gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
+
+		/*
+		* The hardware requires the regulators to be powered on in order,
+		* so enable them one by one.
+		*/
+		for (i = 0; i < OV569X_NUM_SUPPLIES; i++) {
+			ret = regulator_enable(ov569x->supplies[i].consumer);
+			if (ret) {
+				dev_err(dev, "Failed to enable %s: %d\n",
+					ov569x->supplies[i].supply, ret);
+				goto disable_reg_clk;
+			}
+		}
+
+		gpiod_set_value_cansleep(ov569x->reset_gpio, 0);
+	}
 
 	usleep_range(1000, 1200);
 
 	return 0;
 
 disable_reg_clk:
-	for (--i; i >= 0; i--)
-		regulator_disable(ov569x->supplies[i].consumer);
-	clk_disable_unprepare(ov569x->xvclk);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(dev))) {
+		for (--i; i >= 0; i--)
+			regulator_disable(ov569x->supplies[i].consumer);
+		clk_disable_unprepare(ov569x->xvclk);
+	}
 
 	return ret;
 }
@@ -1018,18 +1026,21 @@ static void __ov569x_power_off(struct ov569x *ov569x)
 	struct device *dev = &ov569x->client->dev;
 	int i, ret;
 
-	clk_disable_unprepare(ov569x->xvclk);
-	gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(dev))) {
+		clk_disable_unprepare(ov569x->xvclk);
+		gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
 
-	/*
-	 * The hardware requires the regulators to be powered off in order,
-	 * so disable them one by one.
-	 */
-	for (i = OV569X_NUM_SUPPLIES - 1; i >= 0; i--) {
-		ret = regulator_disable(ov569x->supplies[i].consumer);
-		if (ret)
-			dev_err(dev, "Failed to disable %s: %d\n",
-				ov569x->supplies[i].supply, ret);
+		/*
+		* The hardware requires the regulators to be powered off in order,
+		* so disable them one by one.
+		*/
+		for (i = OV569X_NUM_SUPPLIES - 1; i >= 0; i--) {
+			ret = regulator_disable(ov569x->supplies[i].consumer);
+			if (ret)
+				dev_err(dev, "Failed to disable %s: %d\n",
+					ov569x->supplies[i].supply, ret);
+		}
 	}
 }
 
@@ -1286,29 +1297,32 @@ static int ov569x_probe(struct i2c_client *client)
 	ov569x->client = client;
 	ov569x->cur_mode = &supported_modes[0];
 
-	ov569x->xvclk = devm_clk_get(dev, "xvclk");
-	if (IS_ERR(ov569x->xvclk)) {
-		dev_err(dev, "Failed to get xvclk\n");
-		return -EINVAL;
-	}
-	ret = clk_set_rate(ov569x->xvclk, OV569X_XVCLK_FREQ);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set xvclk rate (24MHz)\n");
-		return ret;
-	}
-	if (clk_get_rate(ov569x->xvclk) != OV569X_XVCLK_FREQ)
-		dev_warn(dev, "xvclk mismatched, modes are based on 24MHz\n");
+	/* For DT-based systems */
+	if (!is_acpi_node(dev_fwnode(dev))) {
+		ov569x->xvclk = devm_clk_get(dev, "xvclk");
+		if (IS_ERR(ov569x->xvclk)) {
+			dev_err(dev, "Failed to get xvclk\n");
+			return -EINVAL;
+		}
+		ret = clk_set_rate(ov569x->xvclk, OV569X_XVCLK_FREQ);
+		if (ret < 0) {
+			dev_err(dev, "Failed to set xvclk rate (24MHz)\n");
+			return ret;
+		}
+		if (clk_get_rate(ov569x->xvclk) != OV569X_XVCLK_FREQ)
+			dev_warn(dev, "xvclk mismatched, modes are based on 24MHz\n");
 
-	ov569x->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov569x->reset_gpio)) {
-		dev_err(dev, "Failed to get reset-gpios\n");
-		return -EINVAL;
-	}
+		ov569x->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+		if (IS_ERR(ov569x->reset_gpio)) {
+			dev_err(dev, "Failed to get reset-gpios\n");
+			return -EINVAL;
+		}
 
-	ret = ov569x_configure_regulators(ov569x);
-	if (ret) {
-		dev_err(dev, "Failed to get power regulators\n");
-		return ret;
+		ret = ov569x_configure_regulators(ov569x);
+		if (ret) {
+			dev_err(dev, "Failed to get power regulators\n");
+			return ret;
+		}
 	}
 
 	mutex_init(&ov569x->mutex);
