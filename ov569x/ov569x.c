@@ -366,6 +366,48 @@ static const struct regval ov5693_global_regs[] = {
 };
 
 /*
+ * 2592x1944 30fps 0.6ms VBlanking 2lane 10Bit
+ */
+static const struct regval ov5693_2592x1944_30fps_regs[] = {
+	{0x3501, 0x7b},
+	{0x3502, 0x00},
+	{0x3708, 0xe2},
+	{0x3709, 0xc3},
+	{0x3803, 0x00},
+	{0x3806, 0x07},
+	{0x3807, 0xa3},
+	{0x3808, 0x0a},
+	{0x3809, 0x20},
+	{0x380a, 0x07},
+	{0x380b, 0x98},
+	{0x380c, 0x0a},
+	{0x380d, 0x80},
+	{0x380e, 0x07},
+	{0x380f, 0xc0},
+	{0x3811, 0x10},
+	{0x3813, 0x00},
+	{0x3814, 0x11},
+	{0x3815, 0x11},
+	{0x3820, 0x00},
+	{0x3821, 0x1e},
+	{0x5002, 0x00},
+	{0x0100, 0x01},
+	{REG_NULL, 0x00},
+};
+
+static const struct ov569x_mode ov5693_supported_modes[] = {
+	{
+		.width = 2592,
+		.height = 1944,
+		.max_fps = 30,
+		.exp_def = 0x0450,
+		.hts_def = 0x02e4 * 4,
+		.vts_def = 0x07e8,
+		.reg_list = ov5693_2592x1944_30fps_regs,
+	},
+};
+
+/*
  * Xclk 24Mhz
  * Pclk 45Mhz
  * linelength 672(0x2a0)
@@ -891,7 +933,7 @@ static const struct regval ov569x_640x480_regs[] = {
 	{REG_NULL, 0x00}
 };
 
-static const struct ov569x_mode supported_modes[] = {
+static const struct ov569x_mode ov5695_supported_modes[] = {
 	{
 		.width = 2592,
 		.height = 1944,
@@ -1037,23 +1079,38 @@ static int ov569x_get_reso_dist(const struct ov569x_mode *mode,
 }
 
 static const struct ov569x_mode *
-ov569x_find_best_fit(struct v4l2_subdev_format *fmt)
+ov569x_find_best_fit(struct v4l2_subdev *sd, struct v4l2_subdev_format *fmt)
 {
+	struct ov569x *ov569x = to_ov569x(sd);
 	struct v4l2_mbus_framefmt *framefmt = &fmt->format;
 	int dist;
 	int cur_best_fit = 0;
 	int cur_best_fit_dist = -1;
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
-		dist = ov569x_get_reso_dist(&supported_modes[i], framefmt);
-		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
-			cur_best_fit_dist = dist;
-			cur_best_fit = i;
+	switch(ov569x->chip_id) {
+	case CHIP_ID_OV5693:
+		for (i = 0; i < ARRAY_SIZE(ov5693_supported_modes); i++) {
+			dist = ov569x_get_reso_dist(&ov5693_supported_modes[i], framefmt);
+			if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
+				cur_best_fit_dist = dist;
+				cur_best_fit = i;
+			}
 		}
+		return &ov5693_supported_modes[cur_best_fit];
+	case CHIP_ID_OV5695:
+		for (i = 0; i < ARRAY_SIZE(ov5695_supported_modes); i++) {
+			dist = ov569x_get_reso_dist(&ov5695_supported_modes[i], framefmt);
+			if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
+				cur_best_fit_dist = dist;
+				cur_best_fit = i;
+			}
+		}
+		return &ov5695_supported_modes[cur_best_fit];
+	default:
+		v4l2_err(sd, "%s(): invalid chip id\n", __func__);
+		return ERR_PTR(-EINVAL);
 	}
-
-	return &supported_modes[cur_best_fit];
 }
 
 static int ov569x_set_fmt(struct v4l2_subdev *sd,
@@ -1066,7 +1123,7 @@ static int ov569x_set_fmt(struct v4l2_subdev *sd,
 
 	mutex_lock(&ov569x->mutex);
 
-	mode = ov569x_find_best_fit(fmt);
+	mode = ov569x_find_best_fit(sd, fmt);
 	fmt->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	fmt->format.width = mode->width;
 	fmt->format.height = mode->height;
@@ -1132,16 +1189,31 @@ static int ov569x_enum_frame_sizes(struct v4l2_subdev *sd,
 				   struct v4l2_subdev_pad_config *cfg,
 				   struct v4l2_subdev_frame_size_enum *fse)
 {
-	if (fse->index >= ARRAY_SIZE(supported_modes))
-		return -EINVAL;
+	struct ov569x *ov569x = to_ov569x(sd);
 
 	if (fse->code != MEDIA_BUS_FMT_SBGGR10_1X10)
 		return -EINVAL;
 
-	fse->min_width  = supported_modes[fse->index].width;
-	fse->max_width  = supported_modes[fse->index].width;
-	fse->max_height = supported_modes[fse->index].height;
-	fse->min_height = supported_modes[fse->index].height;
+	switch(ov569x->chip_id) {
+	case CHIP_ID_OV5693:
+		if (fse->index >= ARRAY_SIZE(ov5693_supported_modes))
+			return -EINVAL;
+
+		fse->min_width  = ov5693_supported_modes[fse->index].width;
+		fse->max_width  = ov5693_supported_modes[fse->index].width;
+		fse->max_height = ov5693_supported_modes[fse->index].height;
+		fse->min_height = ov5693_supported_modes[fse->index].height;
+		break;
+	case CHIP_ID_OV5695:
+		if (fse->index >= ARRAY_SIZE(ov5695_supported_modes))
+			return -EINVAL;
+
+		fse->min_width  = ov5695_supported_modes[fse->index].width;
+		fse->max_width  = ov5695_supported_modes[fse->index].width;
+		fse->max_height = ov5695_supported_modes[fse->index].height;
+		fse->min_height = ov5695_supported_modes[fse->index].height;
+		break;
+	}
 
 	return 0;
 }
@@ -1382,7 +1454,16 @@ static int ov569x_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	struct ov569x *ov569x = to_ov569x(sd);
 	struct v4l2_mbus_framefmt *try_fmt =
 				v4l2_subdev_get_try_format(sd, fh->pad, 0);
-	const struct ov569x_mode *def_mode = &supported_modes[0];
+	const struct ov569x_mode *def_mode;
+
+	switch(ov569x->chip_id) {
+	case CHIP_ID_OV5693:
+		def_mode = &ov5693_supported_modes[0];
+		break;
+	case CHIP_ID_OV5695:
+		def_mode = &ov5695_supported_modes[0];
+		break;
+	}
 
 	mutex_lock(&ov569x->mutex);
 	/* Initialize try_fmt */
@@ -1694,7 +1775,6 @@ static int ov569x_probe(struct i2c_client *client)
 		return -ENOMEM;
 
 	ov569x->client = client;
-	ov569x->cur_mode = &supported_modes[0];
 
 	if (acpi_dev_present(OV569X_ACPI_HID, NULL, -1)) {
 		dev_info(dev, "system is acpi-based\n");
@@ -1752,15 +1832,25 @@ static int ov569x_probe(struct i2c_client *client)
 
 	sd = &ov569x->subdev;
 	v4l2_i2c_subdev_init(sd, client, &ov569x_subdev_ops);
-	ret = ov569x_initialize_controls(ov569x);
-	if (ret)
-		goto err_destroy_mutex;
 
 	ret = __ov569x_power_on(ov569x);
 	if (ret)
-		goto err_free_handler;
+		goto err_destroy_mutex;
 
 	ret = ov569x_check_sensor_id(ov569x, client);
+	if (ret)
+		goto err_power_off;
+
+	switch(ov569x->chip_id) {
+	case CHIP_ID_OV5693:
+		ov569x->cur_mode = &ov5693_supported_modes[0];
+		break;
+	case CHIP_ID_OV5695:
+		ov569x->cur_mode = &ov5695_supported_modes[0];
+		break;
+	}
+
+	ret = ov569x_initialize_controls(ov569x);
 	if (ret)
 		goto err_power_off;
 
@@ -1773,7 +1863,7 @@ static int ov569x_probe(struct i2c_client *client)
 	sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	ret = media_entity_pads_init(&sd->entity, 1, &ov569x->pad);
 	if (ret < 0)
-		goto err_power_off;
+		goto err_free_handler;
 #endif
 
 	ret = v4l2_async_register_subdev_sensor_common(sd);
@@ -1792,10 +1882,10 @@ err_clean_entity:
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	media_entity_cleanup(&sd->entity);
 #endif
-err_power_off:
-	__ov569x_power_off(ov569x);
 err_free_handler:
 	v4l2_ctrl_handler_free(&ov569x->ctrl_handler);
+err_power_off:
+	__ov569x_power_off(ov569x);
 err_destroy_mutex:
 	mutex_destroy(&ov569x->mutex);
 
