@@ -827,21 +827,6 @@ static int startup(struct v4l2_subdev *sd)
 	return ret;
 }
 
-static int ov7251_g_mbus_fmt(struct v4l2_subdev *sd,
-			     struct v4l2_mbus_framefmt *fmt)
-{
-	struct ov7251_device *dev = to_ov7251_sensor(sd);
-
-	if (!fmt)
-		return -EINVAL;
-
-	fmt->width = ov7251_res[dev->fmt_idx].width;
-	fmt->height = ov7251_res[dev->fmt_idx].height;
-	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
-
-	return 0;
-}
-
 static int ov7251_detect(struct i2c_client *client)
 {
 	struct i2c_adapter *adapter = client->adapter;
@@ -1132,7 +1117,6 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 	.s_stream = ov7251_s_stream,
 	.g_parm = ov7251_g_parm,
 	.s_parm = ov7251_s_parm,
-	.g_mbus_fmt = ov7251_g_mbus_fmt,
 	.g_frame_interval = ov7251_g_frame_interval,
 };
 
