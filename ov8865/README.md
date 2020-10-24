@@ -10,6 +10,10 @@ make
 sudo insmod ov8865.ko
 ```
 
+#### note
+
+This driver can't capture images yet.
+
 #### References
 
 Driver is taken from kevlhop/MIPI_CSI2:
