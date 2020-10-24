@@ -48,10 +48,11 @@ First, build kernel with the following changes:
 
 0. Set the kernel config `CONFIG_INIT_STACK_NONE=y` or `CONFIG_GCC_PLUGIN_STRUCTLEAK_USER=y` (https://github.com/kitakar5525/surface-ipu3-cameras/issues/5) to avoid kernel crash.
    Another way is to apply patches currently under development by upstream kernel devs: [[v3,0/8] ipu3-cio2 format and other fixes](https://patchwork.kernel.org/project/linux-media/cover/20201012180414.11579-1-sakari.ailus@linux.intel.com/)
-1. Apply software node kernel patch
-2. Add bridge driver that builds software node
+1. Apply software node kernel patch and add bridge driver
 
-   software node and bridge driver patches are available in djrscally's repo: https://github.com/djrscally/miix-510-cameras/tree/master/patches
+   Both software node and bridge driver patches are available in djrscally's repo: https://github.com/djrscally/miix-510-cameras/tree/master/patches
+
+   Note that if the RFC v3 version isn't working on your machine, try my patch that partially reverts to RFC v2: https://github.com/kitakar5525/linux-kernel/commit/70664c3125fc. It can be applied on top of RFC v3.
 
 Then, build sensor drivers:
 
