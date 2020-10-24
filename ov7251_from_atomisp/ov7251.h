@@ -171,6 +171,17 @@
 
 #define SB_SRB_CTRL_REG 0x3106
 
+/* Camera class:
+ * Exposure, Flash and privacy (indicator) light controls, to be upstreamed
+ */
+#define V4L2_CID_CAMERA_LASTP1             (V4L2_CID_CAMERA_CLASS_BASE + 1024)
+#define V4L2_CID_FOCAL_ABSOLUTE            (V4L2_CID_CAMERA_LASTP1 + 0)
+#define V4L2_CID_FNUMBER_ABSOLUTE          (V4L2_CID_CAMERA_LASTP1 + 1)
+#define V4L2_CID_FNUMBER_RANGE             (V4L2_CID_CAMERA_LASTP1 + 2)
+/*ISP binary running mode*/
+#define CI_MODE_VIDEO		0x4000
+#define CI_MODE_STILL_CAPTURE	0x2000
+
 struct ov7251_resolution {
 	u8 *desc;
 	const struct ov7251_reg *regs;
