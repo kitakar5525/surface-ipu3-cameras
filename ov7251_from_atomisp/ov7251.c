@@ -413,14 +413,12 @@ static long __ov7251_set_exposure_gain(struct v4l2_subdev *sd, u32 exposure, u32
 	unsigned char exp_350B_transaction[3]; /*{0x35,0x0B,gain8}; */
 	struct i2c_msg msgs[8];
 
-	if (exp_regs->exp32 > 0xFFFF) {
+	if (exp_regs->exp32 > 0xFFFF)
 		return -EINVAL;
-	}
 
 	/* only 7 bits is valid */
-	if (gain_regs->exp32 > 0x7F) {
+	if (gain_regs->exp32 > 0x7F)
 		return -EINVAL;
-	}
 
 	/* 4 first bits is fraction bits */
 	exp_regs->exp32 <<= 4;
@@ -1498,9 +1496,8 @@ static int __ov7251_init_ctrl_handler(struct ov7251_device *dev)
 					      &v4l2_ctrl_link_freq,
 					      NULL);
 
-	if (dev->ctrl_handler.error || dev->link_freq == NULL) {
+	if (dev->ctrl_handler.error || dev->link_freq == NULL)
 		return dev->ctrl_handler.error;
-	}
 
 	dev->sd.ctrl_handler = hdl;
 
@@ -1610,9 +1607,8 @@ static ssize_t init_store(struct device *dev,
 
 	sscanf(buf, "%d", &enable);
 
-	if (enable) {
+	if (enable)
 		startup(&(ov->sd));
-	}
 
 	return count;
 }
@@ -1707,14 +1703,12 @@ static int ov7251_probe(struct i2c_client *client,
 
 	input_set_drvdata(idev, dev);
 	ret = input_register_device(idev);
-	if (ret < 0) {
+	if (ret < 0)
 		printk(KERN_ERR " input_register_device failed");
-	}
 
 	ret = sysfs_create_group(&idev->dev.kobj, &ov_attribute_group);
-	if (ret < 0) {
+	if (ret < 0)
 		printk(KERN_ERR " sysfs_create_group failed");
-	}
 
 	}
 #endif
