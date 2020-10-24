@@ -387,8 +387,8 @@ static int ov7251_get_intg_factor(struct i2c_client *client,
 }
 
 typedef union {
-    u32 exp32;
-    uint8_t regs[4];
+	u32 exp32;
+	uint8_t regs[4];
 } OV7251RegsWrapper;
 
 #define GROUP_HOLD_START_VAL 0x00
@@ -791,7 +791,7 @@ static int power_ctrl(struct v4l2_subdev *sd, bool flag)
 		if (ret == 0) {
 			ret = dev->platform_data->v1p8_ctrl(sd, 1);
 			if (ret)
-			   dev->platform_data->v2p8_ctrl(sd, 0);
+				dev->platform_data->v2p8_ctrl(sd, 0);
 		}
 	} else {
 
@@ -1059,7 +1059,7 @@ static int ov7251_s_mbus_fmt(struct v4l2_subdev *sd,
 	}
 
 	dev->fmt_idx = get_resolution_index(fmt->width,
-					      fmt->height);
+					    fmt->height);
 	if (dev->fmt_idx == -1) {
 		dev_err(&client->dev, "get resolution fail\n");
 		mutex_unlock(&dev->input_lock);
@@ -1179,8 +1179,8 @@ static int ov7251_enum_frameintervals(struct v4l2_subdev *sd,
 }
 
 static int ov7251_enum_mbus_fmt(struct v4l2_subdev *sd,
-    unsigned int index,
-    u32 *code)
+				unsigned int index,
+				u32 *code)
 {
 	*code = MEDIA_BUS_FMT_SBGGR10_1X10;
 
@@ -1188,7 +1188,7 @@ static int ov7251_enum_mbus_fmt(struct v4l2_subdev *sd,
 }
 
 static int ov7251_s_config(struct v4l2_subdev *sd,
-    int irq, void *platform_data)
+			   int irq, void *platform_data)
 {
 	struct ov7251_device *dev = to_ov7251_sensor(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1353,9 +1353,9 @@ static int ov7251_enum_frame_size(struct v4l2_subdev *sd,
 
 static struct v4l2_mbus_framefmt *
 __ov7251_get_pad_format(struct ov7251_device *sensor, struct v4l2_subdev *sd,
-    struct v4l2_subdev_pad_config *cfg,
-    unsigned int pad,
-    enum v4l2_subdev_format_whence which)
+			struct v4l2_subdev_pad_config *cfg,
+			unsigned int pad,
+			enum v4l2_subdev_format_whence which)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
 
@@ -1711,8 +1711,7 @@ static int ov7251_probe(struct i2c_client *client,
 		printk(KERN_ERR " input_register_device failed");
 	}
 
-	ret = sysfs_create_group(&idev->dev.kobj,
-			&ov_attribute_group);
+	ret = sysfs_create_group(&idev->dev.kobj, &ov_attribute_group);
 	if (ret < 0) {
 		printk(KERN_ERR " sysfs_create_group failed");
 	}
