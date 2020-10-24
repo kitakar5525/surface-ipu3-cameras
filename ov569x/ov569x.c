@@ -30,7 +30,7 @@
 #define OV569X_PIXEL_RATE		(45 * 1000 * 1000 * 4)
 #define OV569X_XVCLK_FREQ		24000000
 
-#define CHIP_ID_OV5693			0x005693
+#define CHIP_ID_OV5693			0x56906c
 #define CHIP_ID_OV5695			0x005695
 #define OV569X_REG_CHIP_ID		0x300a
 
@@ -1331,7 +1331,11 @@ static int ov569x_check_sensor_id(struct ov569x *ov569x,
 
 	ret = ov569x_read_reg(client, OV569X_REG_CHIP_ID,
 			      OV569X_REG_VALUE_24BIT, &id);
-	if (id != CHIP_ID_OV5695) {
+	switch(id) {
+	case CHIP_ID_OV5693:
+	case CHIP_ID_OV5695:
+		break;
+	default:
 		dev_err(dev, "Unexpected sensor id(%06x), ret(%d)\n", id, ret);
 		return -ENODEV;
 	}
