@@ -118,6 +118,13 @@ struct ov569x {
 	/* For ACPI-based systems */
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
+
+	/* GPIOs defined in dep_dev _CRS. The last "led_gpio" may not exist
+	 * depending on devices.
+	 */
+	struct gpio_desc *xshutdn;
+	struct gpio_desc *pwdnb;
+	struct gpio_desc *led_gpio;
 };
 
 #define to_ov569x(sd) container_of(sd, struct ov569x, subdev)
@@ -979,10 +986,56 @@ unlock_and_return:
 	return ret;
 }
 
+/* Get GPIOs defined in dep_dev _CRS */
+static int gpio_crs_get(struct ov569x *sensor, struct device *dep_dev)
+{
+	sensor->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
+	if (IS_ERR(sensor->xshutdn)) {
+		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
+		return -EINVAL;
+	}
+
+	sensor->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
+	if (IS_ERR(sensor->pwdnb)) {
+		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
+		return -EINVAL;
+	}
+
+	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
+	if (IS_ERR(sensor->led_gpio))
+		dev_info(dep_dev,
+			 "Couldn't get GPIO LED. Maybe not exist, continue anyway.\n");
+
+	return 0;
+}
+
+/* Put GPIOs defined in dep_dev _CRS */
+static void gpio_crs_put(struct ov569x *sensor)
+{
+	gpiod_put(sensor->xshutdn);
+	gpiod_put(sensor->pwdnb);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_put(sensor->led_gpio);
+}
+
+/* Control GPIOs defined in dep_dev _CRS */
+static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+{
+	struct ov569x *sensor = to_ov569x(sd);
+
+	gpiod_set_value_cansleep(sensor->xshutdn, flag);
+	gpiod_set_value_cansleep(sensor->pwdnb, flag);
+	if (!IS_ERR(sensor->led_gpio))
+		gpiod_set_value_cansleep(sensor->led_gpio, flag);
+
+	return 0;
+}
+
 static int __ov569x_power_on(struct ov569x *ov569x)
 {
 	int i, ret;
 	struct device *dev = &ov569x->client->dev;
+	struct v4l2_subdev *sd = i2c_get_clientdata(ov569x->client);
 
 	/* For DT-based systems */
 	if (!is_acpi_node(dev_fwnode(dev))) {
@@ -1010,6 +1063,10 @@ static int __ov569x_power_on(struct ov569x *ov569x)
 		gpiod_set_value_cansleep(ov569x->reset_gpio, 0);
 	}
 
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(dev)))
+		gpio_crs_ctrl(sd, true);
+
 	usleep_range(1000, 1200);
 
 	return 0;
@@ -1028,6 +1085,7 @@ disable_reg_clk:
 static void __ov569x_power_off(struct ov569x *ov569x)
 {
 	struct device *dev = &ov569x->client->dev;
+	struct v4l2_subdev *sd = i2c_get_clientdata(ov569x->client);
 	int i, ret;
 
 	/* For DT-based systems */
@@ -1046,6 +1104,10 @@ static void __ov569x_power_off(struct ov569x *ov569x)
 					ov569x->supplies[i].supply, ret);
 		}
 	}
+
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(dev)))
+		gpio_crs_ctrl(sd, false);
 }
 
 static int __maybe_unused ov569x_runtime_resume(struct device *dev)
@@ -1409,6 +1471,12 @@ static int ov569x_probe(struct i2c_client *client)
 			return ret;
 		}
 		dep_dev = ov569x->dep_dev;
+
+		ret = gpio_crs_get(ov569x, dep_dev);
+		if (ret) {
+			dev_err(dep_dev, "Failed to get _CRS GPIOs\n");
+			return ret;
+		}
 	}
 
 	mutex_init(&ov569x->mutex);
@@ -1469,6 +1537,10 @@ static int ov569x_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov569x *ov569x = to_ov569x(sd);
+
+	/* For ACPI-based systems */
+	if (is_acpi_node(dev_fwnode(&client->dev)))
+		gpio_crs_put(ov569x);
 
 	v4l2_async_unregister_subdev(sd);
 #if defined(CONFIG_MEDIA_CONTROLLER)
