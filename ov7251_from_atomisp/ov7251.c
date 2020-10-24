@@ -1741,7 +1741,8 @@ out_free:
 MODULE_DEVICE_TABLE(i2c, ov7251_id);
 
 static struct acpi_device_id ov7251_acpi_match[] = {
-	{ "INT35AA" },
+	{"INT347A"},
+	{"INT35AA"},
 	{},
 };
 
