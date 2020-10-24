@@ -1416,7 +1416,7 @@ static const struct v4l2_subdev_sensor_ops ov7251_sensor_ops = {
 	.g_skip_frames	= ov7251_g_skip_frames,
 };
 
-static struct v4l2_ctrl_ops ov7251_ctrl_ops = {
+static const struct v4l2_ctrl_ops ov7251_ctrl_ops = {
 	.g_volatile_ctrl = ov7251_g_volatile_ctrl,
 };
 
