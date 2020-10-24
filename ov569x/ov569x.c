@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * ov5695 driver
+ * ov569x driver
  *
  * Copyright (C) 2017 Fuzhou Rockchip Electronics Co., Ltd.
  */
@@ -24,65 +24,66 @@
 #endif
 
 /* 45Mhz * 4 Binning */
-#define OV5695_PIXEL_RATE		(45 * 1000 * 1000 * 4)
-#define OV5695_XVCLK_FREQ		24000000
+#define OV569X_PIXEL_RATE		(45 * 1000 * 1000 * 4)
+#define OV569X_XVCLK_FREQ		24000000
 
-#define CHIP_ID				0x005695
-#define OV5695_REG_CHIP_ID		0x300a
+#define CHIP_ID_OV5693			0x005693
+#define CHIP_ID_OV5695			0x005695
+#define OV569X_REG_CHIP_ID		0x300a
 
-#define OV5695_REG_CTRL_MODE		0x0100
-#define OV5695_MODE_SW_STANDBY		0x0
-#define OV5695_MODE_STREAMING		BIT(0)
+#define OV569X_REG_CTRL_MODE		0x0100
+#define OV569X_MODE_SW_STANDBY		0x0
+#define OV569X_MODE_STREAMING		BIT(0)
 
-#define OV5695_REG_EXPOSURE		0x3500
-#define	OV5695_EXPOSURE_MIN		4
-#define	OV5695_EXPOSURE_STEP		1
-#define OV5695_VTS_MAX			0x7fff
+#define OV569X_REG_EXPOSURE		0x3500
+#define	OV569X_EXPOSURE_MIN		4
+#define	OV569X_EXPOSURE_STEP		1
+#define OV569X_VTS_MAX			0x7fff
 
-#define OV5695_REG_ANALOG_GAIN		0x3509
+#define OV569X_REG_ANALOG_GAIN		0x3509
 #define	ANALOG_GAIN_MIN			0x10
 #define	ANALOG_GAIN_MAX			0xf8
 #define	ANALOG_GAIN_STEP		1
 #define	ANALOG_GAIN_DEFAULT		0xf8
 
-#define OV5695_REG_DIGI_GAIN_H		0x350a
-#define OV5695_REG_DIGI_GAIN_L		0x350b
-#define OV5695_DIGI_GAIN_L_MASK		0x3f
-#define OV5695_DIGI_GAIN_H_SHIFT	6
-#define OV5695_DIGI_GAIN_MIN		0
-#define OV5695_DIGI_GAIN_MAX		(0x4000 - 1)
-#define OV5695_DIGI_GAIN_STEP		1
-#define OV5695_DIGI_GAIN_DEFAULT	1024
+#define OV569X_REG_DIGI_GAIN_H		0x350a
+#define OV569X_REG_DIGI_GAIN_L		0x350b
+#define OV569X_DIGI_GAIN_L_MASK		0x3f
+#define OV569X_DIGI_GAIN_H_SHIFT	6
+#define OV569X_DIGI_GAIN_MIN		0
+#define OV569X_DIGI_GAIN_MAX		(0x4000 - 1)
+#define OV569X_DIGI_GAIN_STEP		1
+#define OV569X_DIGI_GAIN_DEFAULT	1024
 
-#define OV5695_REG_TEST_PATTERN		0x4503
-#define	OV5695_TEST_PATTERN_ENABLE	0x80
-#define	OV5695_TEST_PATTERN_DISABLE	0x0
+#define OV569X_REG_TEST_PATTERN		0x4503
+#define	OV569X_TEST_PATTERN_ENABLE	0x80
+#define	OV569X_TEST_PATTERN_DISABLE	0x0
 
-#define OV5695_REG_VTS			0x380e
+#define OV569X_REG_VTS			0x380e
 
 #define REG_NULL			0xFFFF
 
-#define OV5695_REG_VALUE_08BIT		1
-#define OV5695_REG_VALUE_16BIT		2
-#define OV5695_REG_VALUE_24BIT		3
+#define OV569X_REG_VALUE_08BIT		1
+#define OV569X_REG_VALUE_16BIT		2
+#define OV569X_REG_VALUE_24BIT		3
 
-#define OV5695_LANES			2
-#define OV5695_BITS_PER_SAMPLE		10
+#define OV569X_LANES			2
+#define OV569X_BITS_PER_SAMPLE		10
 
-static const char * const ov5695_supply_names[] = {
+static const char * const ov569x_supply_names[] = {
 	"avdd",		/* Analog power */
 	"dovdd",	/* Digital I/O power */
 	"dvdd",		/* Digital core power */
 };
 
-#define OV5695_NUM_SUPPLIES ARRAY_SIZE(ov5695_supply_names)
+#define OV569X_NUM_SUPPLIES ARRAY_SIZE(ov569x_supply_names)
 
 struct regval {
 	u16 addr;
 	u8 val;
 };
 
-struct ov5695_mode {
+struct ov569x_mode {
 	u32 width;
 	u32 height;
 	u32 max_fps;
@@ -92,11 +93,11 @@ struct ov5695_mode {
 	const struct regval *reg_list;
 };
 
-struct ov5695 {
+struct ov569x {
 	struct i2c_client	*client;
 	struct clk		*xvclk;
 	struct gpio_desc	*reset_gpio;
-	struct regulator_bulk_data supplies[OV5695_NUM_SUPPLIES];
+	struct regulator_bulk_data supplies[OV569X_NUM_SUPPLIES];
 
 	struct v4l2_subdev	subdev;
 	struct media_pad	pad;
@@ -109,10 +110,10 @@ struct ov5695 {
 	struct v4l2_ctrl	*test_pattern;
 	struct mutex		mutex;
 	bool			streaming;
-	const struct ov5695_mode *cur_mode;
+	const struct ov569x_mode *cur_mode;
 };
 
-#define to_ov5695(sd) container_of(sd, struct ov5695, subdev)
+#define to_ov569x(sd) container_of(sd, struct ov569x, subdev)
 
 /*
  * Xclk 24Mhz
@@ -124,7 +125,7 @@ struct ov5695 {
  * max_framerate 30fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_global_regs[] = {
+static const struct regval ov569x_global_regs[] = {
 	{0x0103, 0x01},
 	{0x0100, 0x00},
 	{0x0300, 0x04},
@@ -299,7 +300,7 @@ static const struct regval ov5695_global_regs[] = {
  * max_framerate 30fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_2592x1944_regs[] = {
+static const struct regval ov569x_2592x1944_regs[] = {
 	{0x3501, 0x7e},
 	{0x366e, 0x18},
 	{0x3800, 0x00},
@@ -341,7 +342,7 @@ static const struct regval ov5695_2592x1944_regs[] = {
  * max_framerate 30fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_1920x1080_regs[] = {
+static const struct regval ov569x_1920x1080_regs[] = {
 	{0x3501, 0x45},
 	{0x366e, 0x18},
 	{0x3800, 0x01},
@@ -383,7 +384,7 @@ static const struct regval ov5695_1920x1080_regs[] = {
  * max_framerate 60fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_1296x972_regs[] = {
+static const struct regval ov569x_1296x972_regs[] = {
 	{0x0103, 0x01},
 	{0x0100, 0x00},
 	{0x0300, 0x04},
@@ -566,7 +567,7 @@ static const struct regval ov5695_1296x972_regs[] = {
  * max_framerate 30fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_1280x720_regs[] = {
+static const struct regval ov569x_1280x720_regs[] = {
 	{0x3501, 0x45},
 	{0x366e, 0x0c},
 	{0x3800, 0x00},
@@ -608,7 +609,7 @@ static const struct regval ov5695_1280x720_regs[] = {
  * max_framerate 120fps
  * mipi_datarate per lane 840Mbps
  */
-static const struct regval ov5695_640x480_regs[] = {
+static const struct regval ov569x_640x480_regs[] = {
 	{0x3501, 0x22},
 	{0x366e, 0x0c},
 	{0x3800, 0x00},
@@ -640,7 +641,7 @@ static const struct regval ov5695_640x480_regs[] = {
 	{REG_NULL, 0x00}
 };
 
-static const struct ov5695_mode supported_modes[] = {
+static const struct ov569x_mode supported_modes[] = {
 	{
 		.width = 2592,
 		.height = 1944,
@@ -648,7 +649,7 @@ static const struct ov5695_mode supported_modes[] = {
 		.exp_def = 0x0450,
 		.hts_def = 0x02e4 * 4,
 		.vts_def = 0x07e8,
-		.reg_list = ov5695_2592x1944_regs,
+		.reg_list = ov569x_2592x1944_regs,
 	},
 	{
 		.width = 1920,
@@ -657,7 +658,7 @@ static const struct ov5695_mode supported_modes[] = {
 		.exp_def = 0x0450,
 		.hts_def = 0x02a0 * 4,
 		.vts_def = 0x08b8,
-		.reg_list = ov5695_1920x1080_regs,
+		.reg_list = ov569x_1920x1080_regs,
 	},
 	{
 		.width = 1296,
@@ -666,7 +667,7 @@ static const struct ov5695_mode supported_modes[] = {
 		.exp_def = 0x03e0,
 		.hts_def = 0x02e4 * 4,
 		.vts_def = 0x03f4,
-		.reg_list = ov5695_1296x972_regs,
+		.reg_list = ov569x_1296x972_regs,
 	},
 	{
 		.width = 1280,
@@ -675,7 +676,7 @@ static const struct ov5695_mode supported_modes[] = {
 		.exp_def = 0x0450,
 		.hts_def = 0x02a0 * 4,
 		.vts_def = 0x08b8,
-		.reg_list = ov5695_1280x720_regs,
+		.reg_list = ov569x_1280x720_regs,
 	},
 	{
 		.width = 640,
@@ -684,16 +685,16 @@ static const struct ov5695_mode supported_modes[] = {
 		.exp_def = 0x0450,
 		.hts_def = 0x02a0 * 4,
 		.vts_def = 0x022e,
-		.reg_list = ov5695_640x480_regs,
+		.reg_list = ov569x_640x480_regs,
 	},
 };
 
-#define OV5695_LINK_FREQ_420MHZ		420000000
+#define OV569X_LINK_FREQ_420MHZ		420000000
 static const s64 link_freq_menu_items[] = {
-	OV5695_LINK_FREQ_420MHZ
+	OV569X_LINK_FREQ_420MHZ
 };
 
-static const char * const ov5695_test_pattern_menu[] = {
+static const char * const ov569x_test_pattern_menu[] = {
 	"Disabled",
 	"Vertical Color Bar Type 1",
 	"Vertical Color Bar Type 2",
@@ -702,7 +703,7 @@ static const char * const ov5695_test_pattern_menu[] = {
 };
 
 /* Write registers up to 4 at a time */
-static int ov5695_write_reg(struct i2c_client *client, u16 reg,
+static int ov569x_write_reg(struct i2c_client *client, u16 reg,
 			    u32 len, u32 val)
 {
 	u32 buf_i, val_i;
@@ -730,21 +731,21 @@ static int ov5695_write_reg(struct i2c_client *client, u16 reg,
 	return 0;
 }
 
-static int ov5695_write_array(struct i2c_client *client,
+static int ov569x_write_array(struct i2c_client *client,
 			      const struct regval *regs)
 {
 	u32 i;
 	int ret = 0;
 
 	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++)
-		ret = ov5695_write_reg(client, regs[i].addr,
-				       OV5695_REG_VALUE_08BIT, regs[i].val);
+		ret = ov569x_write_reg(client, regs[i].addr,
+				       OV569X_REG_VALUE_08BIT, regs[i].val);
 
 	return ret;
 }
 
 /* Read registers up to 4 at a time */
-static int ov5695_read_reg(struct i2c_client *client, u16 reg, unsigned int len,
+static int ov569x_read_reg(struct i2c_client *client, u16 reg, unsigned int len,
 			   u32 *val)
 {
 	struct i2c_msg msgs[2];
@@ -778,15 +779,15 @@ static int ov5695_read_reg(struct i2c_client *client, u16 reg, unsigned int len,
 	return 0;
 }
 
-static int ov5695_get_reso_dist(const struct ov5695_mode *mode,
+static int ov569x_get_reso_dist(const struct ov569x_mode *mode,
 				struct v4l2_mbus_framefmt *framefmt)
 {
 	return abs(mode->width - framefmt->width) +
 	       abs(mode->height - framefmt->height);
 }
 
-static const struct ov5695_mode *
-ov5695_find_best_fit(struct v4l2_subdev_format *fmt)
+static const struct ov569x_mode *
+ov569x_find_best_fit(struct v4l2_subdev_format *fmt)
 {
 	struct v4l2_mbus_framefmt *framefmt = &fmt->format;
 	int dist;
@@ -795,7 +796,7 @@ ov5695_find_best_fit(struct v4l2_subdev_format *fmt)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
-		dist = ov5695_get_reso_dist(&supported_modes[i], framefmt);
+		dist = ov569x_get_reso_dist(&supported_modes[i], framefmt);
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
@@ -805,17 +806,17 @@ ov5695_find_best_fit(struct v4l2_subdev_format *fmt)
 	return &supported_modes[cur_best_fit];
 }
 
-static int ov5695_set_fmt(struct v4l2_subdev *sd,
+static int ov569x_set_fmt(struct v4l2_subdev *sd,
 			  struct v4l2_subdev_pad_config *cfg,
 			  struct v4l2_subdev_format *fmt)
 {
-	struct ov5695 *ov5695 = to_ov5695(sd);
-	const struct ov5695_mode *mode;
+	struct ov569x *ov569x = to_ov569x(sd);
+	const struct ov569x_mode *mode;
 	s64 h_blank, vblank_def;
 
-	mutex_lock(&ov5695->mutex);
+	mutex_lock(&ov569x->mutex);
 
-	mode = ov5695_find_best_fit(fmt);
+	mode = ov569x_find_best_fit(fmt);
 	fmt->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	fmt->format.width = mode->width;
 	fmt->format.height = mode->height;
@@ -825,34 +826,34 @@ static int ov5695_set_fmt(struct v4l2_subdev *sd,
 		*v4l2_subdev_get_try_format(sd, cfg, fmt->pad) = fmt->format;
 #endif
 	} else {
-		ov5695->cur_mode = mode;
+		ov569x->cur_mode = mode;
 		h_blank = mode->hts_def - mode->width;
-		__v4l2_ctrl_modify_range(ov5695->hblank, h_blank,
+		__v4l2_ctrl_modify_range(ov569x->hblank, h_blank,
 					 h_blank, 1, h_blank);
 		vblank_def = mode->vts_def - mode->height;
-		__v4l2_ctrl_modify_range(ov5695->vblank, vblank_def,
-					 OV5695_VTS_MAX - mode->height,
+		__v4l2_ctrl_modify_range(ov569x->vblank, vblank_def,
+					 OV569X_VTS_MAX - mode->height,
 					 1, vblank_def);
 	}
 
-	mutex_unlock(&ov5695->mutex);
+	mutex_unlock(&ov569x->mutex);
 
 	return 0;
 }
 
-static int ov5695_get_fmt(struct v4l2_subdev *sd,
+static int ov569x_get_fmt(struct v4l2_subdev *sd,
 			  struct v4l2_subdev_pad_config *cfg,
 			  struct v4l2_subdev_format *fmt)
 {
-	struct ov5695 *ov5695 = to_ov5695(sd);
-	const struct ov5695_mode *mode = ov5695->cur_mode;
+	struct ov569x *ov569x = to_ov569x(sd);
+	const struct ov569x_mode *mode = ov569x->cur_mode;
 
-	mutex_lock(&ov5695->mutex);
+	mutex_lock(&ov569x->mutex);
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 		fmt->format = *v4l2_subdev_get_try_format(sd, cfg, fmt->pad);
 #else
-		mutex_unlock(&ov5695->mutex);
+		mutex_unlock(&ov569x->mutex);
 		return -EINVAL;
 #endif
 	} else {
@@ -861,12 +862,12 @@ static int ov5695_get_fmt(struct v4l2_subdev *sd,
 		fmt->format.code = MEDIA_BUS_FMT_SBGGR10_1X10;
 		fmt->format.field = V4L2_FIELD_NONE;
 	}
-	mutex_unlock(&ov5695->mutex);
+	mutex_unlock(&ov569x->mutex);
 
 	return 0;
 }
 
-static int ov5695_enum_mbus_code(struct v4l2_subdev *sd,
+static int ov569x_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
@@ -877,7 +878,7 @@ static int ov5695_enum_mbus_code(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov5695_enum_frame_sizes(struct v4l2_subdev *sd,
+static int ov569x_enum_frame_sizes(struct v4l2_subdev *sd,
 				   struct v4l2_subdev_pad_config *cfg,
 				   struct v4l2_subdev_frame_size_enum *fse)
 {
@@ -895,54 +896,54 @@ static int ov5695_enum_frame_sizes(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov5695_enable_test_pattern(struct ov5695 *ov5695, u32 pattern)
+static int ov569x_enable_test_pattern(struct ov569x *ov569x, u32 pattern)
 {
 	u32 val;
 
 	if (pattern)
-		val = (pattern - 1) | OV5695_TEST_PATTERN_ENABLE;
+		val = (pattern - 1) | OV569X_TEST_PATTERN_ENABLE;
 	else
-		val = OV5695_TEST_PATTERN_DISABLE;
+		val = OV569X_TEST_PATTERN_DISABLE;
 
-	return ov5695_write_reg(ov5695->client, OV5695_REG_TEST_PATTERN,
-				OV5695_REG_VALUE_08BIT, val);
+	return ov569x_write_reg(ov569x->client, OV569X_REG_TEST_PATTERN,
+				OV569X_REG_VALUE_08BIT, val);
 }
 
-static int __ov5695_start_stream(struct ov5695 *ov5695)
+static int __ov569x_start_stream(struct ov569x *ov569x)
 {
 	int ret;
 
-	ret = ov5695_write_array(ov5695->client, ov5695_global_regs);
+	ret = ov569x_write_array(ov569x->client, ov569x_global_regs);
 	if (ret)
 		return ret;
-	ret = ov5695_write_array(ov5695->client, ov5695->cur_mode->reg_list);
+	ret = ov569x_write_array(ov569x->client, ov569x->cur_mode->reg_list);
 	if (ret)
 		return ret;
 
 	/* In case these controls are set before streaming */
-	ret = __v4l2_ctrl_handler_setup(&ov5695->ctrl_handler);
+	ret = __v4l2_ctrl_handler_setup(&ov569x->ctrl_handler);
 	if (ret)
 		return ret;
 
-	return ov5695_write_reg(ov5695->client, OV5695_REG_CTRL_MODE,
-				OV5695_REG_VALUE_08BIT, OV5695_MODE_STREAMING);
+	return ov569x_write_reg(ov569x->client, OV569X_REG_CTRL_MODE,
+				OV569X_REG_VALUE_08BIT, OV569X_MODE_STREAMING);
 }
 
-static int __ov5695_stop_stream(struct ov5695 *ov5695)
+static int __ov569x_stop_stream(struct ov569x *ov569x)
 {
-	return ov5695_write_reg(ov5695->client, OV5695_REG_CTRL_MODE,
-				OV5695_REG_VALUE_08BIT, OV5695_MODE_SW_STANDBY);
+	return ov569x_write_reg(ov569x->client, OV569X_REG_CTRL_MODE,
+				OV569X_REG_VALUE_08BIT, OV569X_MODE_SW_STANDBY);
 }
 
-static int ov5695_s_stream(struct v4l2_subdev *sd, int on)
+static int ov569x_s_stream(struct v4l2_subdev *sd, int on)
 {
-	struct ov5695 *ov5695 = to_ov5695(sd);
-	struct i2c_client *client = ov5695->client;
+	struct ov569x *ov569x = to_ov569x(sd);
+	struct i2c_client *client = ov569x->client;
 	int ret = 0;
 
-	mutex_lock(&ov5695->mutex);
+	mutex_lock(&ov569x->mutex);
 	on = !!on;
-	if (on == ov5695->streaming)
+	if (on == ov569x->streaming)
 		goto unlock_and_return;
 
 	if (on) {
@@ -952,52 +953,52 @@ static int ov5695_s_stream(struct v4l2_subdev *sd, int on)
 			goto unlock_and_return;
 		}
 
-		ret = __ov5695_start_stream(ov5695);
+		ret = __ov569x_start_stream(ov569x);
 		if (ret) {
 			v4l2_err(sd, "start stream failed while write regs\n");
 			pm_runtime_put(&client->dev);
 			goto unlock_and_return;
 		}
 	} else {
-		__ov5695_stop_stream(ov5695);
+		__ov569x_stop_stream(ov569x);
 		pm_runtime_put(&client->dev);
 	}
 
-	ov5695->streaming = on;
+	ov569x->streaming = on;
 
 unlock_and_return:
-	mutex_unlock(&ov5695->mutex);
+	mutex_unlock(&ov569x->mutex);
 
 	return ret;
 }
 
-static int __ov5695_power_on(struct ov5695 *ov5695)
+static int __ov569x_power_on(struct ov569x *ov569x)
 {
 	int i, ret;
-	struct device *dev = &ov5695->client->dev;
+	struct device *dev = &ov569x->client->dev;
 
-	ret = clk_prepare_enable(ov5695->xvclk);
+	ret = clk_prepare_enable(ov569x->xvclk);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enable xvclk\n");
 		return ret;
 	}
 
-	gpiod_set_value_cansleep(ov5695->reset_gpio, 1);
+	gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
 
 	/*
 	 * The hardware requires the regulators to be powered on in order,
 	 * so enable them one by one.
 	 */
-	for (i = 0; i < OV5695_NUM_SUPPLIES; i++) {
-		ret = regulator_enable(ov5695->supplies[i].consumer);
+	for (i = 0; i < OV569X_NUM_SUPPLIES; i++) {
+		ret = regulator_enable(ov569x->supplies[i].consumer);
 		if (ret) {
 			dev_err(dev, "Failed to enable %s: %d\n",
-				ov5695->supplies[i].supply, ret);
+				ov569x->supplies[i].supply, ret);
 			goto disable_reg_clk;
 		}
 	}
 
-	gpiod_set_value_cansleep(ov5695->reset_gpio, 0);
+	gpiod_set_value_cansleep(ov569x->reset_gpio, 0);
 
 	usleep_range(1000, 1200);
 
@@ -1005,106 +1006,106 @@ static int __ov5695_power_on(struct ov5695 *ov5695)
 
 disable_reg_clk:
 	for (--i; i >= 0; i--)
-		regulator_disable(ov5695->supplies[i].consumer);
-	clk_disable_unprepare(ov5695->xvclk);
+		regulator_disable(ov569x->supplies[i].consumer);
+	clk_disable_unprepare(ov569x->xvclk);
 
 	return ret;
 }
 
-static void __ov5695_power_off(struct ov5695 *ov5695)
+static void __ov569x_power_off(struct ov569x *ov569x)
 {
-	struct device *dev = &ov5695->client->dev;
+	struct device *dev = &ov569x->client->dev;
 	int i, ret;
 
-	clk_disable_unprepare(ov5695->xvclk);
-	gpiod_set_value_cansleep(ov5695->reset_gpio, 1);
+	clk_disable_unprepare(ov569x->xvclk);
+	gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
 
 	/*
 	 * The hardware requires the regulators to be powered off in order,
 	 * so disable them one by one.
 	 */
-	for (i = OV5695_NUM_SUPPLIES - 1; i >= 0; i--) {
-		ret = regulator_disable(ov5695->supplies[i].consumer);
+	for (i = OV569X_NUM_SUPPLIES - 1; i >= 0; i--) {
+		ret = regulator_disable(ov569x->supplies[i].consumer);
 		if (ret)
 			dev_err(dev, "Failed to disable %s: %d\n",
-				ov5695->supplies[i].supply, ret);
+				ov569x->supplies[i].supply, ret);
 	}
 }
 
-static int __maybe_unused ov5695_runtime_resume(struct device *dev)
+static int __maybe_unused ov569x_runtime_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov5695 *ov5695 = to_ov5695(sd);
+	struct ov569x *ov569x = to_ov569x(sd);
 
-	return __ov5695_power_on(ov5695);
+	return __ov569x_power_on(ov569x);
 }
 
-static int __maybe_unused ov5695_runtime_suspend(struct device *dev)
+static int __maybe_unused ov569x_runtime_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov5695 *ov5695 = to_ov5695(sd);
+	struct ov569x *ov569x = to_ov569x(sd);
 
-	__ov5695_power_off(ov5695);
+	__ov569x_power_off(ov569x);
 
 	return 0;
 }
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-static int ov5695_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+static int ov569x_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
-	struct ov5695 *ov5695 = to_ov5695(sd);
+	struct ov569x *ov569x = to_ov569x(sd);
 	struct v4l2_mbus_framefmt *try_fmt =
 				v4l2_subdev_get_try_format(sd, fh->pad, 0);
-	const struct ov5695_mode *def_mode = &supported_modes[0];
+	const struct ov569x_mode *def_mode = &supported_modes[0];
 
-	mutex_lock(&ov5695->mutex);
+	mutex_lock(&ov569x->mutex);
 	/* Initialize try_fmt */
 	try_fmt->width = def_mode->width;
 	try_fmt->height = def_mode->height;
 	try_fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
 	try_fmt->field = V4L2_FIELD_NONE;
 
-	mutex_unlock(&ov5695->mutex);
+	mutex_unlock(&ov569x->mutex);
 	/* No crop or compose */
 
 	return 0;
 }
 #endif
 
-static const struct dev_pm_ops ov5695_pm_ops = {
-	SET_RUNTIME_PM_OPS(ov5695_runtime_suspend,
-			   ov5695_runtime_resume, NULL)
+static const struct dev_pm_ops ov569x_pm_ops = {
+	SET_RUNTIME_PM_OPS(ov569x_runtime_suspend,
+			   ov569x_runtime_resume, NULL)
 };
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-static const struct v4l2_subdev_internal_ops ov5695_internal_ops = {
-	.open = ov5695_open,
+static const struct v4l2_subdev_internal_ops ov569x_internal_ops = {
+	.open = ov569x_open,
 };
 #endif
 
-static const struct v4l2_subdev_video_ops ov5695_video_ops = {
-	.s_stream = ov5695_s_stream,
+static const struct v4l2_subdev_video_ops ov569x_video_ops = {
+	.s_stream = ov569x_s_stream,
 };
 
-static const struct v4l2_subdev_pad_ops ov5695_pad_ops = {
-	.enum_mbus_code = ov5695_enum_mbus_code,
-	.enum_frame_size = ov5695_enum_frame_sizes,
-	.get_fmt = ov5695_get_fmt,
-	.set_fmt = ov5695_set_fmt,
+static const struct v4l2_subdev_pad_ops ov569x_pad_ops = {
+	.enum_mbus_code = ov569x_enum_mbus_code,
+	.enum_frame_size = ov569x_enum_frame_sizes,
+	.get_fmt = ov569x_get_fmt,
+	.set_fmt = ov569x_set_fmt,
 };
 
-static const struct v4l2_subdev_ops ov5695_subdev_ops = {
-	.video	= &ov5695_video_ops,
-	.pad	= &ov5695_pad_ops,
+static const struct v4l2_subdev_ops ov569x_subdev_ops = {
+	.video	= &ov569x_video_ops,
+	.pad	= &ov569x_pad_ops,
 };
 
-static int ov5695_set_ctrl(struct v4l2_ctrl *ctrl)
+static int ov569x_set_ctrl(struct v4l2_ctrl *ctrl)
 {
-	struct ov5695 *ov5695 = container_of(ctrl->handler,
-					     struct ov5695, ctrl_handler);
-	struct i2c_client *client = ov5695->client;
+	struct ov569x *ov569x = container_of(ctrl->handler,
+					     struct ov569x, ctrl_handler);
+	struct i2c_client *client = ov569x->client;
 	s64 max;
 	int ret = 0;
 
@@ -1112,11 +1113,11 @@ static int ov5695_set_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_VBLANK:
 		/* Update max exposure while meeting expected vblanking */
-		max = ov5695->cur_mode->height + ctrl->val - 4;
-		__v4l2_ctrl_modify_range(ov5695->exposure,
-					 ov5695->exposure->minimum, max,
-					 ov5695->exposure->step,
-					 ov5695->exposure->default_value);
+		max = ov569x->cur_mode->height + ctrl->val - 4;
+		__v4l2_ctrl_modify_range(ov569x->exposure,
+					 ov569x->exposure->minimum, max,
+					 ov569x->exposure->step,
+					 ov569x->exposure->default_value);
 		break;
 	}
 
@@ -1126,28 +1127,28 @@ static int ov5695_set_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_EXPOSURE:
 		/* 4 least significant bits of expsoure are fractional part */
-		ret = ov5695_write_reg(ov5695->client, OV5695_REG_EXPOSURE,
-				       OV5695_REG_VALUE_24BIT, ctrl->val << 4);
+		ret = ov569x_write_reg(ov569x->client, OV569X_REG_EXPOSURE,
+				       OV569X_REG_VALUE_24BIT, ctrl->val << 4);
 		break;
 	case V4L2_CID_ANALOGUE_GAIN:
-		ret = ov5695_write_reg(ov5695->client, OV5695_REG_ANALOG_GAIN,
-				       OV5695_REG_VALUE_08BIT, ctrl->val);
+		ret = ov569x_write_reg(ov569x->client, OV569X_REG_ANALOG_GAIN,
+				       OV569X_REG_VALUE_08BIT, ctrl->val);
 		break;
 	case V4L2_CID_DIGITAL_GAIN:
-		ret = ov5695_write_reg(ov5695->client, OV5695_REG_DIGI_GAIN_L,
-				       OV5695_REG_VALUE_08BIT,
-				       ctrl->val & OV5695_DIGI_GAIN_L_MASK);
-		ret = ov5695_write_reg(ov5695->client, OV5695_REG_DIGI_GAIN_H,
-				       OV5695_REG_VALUE_08BIT,
-				       ctrl->val >> OV5695_DIGI_GAIN_H_SHIFT);
+		ret = ov569x_write_reg(ov569x->client, OV569X_REG_DIGI_GAIN_L,
+				       OV569X_REG_VALUE_08BIT,
+				       ctrl->val & OV569X_DIGI_GAIN_L_MASK);
+		ret = ov569x_write_reg(ov569x->client, OV569X_REG_DIGI_GAIN_H,
+				       OV569X_REG_VALUE_08BIT,
+				       ctrl->val >> OV569X_DIGI_GAIN_H_SHIFT);
 		break;
 	case V4L2_CID_VBLANK:
-		ret = ov5695_write_reg(ov5695->client, OV5695_REG_VTS,
-				       OV5695_REG_VALUE_16BIT,
-				       ctrl->val + ov5695->cur_mode->height);
+		ret = ov569x_write_reg(ov569x->client, OV569X_REG_VTS,
+				       OV569X_REG_VALUE_16BIT,
+				       ctrl->val + ov569x->cur_mode->height);
 		break;
 	case V4L2_CID_TEST_PATTERN:
-		ret = ov5695_enable_test_pattern(ov5695, ctrl->val);
+		ret = ov569x_enable_test_pattern(ov569x, ctrl->val);
 		break;
 	default:
 		dev_warn(&client->dev, "%s Unhandled id:0x%x, val:0x%x\n",
@@ -1160,25 +1161,25 @@ static int ov5695_set_ctrl(struct v4l2_ctrl *ctrl)
 	return ret;
 }
 
-static const struct v4l2_ctrl_ops ov5695_ctrl_ops = {
-	.s_ctrl = ov5695_set_ctrl,
+static const struct v4l2_ctrl_ops ov569x_ctrl_ops = {
+	.s_ctrl = ov569x_set_ctrl,
 };
 
-static int ov5695_initialize_controls(struct ov5695 *ov5695)
+static int ov569x_initialize_controls(struct ov569x *ov569x)
 {
-	const struct ov5695_mode *mode;
+	const struct ov569x_mode *mode;
 	struct v4l2_ctrl_handler *handler;
 	struct v4l2_ctrl *ctrl;
 	s64 exposure_max, vblank_def;
 	u32 h_blank;
 	int ret;
 
-	handler = &ov5695->ctrl_handler;
-	mode = ov5695->cur_mode;
+	handler = &ov569x->ctrl_handler;
+	mode = ov569x->cur_mode;
 	ret = v4l2_ctrl_handler_init(handler, 8);
 	if (ret)
 		return ret;
-	handler->lock = &ov5695->mutex;
+	handler->lock = &ov569x->mutex;
 
 	ctrl = v4l2_ctrl_new_int_menu(handler, NULL, V4L2_CID_LINK_FREQ,
 				      0, 0, link_freq_menu_items);
@@ -1186,50 +1187,50 @@ static int ov5695_initialize_controls(struct ov5695 *ov5695)
 		ctrl->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
 	v4l2_ctrl_new_std(handler, NULL, V4L2_CID_PIXEL_RATE,
-			  0, OV5695_PIXEL_RATE, 1, OV5695_PIXEL_RATE);
+			  0, OV569X_PIXEL_RATE, 1, OV569X_PIXEL_RATE);
 
 	h_blank = mode->hts_def - mode->width;
-	ov5695->hblank = v4l2_ctrl_new_std(handler, NULL, V4L2_CID_HBLANK,
+	ov569x->hblank = v4l2_ctrl_new_std(handler, NULL, V4L2_CID_HBLANK,
 				h_blank, h_blank, 1, h_blank);
-	if (ov5695->hblank)
-		ov5695->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+	if (ov569x->hblank)
+		ov569x->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
 	vblank_def = mode->vts_def - mode->height;
-	ov5695->vblank = v4l2_ctrl_new_std(handler, &ov5695_ctrl_ops,
+	ov569x->vblank = v4l2_ctrl_new_std(handler, &ov569x_ctrl_ops,
 				V4L2_CID_VBLANK, vblank_def,
-				OV5695_VTS_MAX - mode->height,
+				OV569X_VTS_MAX - mode->height,
 				1, vblank_def);
 
 	exposure_max = mode->vts_def - 4;
-	ov5695->exposure = v4l2_ctrl_new_std(handler, &ov5695_ctrl_ops,
-				V4L2_CID_EXPOSURE, OV5695_EXPOSURE_MIN,
-				exposure_max, OV5695_EXPOSURE_STEP,
+	ov569x->exposure = v4l2_ctrl_new_std(handler, &ov569x_ctrl_ops,
+				V4L2_CID_EXPOSURE, OV569X_EXPOSURE_MIN,
+				exposure_max, OV569X_EXPOSURE_STEP,
 				mode->exp_def);
 
-	ov5695->anal_gain = v4l2_ctrl_new_std(handler, &ov5695_ctrl_ops,
+	ov569x->anal_gain = v4l2_ctrl_new_std(handler, &ov569x_ctrl_ops,
 				V4L2_CID_ANALOGUE_GAIN, ANALOG_GAIN_MIN,
 				ANALOG_GAIN_MAX, ANALOG_GAIN_STEP,
 				ANALOG_GAIN_DEFAULT);
 
 	/* Digital gain */
-	ov5695->digi_gain = v4l2_ctrl_new_std(handler, &ov5695_ctrl_ops,
-				V4L2_CID_DIGITAL_GAIN, OV5695_DIGI_GAIN_MIN,
-				OV5695_DIGI_GAIN_MAX, OV5695_DIGI_GAIN_STEP,
-				OV5695_DIGI_GAIN_DEFAULT);
+	ov569x->digi_gain = v4l2_ctrl_new_std(handler, &ov569x_ctrl_ops,
+				V4L2_CID_DIGITAL_GAIN, OV569X_DIGI_GAIN_MIN,
+				OV569X_DIGI_GAIN_MAX, OV569X_DIGI_GAIN_STEP,
+				OV569X_DIGI_GAIN_DEFAULT);
 
-	ov5695->test_pattern = v4l2_ctrl_new_std_menu_items(handler,
-				&ov5695_ctrl_ops, V4L2_CID_TEST_PATTERN,
-				ARRAY_SIZE(ov5695_test_pattern_menu) - 1,
-				0, 0, ov5695_test_pattern_menu);
+	ov569x->test_pattern = v4l2_ctrl_new_std_menu_items(handler,
+				&ov569x_ctrl_ops, V4L2_CID_TEST_PATTERN,
+				ARRAY_SIZE(ov569x_test_pattern_menu) - 1,
+				0, 0, ov569x_test_pattern_menu);
 
 	if (handler->error) {
 		ret = handler->error;
-		dev_err(&ov5695->client->dev,
+		dev_err(&ov569x->client->dev,
 			"Failed to init controls(%d)\n", ret);
 		goto err_free_handler;
 	}
 
-	ov5695->subdev.ctrl_handler = handler;
+	ov569x->subdev.ctrl_handler = handler;
 
 	return 0;
 
@@ -1239,100 +1240,100 @@ err_free_handler:
 	return ret;
 }
 
-static int ov5695_check_sensor_id(struct ov5695 *ov5695,
+static int ov569x_check_sensor_id(struct ov569x *ov569x,
 				  struct i2c_client *client)
 {
-	struct device *dev = &ov5695->client->dev;
+	struct device *dev = &ov569x->client->dev;
 	u32 id = 0;
 	int ret;
 
-	ret = ov5695_read_reg(client, OV5695_REG_CHIP_ID,
-			      OV5695_REG_VALUE_24BIT, &id);
-	if (id != CHIP_ID) {
+	ret = ov569x_read_reg(client, OV569X_REG_CHIP_ID,
+			      OV569X_REG_VALUE_24BIT, &id);
+	if (id != CHIP_ID_OV5695) {
 		dev_err(dev, "Unexpected sensor id(%06x), ret(%d)\n", id, ret);
 		return -ENODEV;
 	}
 
-	dev_info(dev, "Detected OV%06x sensor\n", CHIP_ID);
+	dev_info(dev, "Detected OV%06x sensor\n", id);
 
 	return 0;
 }
 
-static int ov5695_configure_regulators(struct ov5695 *ov5695)
+static int ov569x_configure_regulators(struct ov569x *ov569x)
 {
 	int i;
 
-	for (i = 0; i < OV5695_NUM_SUPPLIES; i++)
-		ov5695->supplies[i].supply = ov5695_supply_names[i];
+	for (i = 0; i < OV569X_NUM_SUPPLIES; i++)
+		ov569x->supplies[i].supply = ov569x_supply_names[i];
 
-	return devm_regulator_bulk_get(&ov5695->client->dev,
-				       OV5695_NUM_SUPPLIES,
-				       ov5695->supplies);
+	return devm_regulator_bulk_get(&ov569x->client->dev,
+				       OV569X_NUM_SUPPLIES,
+				       ov569x->supplies);
 }
 
-static int ov5695_probe(struct i2c_client *client)
+static int ov569x_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
-	struct ov5695 *ov5695;
+	struct ov569x *ov569x;
 	struct v4l2_subdev *sd;
 	int ret;
 
-	ov5695 = devm_kzalloc(dev, sizeof(*ov5695), GFP_KERNEL);
-	if (!ov5695)
+	ov569x = devm_kzalloc(dev, sizeof(*ov569x), GFP_KERNEL);
+	if (!ov569x)
 		return -ENOMEM;
 
-	ov5695->client = client;
-	ov5695->cur_mode = &supported_modes[0];
+	ov569x->client = client;
+	ov569x->cur_mode = &supported_modes[0];
 
-	ov5695->xvclk = devm_clk_get(dev, "xvclk");
-	if (IS_ERR(ov5695->xvclk)) {
+	ov569x->xvclk = devm_clk_get(dev, "xvclk");
+	if (IS_ERR(ov569x->xvclk)) {
 		dev_err(dev, "Failed to get xvclk\n");
 		return -EINVAL;
 	}
-	ret = clk_set_rate(ov5695->xvclk, OV5695_XVCLK_FREQ);
+	ret = clk_set_rate(ov569x->xvclk, OV569X_XVCLK_FREQ);
 	if (ret < 0) {
 		dev_err(dev, "Failed to set xvclk rate (24MHz)\n");
 		return ret;
 	}
-	if (clk_get_rate(ov5695->xvclk) != OV5695_XVCLK_FREQ)
+	if (clk_get_rate(ov569x->xvclk) != OV569X_XVCLK_FREQ)
 		dev_warn(dev, "xvclk mismatched, modes are based on 24MHz\n");
 
-	ov5695->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov5695->reset_gpio)) {
+	ov569x->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ov569x->reset_gpio)) {
 		dev_err(dev, "Failed to get reset-gpios\n");
 		return -EINVAL;
 	}
 
-	ret = ov5695_configure_regulators(ov5695);
+	ret = ov569x_configure_regulators(ov569x);
 	if (ret) {
 		dev_err(dev, "Failed to get power regulators\n");
 		return ret;
 	}
 
-	mutex_init(&ov5695->mutex);
+	mutex_init(&ov569x->mutex);
 
-	sd = &ov5695->subdev;
-	v4l2_i2c_subdev_init(sd, client, &ov5695_subdev_ops);
-	ret = ov5695_initialize_controls(ov5695);
+	sd = &ov569x->subdev;
+	v4l2_i2c_subdev_init(sd, client, &ov569x_subdev_ops);
+	ret = ov569x_initialize_controls(ov569x);
 	if (ret)
 		goto err_destroy_mutex;
 
-	ret = __ov5695_power_on(ov5695);
+	ret = __ov569x_power_on(ov569x);
 	if (ret)
 		goto err_free_handler;
 
-	ret = ov5695_check_sensor_id(ov5695, client);
+	ret = ov569x_check_sensor_id(ov569x, client);
 	if (ret)
 		goto err_power_off;
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-	sd->internal_ops = &ov5695_internal_ops;
+	sd->internal_ops = &ov569x_internal_ops;
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 #endif
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	ov5695->pad.flags = MEDIA_PAD_FL_SOURCE;
+	ov569x->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
-	ret = media_entity_pads_init(&sd->entity, 1, &ov5695->pad);
+	ret = media_entity_pads_init(&sd->entity, 1, &ov569x->pad);
 	if (ret < 0)
 		goto err_power_off;
 #endif
@@ -1354,54 +1355,54 @@ err_clean_entity:
 	media_entity_cleanup(&sd->entity);
 #endif
 err_power_off:
-	__ov5695_power_off(ov5695);
+	__ov569x_power_off(ov569x);
 err_free_handler:
-	v4l2_ctrl_handler_free(&ov5695->ctrl_handler);
+	v4l2_ctrl_handler_free(&ov569x->ctrl_handler);
 err_destroy_mutex:
-	mutex_destroy(&ov5695->mutex);
+	mutex_destroy(&ov569x->mutex);
 
 	return ret;
 }
 
-static int ov5695_remove(struct i2c_client *client)
+static int ov569x_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov5695 *ov5695 = to_ov5695(sd);
+	struct ov569x *ov569x = to_ov569x(sd);
 
 	v4l2_async_unregister_subdev(sd);
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	media_entity_cleanup(&sd->entity);
 #endif
-	v4l2_ctrl_handler_free(&ov5695->ctrl_handler);
-	mutex_destroy(&ov5695->mutex);
+	v4l2_ctrl_handler_free(&ov569x->ctrl_handler);
+	mutex_destroy(&ov569x->mutex);
 
 	pm_runtime_disable(&client->dev);
 	if (!pm_runtime_status_suspended(&client->dev))
-		__ov5695_power_off(ov5695);
+		__ov569x_power_off(ov569x);
 	pm_runtime_set_suspended(&client->dev);
 
 	return 0;
 }
 
 #if IS_ENABLED(CONFIG_OF)
-static const struct of_device_id ov5695_of_match[] = {
+static const struct of_device_id ov569x_of_match[] = {
 	{ .compatible = "ovti,ov5695" },
 	{},
 };
-MODULE_DEVICE_TABLE(of, ov5695_of_match);
+MODULE_DEVICE_TABLE(of, ov569x_of_match);
 #endif
 
-static struct i2c_driver ov5695_i2c_driver = {
+static struct i2c_driver ov569x_i2c_driver = {
 	.driver = {
-		.name = "ov5695",
-		.pm = &ov5695_pm_ops,
-		.of_match_table = of_match_ptr(ov5695_of_match),
+		.name = "ov569x",
+		.pm = &ov569x_pm_ops,
+		.of_match_table = of_match_ptr(ov569x_of_match),
 	},
-	.probe_new	= &ov5695_probe,
-	.remove		= &ov5695_remove,
+	.probe_new	= &ov569x_probe,
+	.remove		= &ov569x_remove,
 };
 
-module_i2c_driver(ov5695_i2c_driver);
+module_i2c_driver(ov569x_i2c_driver);
 
-MODULE_DESCRIPTION("OmniVision ov5695 sensor driver");
+MODULE_DESCRIPTION("OmniVision ov569x sensor driver");
 MODULE_LICENSE("GPL v2");
