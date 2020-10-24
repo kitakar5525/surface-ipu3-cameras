@@ -5,6 +5,8 @@
  * Copyright (C) 2017 Fuzhou Rockchip Electronics Co., Ltd.
  */
 
+#define OV569X_ACPI_HID "INT33BE"
+
 #include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/device.h>
@@ -125,6 +127,8 @@ struct ov569x {
 	struct gpio_desc *xshutdn;
 	struct gpio_desc *pwdnb;
 	struct gpio_desc *led_gpio;
+
+	bool is_acpi_based;
 };
 
 #define to_ov569x(sd) container_of(sd, struct ov569x, subdev)
@@ -1038,7 +1042,7 @@ static int __ov569x_power_on(struct ov569x *ov569x)
 	struct v4l2_subdev *sd = i2c_get_clientdata(ov569x->client);
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(dev))) {
+	if (!ov569x->is_acpi_based) {
 		ret = clk_prepare_enable(ov569x->xvclk);
 		if (ret < 0) {
 			dev_err(dev, "Failed to enable xvclk\n");
@@ -1064,7 +1068,7 @@ static int __ov569x_power_on(struct ov569x *ov569x)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(dev)))
+	if (ov569x->is_acpi_based)
 		gpio_crs_ctrl(sd, true);
 
 	usleep_range(1000, 1200);
@@ -1073,7 +1077,7 @@ static int __ov569x_power_on(struct ov569x *ov569x)
 
 disable_reg_clk:
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(dev))) {
+	if (!ov569x->is_acpi_based) {
 		for (--i; i >= 0; i--)
 			regulator_disable(ov569x->supplies[i].consumer);
 		clk_disable_unprepare(ov569x->xvclk);
@@ -1089,7 +1093,7 @@ static void __ov569x_power_off(struct ov569x *ov569x)
 	int i, ret;
 
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(dev))) {
+	if (!ov569x->is_acpi_based) {
 		clk_disable_unprepare(ov569x->xvclk);
 		gpiod_set_value_cansleep(ov569x->reset_gpio, 1);
 
@@ -1106,7 +1110,7 @@ static void __ov569x_power_off(struct ov569x *ov569x)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(dev)))
+	if (ov569x->is_acpi_based)
 		gpio_crs_ctrl(sd, false);
 }
 
@@ -1436,8 +1440,15 @@ static int ov569x_probe(struct i2c_client *client)
 	ov569x->client = client;
 	ov569x->cur_mode = &supported_modes[0];
 
+	if (acpi_dev_present(OV569X_ACPI_HID, NULL, -1)) {
+		dev_info(dev, "system is acpi-based\n");
+		ov569x->is_acpi_based = true;
+	} else {
+		dev_info(dev, "system is not acpi-based\n");
+	}
+
 	/* For DT-based systems */
-	if (!is_acpi_node(dev_fwnode(dev))) {
+	if (!ov569x->is_acpi_based) {
 		ov569x->xvclk = devm_clk_get(dev, "xvclk");
 		if (IS_ERR(ov569x->xvclk)) {
 			dev_err(dev, "Failed to get xvclk\n");
@@ -1465,7 +1476,7 @@ static int ov569x_probe(struct i2c_client *client)
 	}
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(dev))) {
+	if (ov569x->is_acpi_based) {
 		ov569x->dep_dev = get_dep_dev(dev);
 		if (IS_ERR(ov569x->dep_dev)) {
 			ret = PTR_ERR(ov569x->dep_dev);
@@ -1547,7 +1558,7 @@ static int ov569x_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s() called\n", __func__);
 
 	/* For ACPI-based systems */
-	if (is_acpi_node(dev_fwnode(&client->dev)))
+	if (ov569x->is_acpi_based)
 		gpio_crs_put(ov569x);
 
 	v4l2_async_unregister_subdev(sd);
