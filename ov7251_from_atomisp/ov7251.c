@@ -969,15 +969,6 @@ static int ov7251_enum_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov7251_enum_mbus_fmt(struct v4l2_subdev *sd,
-				unsigned int index,
-				u32 *code)
-{
-	*code = MEDIA_BUS_FMT_SBGGR10_1X10;
-
-	return 0;
-}
-
 static int ov7251_s_config(struct v4l2_subdev *sd)
 {
 	struct ov7251_device *dev = to_ov7251_sensor(sd);
@@ -1203,7 +1194,6 @@ static const struct v4l2_subdev_video_ops ov7251_video_ops = {
 	.s_stream = ov7251_s_stream,
 	.g_parm = ov7251_g_parm,
 	.s_parm = ov7251_s_parm,
-	.enum_mbus_fmt = ov7251_enum_mbus_fmt,
 	.try_mbus_fmt = ov7251_try_mbus_fmt,
 	.g_mbus_fmt = ov7251_g_mbus_fmt,
 	.s_mbus_fmt = ov7251_s_mbus_fmt,
