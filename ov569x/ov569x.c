@@ -5,6 +5,7 @@
  * Copyright (C) 2017 Fuzhou Rockchip Electronics Co., Ltd.
  */
 
+#include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/delay.h>
@@ -1392,11 +1393,20 @@ static const struct of_device_id ov569x_of_match[] = {
 MODULE_DEVICE_TABLE(of, ov569x_of_match);
 #endif
 
+#if IS_ENABLED(CONFIG_ACPI)
+static const struct acpi_device_id ov569x_acpi_ids[] = {
+	{"INT33BE"},
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, ov569x_acpi_ids);
+#endif
+
 static struct i2c_driver ov569x_i2c_driver = {
 	.driver = {
 		.name = "ov569x",
 		.pm = &ov569x_pm_ops,
 		.of_match_table = of_match_ptr(ov569x_of_match),
+		.acpi_match_table = ACPI_PTR(ov569x_acpi_ids),
 	},
 	.probe_new	= &ov569x_probe,
 	.remove		= &ov569x_remove,
