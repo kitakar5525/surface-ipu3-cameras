@@ -1648,8 +1648,7 @@ static struct attribute_group ov_attribute_group = {
 
 
 
-static int ov7251_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
+static int ov7251_probe(struct i2c_client *client)
 {
 	struct ov7251_device *dev;
 	void *ovpdev;
@@ -1738,8 +1737,6 @@ out_free:
 	return ret;
 }
 
-MODULE_DEVICE_TABLE(i2c, ov7251_id);
-
 static struct acpi_device_id ov7251_acpi_match[] = {
 	{"INT347A"},
 	{"INT35AA"},
@@ -1754,9 +1751,8 @@ static struct i2c_driver ov7251_driver = {
 		.name = OV7251_NAME,
 		.acpi_match_table = ACPI_PTR(ov7251_acpi_match),
 	},
-	.probe = ov7251_probe,
+	.probe_new = ov7251_probe,
 	.remove = ov7251_remove,
-	.id_table = ov7251_id,
 };
 
 static int init_ov7251(void)

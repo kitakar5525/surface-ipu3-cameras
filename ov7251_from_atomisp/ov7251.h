@@ -258,13 +258,6 @@ struct ov7251_write_ctrl {
 	struct ov7251_write_buffer buffer;
 };
 
-static const struct i2c_device_id ov7251_id[] = {
-	{OV7251_NAME, 0},
-	{"INT35AA", 0},
-	{"INT35AA:00", 0},
-	{}
-};
-
 static struct ov7251_reg const ov7251_480P_75fps[] = {
 /*	{OV7251_8BIT, SC_SOFTWARE_RESET_REG, 0x1}, */
 	{OV7251_8BIT, 0x100, 0x0}, /* disable OTP memory access */
