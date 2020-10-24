@@ -1250,7 +1250,7 @@ static int ov5695_check_sensor_id(struct ov5695 *ov5695,
 			      OV5695_REG_VALUE_24BIT, &id);
 	if (id != CHIP_ID) {
 		dev_err(dev, "Unexpected sensor id(%06x), ret(%d)\n", id, ret);
-		return ret;
+		return -ENODEV;
 	}
 
 	dev_info(dev, "Detected OV%06x sensor\n", CHIP_ID);
