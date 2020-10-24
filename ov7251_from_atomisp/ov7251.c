@@ -1361,7 +1361,7 @@ __ov7251_get_pad_format(struct ov7251_device *sensor, struct v4l2_subdev *sd,
 
 	if (pad != 0) {
 		dev_err(&client->dev,
-			"__ov7251_get_pad_format err. pad %x\n", pad);
+			"%s err. pad %x\n", __func__, pad);
 		return NULL;
 	}
 
@@ -1472,7 +1472,7 @@ static int ov7251_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov7251_device *dev = to_ov7251_sensor(sd);
 
-	dev_dbg(&client->dev, "ov7251_remove...\n");
+	dev_dbg(&client->dev, "%s...\n", __func__);
 
 	if (dev->platform_data->platform_deinit)
 		dev->platform_data->platform_deinit();
