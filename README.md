@@ -87,6 +87,37 @@ Note:
 - About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
 - About `ov5693` and `ov5693_from_jhand2` dirs: Both drivers are working now. (you can load only one of them at the same time, of course) The former is from atomisp driver and modified to work with ipu3. The latter is from jhand2 and I made some changes. (jhand2 seems to be busy, so I haven't made pull request or something so far yet)
 
+#### how can I install the sensor drivers? (works until you update kernel version)
+Like this:
+```bash
+sudo mkdir /lib/modules/$(uname -r)/updates/
+sudo cp ov5693/ov5693.ko /lib/modules/$(uname -r)/updates/
+sudo cp ov7251/ov7251.ko /lib/modules/$(uname -r)/updates/
+sudo cp ov8865_from_ov8856/ov8865.ko /lib/modules/$(uname -r)/updates/
+
+sudo depmod
+```
+
+#### kernel lockdown is enabled and I can't do `insmod`
+The above section `how can I install the sensor drivers?` works.
+
+#### how to reload camera drivers?
+Sensor drivers are used by ipu3 drivers. So, we need to unload ipu3 drivers first like this:
+```bash
+# reload camera drivers
+sudo modprobe -r ipu3_imgu
+sudo modprobe -r ipu3_cio2
+sudo rmmod ov5693
+sudo rmmod ov7251
+sudo rmmod ov8865
+
+sudo modprobe ipu3_cio2
+sudo modprobe ipu3_imgu
+sudo modprobe ov5693
+sudo modprobe ov7251
+sudo modprobe ov8865
+```
+
 ---
 
 #### links
