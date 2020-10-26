@@ -143,6 +143,13 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 		return ssdb_len;
 	}
 
+	print_acpi_entry(adev, "_ADR");
+	print_acpi_entry(adev, "_HID");
+	print_acpi_entry(adev, "_CID");
+	print_acpi_entry(adev, "_DDN");
+	print_acpi_entry(adev, "_SUB");
+	print_acpi_entry(adev, "_UID");
+
 	return 0;
 }
 
@@ -159,6 +166,13 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 		pr_info("%s(): Reading CLDB failed\n", __func__);
 		return cldb_len;
 	}
+
+	print_acpi_entry(adev, "_ADR");
+	print_acpi_entry(adev, "_HID");
+	print_acpi_entry(adev, "_CID");
+	print_acpi_entry(adev, "_DDN");
+	print_acpi_entry(adev, "_SUB");
+	print_acpi_entry(adev, "_UID");
 
 	return 0;
 }
