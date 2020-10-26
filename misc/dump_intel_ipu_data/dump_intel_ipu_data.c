@@ -68,8 +68,17 @@ err_free_buf:
 
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
+	struct intel_ssdb sensor_data;
+	int ssdb_len;
+
 	pr_info("%s(): ==================== %s (Sensor) ====================\n",
 		__func__, dev_name(&adev->dev));
+
+	ssdb_len = get_acpi_buf(adev, "SSDB", &sensor_data, sizeof(sensor_data));
+	if (!ssdb_len) {
+		pr_info("%s(): Reading SSDB failed\n", __func__);
+		return ssdb_len;
+	}
 
 	return 0;
 }
