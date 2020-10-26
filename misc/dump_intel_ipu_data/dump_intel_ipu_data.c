@@ -189,6 +189,43 @@ static int print_pmic_i2c_dev_name(struct acpi_device *adev, int pmic_type)
 	return 0;
 }
 
+static int print_dep_acpi_paths(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	struct acpi_handle_list dep_devices;
+	const char *path = "_DEP";
+	int ret;
+	int i;
+
+	if (!acpi_has_method(handle, (acpi_string)path)) {
+		pr_info("ACPI %s: Entry not found\n", path);
+		return 0;
+	}
+
+	ret = acpi_evaluate_reference(handle, (acpi_string)path, NULL,
+				      &dep_devices);
+	if (ACPI_FAILURE(ret)) {
+		pr_err("ACPI %s: Evaluation failed\n", path);
+		return -ENODEV;
+	}
+
+	for (i = 0; i < dep_devices.count; i++) {
+		char acpi_method_name[255] = { 0 };
+		struct acpi_buffer buffer = {sizeof(acpi_method_name),
+					     acpi_method_name};
+
+		acpi_get_name(dep_devices.handles[i], ACPI_FULL_PATHNAME,
+			      &buffer);
+		pr_info("ACPI %s (%d of %d): %s\n",
+			path, i + 1, dep_devices.count, acpi_method_name);
+	}
+
+	if (!dep_devices.count)
+		pr_info("ACPI %s: No dependent device found\n", path);
+
+	return 0;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -213,6 +250,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	print_acpi_fullpath(adev);
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 	print_sensor_i2c_dev_name(adev);
+	print_dep_acpi_paths(adev);
 
 	return 0;
 }
@@ -241,6 +279,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	print_acpi_fullpath(adev);
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 	print_pmic_i2c_dev_name(adev, pmic_data.control_logic_type);
+	print_dep_acpi_paths(adev);
 
 	return 0;
 }
