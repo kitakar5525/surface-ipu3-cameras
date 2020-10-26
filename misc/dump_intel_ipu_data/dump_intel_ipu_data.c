@@ -27,6 +27,28 @@ static struct acpi_driver dump_intel_ipu_data_driver = {
 	.class = DRV_NAME,
 };
 
+static bool is_supported_sensor(struct acpi_device *adev)
+{
+	/* check if SSDB is present */
+	if (!acpi_has_method(adev->handle, "SSDB")) {
+		dev_dbg(&adev->dev, "SSDB not found\n");
+		return false;
+	}
+
+	return true;
+}
+
+static bool is_supported_pmic(struct acpi_device *adev)
+{
+	/* check if CLDB is present */
+	if (!acpi_has_method(adev->handle, "CLDB")) {
+		dev_dbg(&adev->dev, "CLDB not found\n");
+		return false;
+	}
+
+	return true;
+}
+
 static int acpi_dev_match_cb(struct device *dev, void *data)
 {
 	struct acpi_device *adev = to_acpi_device(dev);
@@ -43,10 +65,15 @@ static int acpi_dev_match_cb(struct device *dev, void *data)
 		return 0;
 	}
 
-	get_acpi_sensor_data(adev);
-	pr_info("\n");
-	get_acpi_pmic_data(adev);
-	pr_info("\n");
+	if (is_supported_sensor(adev)) {
+		get_acpi_sensor_data(adev);
+		pr_info("\n");
+	}
+
+	if (is_supported_pmic(adev)) {
+		get_acpi_pmic_data(adev);
+		pr_info("\n");
+	}
 
 	return 0;
 }
