@@ -286,6 +286,14 @@ static int dump_pld(struct acpi_device *adev)
 	return 0;
 }
 
+static int dump_crs(struct acpi_device *adev)
+{
+	const char *path = "_CRS";
+
+	pr_info("ACPI %s: ---------- %s() ----------\n", path, __func__);
+	return print_acpi_entry(adev, path);
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -313,6 +321,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	print_dep_acpi_paths(adev);
 
 	dump_pld(adev);
+	dump_crs(adev);
 
 	return 0;
 }
@@ -344,6 +353,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	print_dep_acpi_paths(adev);
 
 	dump_pld(adev);
+	dump_crs(adev);
 
 	return 0;
 }
