@@ -7,6 +7,65 @@
 #define DRV_NAME	"dump_intel_ipu_data"
 #define DRV_VERSION	"0.1"
 
+/**
+ * get_acpi_buf - wrapper for acpi_evaluate_object()
+ * @adev: ACPI device
+ * @path: ACPI object path
+ * @out: pointer to point returned buffer from @path
+ * @size: buffer size of @out
+ *
+ * Return negative values for errors.
+ * Return 0 for success.
+ */
+static int get_acpi_buf(struct acpi_device *adev, const char *path,
+			void *out, u32 size)
+{
+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+	acpi_status status;
+	int ret;
+
+	if (!acpi_has_method(handle, (acpi_string)path)) {
+		pr_info("ACPI %s: Entry not found\n", path);
+		return 0;
+	}
+
+	status = acpi_evaluate_object(handle, (acpi_string)path, NULL,
+				      &buffer);
+	if (ACPI_FAILURE(status)) {
+		pr_err("%s: Evaluation failed\n", path);
+		return -ENODEV;
+	}
+
+	obj = buffer.pointer;
+	if (!obj) {
+		pr_err("%s: Couldn't locate ACPI buffer\n", path);
+		return -ENODEV;
+	}
+
+	if (obj->type != ACPI_TYPE_BUFFER) {
+		pr_err("%s: Couldn't read ACPI buffer\n", path);
+		ret = -ENODEV;
+		goto err_free_buf;
+	}
+
+	if (obj->buffer.length > size) {
+		pr_err("%s: Given buffer is too small\n", path);
+		ret = -ENODEV;
+		goto err_free_buf;
+	}
+
+	memcpy(out, obj->buffer.pointer, obj->buffer.length);
+	kfree(buffer.pointer);
+
+	return obj->buffer.length;
+
+err_free_buf:
+	kfree(buffer.pointer);
+	return ret;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	pr_info("%s(): ==================== %s (Sensor) ====================\n",
