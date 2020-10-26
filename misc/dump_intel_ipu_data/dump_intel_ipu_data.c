@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 #include <linux/acpi.h>
+#include <linux/i2c.h>
 
 #include "dump_intel_ipu_data.h"
 
@@ -139,6 +140,55 @@ static void print_acpi_fullpath(struct acpi_device *adev)
 	pr_info("ACPI path: %s\n", acpi_method_name);
 }
 
+static int print_sensor_i2c_dev_name(struct acpi_device *adev)
+{
+	struct device *i2c_dev;
+
+	i2c_dev = bus_find_device_by_acpi_dev(&i2c_bus_type, adev);
+	if (!i2c_dev) {
+		pr_warn("%s(): i2c device not found.\n", __func__);
+		pr_warn("%s(): Real sensor driver loaded with (old) bridge driver?\n",
+			__func__);
+		pr_warn("%s(): Otherwise, it might be a problem.\n", __func__);
+		pr_warn("%s(): Try adding acpi_enforce_resources=lax to bootloader.\n",
+			__func__);
+		return -ENODEV;
+	}
+
+	pr_info("i2c device name: %s\n", dev_name(i2c_dev));
+	put_device(i2c_dev);
+
+	return 0;
+}
+
+static int print_pmic_i2c_dev_name(struct acpi_device *adev, int pmic_type)
+{
+	struct device *i2c_dev;
+
+	i2c_dev = bus_find_device_by_acpi_dev(&i2c_bus_type, adev);
+	if (!i2c_dev && !(pmic_type == PMIC_TYPE_DISCRETE)) {
+		pr_warn("%s(): non-DISCRETE but i2c device not found\n",
+			__func__);
+		return -ENODEV;
+	} else if (!i2c_dev) {
+		pr_info("%s(): (i2c dev not found as expected (DISCRETE))\n",
+			__func__);
+		return 0;
+	}
+
+	if (pmic_type == PMIC_TYPE_DISCRETE) {
+		pr_warn("%s(): CLDB indicates DISCRETE but i2c dev %s found\n",
+			__func__, dev_name(i2c_dev));
+		/* TODO: appropriate return value? */
+		return 0;
+	}
+
+	pr_info("i2c device name: %s\n", dev_name(i2c_dev));
+	put_device(i2c_dev);
+
+	return 0;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -162,6 +212,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 
 	print_acpi_fullpath(adev);
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
+	print_sensor_i2c_dev_name(adev);
 
 	return 0;
 }
@@ -189,6 +240,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 
 	print_acpi_fullpath(adev);
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
+	print_pmic_i2c_dev_name(adev, pmic_data.control_logic_type);
 
 	return 0;
 }
