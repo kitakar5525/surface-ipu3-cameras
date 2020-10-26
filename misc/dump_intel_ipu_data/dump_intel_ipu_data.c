@@ -356,6 +356,22 @@ static void dump_ssdb(struct acpi_device *adev, struct intel_ssdb *ssdb,
 	pr_info("mclk_port:     %d\n", ssdb->mclk_port);
 }
 
+static void dump_cldb(struct acpi_device *adev, struct intel_cldb *cldb,
+		      int cldb_len)
+{
+	pr_info("ACPI CLDB: ---------- %s() ----------\n", __func__);
+
+	print_acpi_entry(adev, "CLDB");
+
+	pr_info("version:            %d\n", cldb->version);
+	pr_info("control_logic_type: %d\n", cldb->control_logic_type);
+	pr_info("control_logic_id:   %d\n", cldb->control_logic_id);
+	pr_info("sensor_card_sku:    %d\n", cldb->sensor_card_sku);
+	pr_info("reserved:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       cldb->reserved, sizeof(cldb->reserved), true);
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -417,6 +433,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 
 	dump_pld(adev);
 	dump_crs(adev);
+	dump_cldb(adev, &pmic_data, cldb_len);
 
 	return 0;
 }
