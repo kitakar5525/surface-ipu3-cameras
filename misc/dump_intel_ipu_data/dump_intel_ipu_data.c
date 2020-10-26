@@ -161,6 +161,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	print_acpi_entry(adev, "_UID");
 
 	print_acpi_fullpath(adev);
+	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 
 	return 0;
 }
@@ -187,6 +188,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	print_acpi_entry(adev, "_UID");
 
 	print_acpi_fullpath(adev);
+	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 
 	return 0;
 }
