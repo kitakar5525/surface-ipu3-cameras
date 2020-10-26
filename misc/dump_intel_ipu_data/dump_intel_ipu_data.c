@@ -226,6 +226,66 @@ static int print_dep_acpi_paths(struct acpi_device *adev)
 	return 0;
 }
 
+static int dump_pld(struct acpi_device *adev)
+{
+	struct acpi_pld_info *pld;
+	struct acpi_handle *handle = adev->handle;
+	acpi_status status;
+	const char *path = "_PLD";
+
+	pr_info("ACPI %s: ---------- %s() ----------\n", path, __func__);
+
+	if (!acpi_has_method(handle, (acpi_string)path)) {
+		pr_info("ACPI %s: Entry not found\n", path);
+		return 0;
+	}
+
+	status = acpi_get_physical_device_location(handle, &pld);
+	if (ACPI_FAILURE(status)) {
+		pr_err("ACPI %s: Evaluation failed\n", path);
+		return -ENODEV;
+	}
+
+	pr_info("revision:            %d\n", pld->revision);
+	pr_info("ignore_color:        %d\n", pld->ignore_color);
+	pr_info("red:                 %d\n", pld->red);
+	pr_info("green:               %d\n", pld->green);
+	pr_info("blue:                %d\n", pld->blue);
+	pr_info("width:               %d\n", pld->width);
+	pr_info("height:              %d\n", pld->height);
+	pr_info("user_visible:        %d\n", pld->user_visible);
+	pr_info("dock:                %d\n", pld->dock);
+	pr_info("lid:                 %d\n", pld->lid);
+	pr_info("panel:               %d\n", pld->panel);
+	pr_info("vertical_position:   %d\n", pld->vertical_position);
+	pr_info("horizontal_position: %d\n", pld->horizontal_position);
+	pr_info("shape:               %d\n", pld->shape);
+	pr_info("group_orientation:   %d\n", pld->group_orientation);
+	pr_info("group_token:         %d\n", pld->group_token);
+	pr_info("group_position:      %d\n", pld->group_position);
+	pr_info("bay:                 %d\n", pld->bay);
+	pr_info("ejectable:           %d\n", pld->ejectable);
+	pr_info("ospm_eject_required: %d\n", pld->ospm_eject_required);
+	pr_info("cabinet_number:      %d\n", pld->cabinet_number);
+	pr_info("card_cage_number:    %d\n", pld->card_cage_number);
+	pr_info("reference:           %d\n", pld->reference);
+	pr_info("rotation:            %d\n", pld->rotation);
+	pr_info("order:               %d\n", pld->order);
+	pr_info("reserved:            %d\n", pld->reserved);
+	pr_info("vertical_offset:     %d\n", pld->vertical_offset);
+	pr_info("horizontal_offset:   %d\n", pld->horizontal_offset);
+
+	pr_info("----- in string -----\n");
+	pr_info("PLD_Panel: %s\n", pld_panel_list[pld->panel]);
+	pr_info("PLD_VerticalPosition: %s\n",
+		pld_vertical_position_list[pld->vertical_position]);
+	pr_info("PLD_HorizontalPosition: %s\n",
+		pld_horizontal_position_list[pld->horizontal_position]);
+	pr_info("PLD_Shape: %s\n", pld_shape_list[pld->shape]);
+
+	return 0;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -251,6 +311,8 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 	print_sensor_i2c_dev_name(adev);
 	print_dep_acpi_paths(adev);
+
+	dump_pld(adev);
 
 	return 0;
 }
@@ -280,6 +342,8 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	pr_info("ACPI device name: %s\n", dev_name(&adev->dev));
 	print_pmic_i2c_dev_name(adev, pmic_data.control_logic_type);
 	print_dep_acpi_paths(adev);
+
+	dump_pld(adev);
 
 	return 0;
 }
