@@ -476,6 +476,171 @@ static int get_dsm_data_integer(struct acpi_device *adev, const guid_t *guid,
 	return 0;
 }
 
+static int __dump_subsys_id_dsm(struct acpi_device *adev)
+{
+	char id[DSM_STR_BUF_SIZE];
+	int ret;
+
+	ret = get_dsm_data_string(adev, &subsys_id_dsm_guid,
+				  SUBSYS_ID_DSM_REV,
+				  SUBSYS_ID_DSM_RETURN_ID_FUNC,
+				  id, DSM_STR_BUF_SIZE);
+	if (ret) {
+		pr_info("%s(): Couldn't get Subsystem ID. GUID not exist?\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): Subsystem ID: %s\n", __func__, id);
+
+	return 0;
+}
+
+static int __dump_i2c_dev_dsm(struct acpi_device *adev)
+{
+	u64 dev_amount;
+	int ret;
+	int i;
+
+	ret = get_dsm_data_integer(adev, &i2c_dev_dsm_guid,
+				   I2C_DEV_DSM_REV,
+				   I2C_DEV_DSM_DEV_AMOUNT_FUNC,
+				   &dev_amount);
+	if (ret) {
+		pr_info("%s(): Couldn't get i2c dev amount. GUID not exist?\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): i2c device amount: %llu\n", __func__, dev_amount);
+
+	/* dump _DSM data for each device */
+	for (i = 1; i <= dev_amount; i++) {
+		u64 dev_dsm_data;
+		u16 i2c_bus;
+		u16 i2c_second_byte;
+		u16 i2c_addr;
+		u16 i2c_dev_type;
+
+		ret = get_dsm_data_integer(adev, &i2c_dev_dsm_guid,
+					   I2C_DEV_DSM_REV,
+					   I2C_DEV_DSM_DEV_AMOUNT_FUNC + i,
+					   &dev_dsm_data);
+		if (ret) {
+			pr_err("%s(): Couldn't get i2c dev %d data\n",
+			       __func__, i);
+			return -EIO;
+		}
+
+		/* TODO: The original ipu4-acpi subtracts 1 from i2c_bus. Why?
+		 * Not substracting here.
+		 * https://github.com/intel/linux-intel-lts/blob/8e69644ab5b84be1400874ac1dbcb4389aa2412c/drivers/media/platform/intel/ipu4-acpi.c#L337
+		 */
+		i2c_bus = (dev_dsm_data >> 24) & 0xff;
+		i2c_second_byte = (dev_dsm_data >> 16) & 0xff;
+		i2c_addr = (dev_dsm_data >> 8) & 0xff;
+		/* The last byte is i2c device type
+		 * https://github.com/coreboot/coreboot/blob/b38d6bbe1c74309f078915c2d467475bb4144943/src/drivers/intel/mipi_camera/chip.h#L27
+		 * https://github.com/coreboot/coreboot/blob/b38d6bbe1c74309f078915c2d467475bb4144943/src/drivers/intel/mipi_camera/camera.c#L196
+		 */
+		i2c_dev_type = dev_dsm_data & 0xff;
+
+		pr_info("%s(): i2c device _DSM data (%d of %llu): 0x%08llx, bus: 0x%02x, second_byte: 0x%02x, addr: 0x%02x, dev_type: 0x%02x\n",
+			__func__, i, dev_amount, dev_dsm_data,
+			i2c_bus, i2c_second_byte, i2c_addr, i2c_dev_type);
+	}
+
+	return 0;
+}
+
+static int __dump_discrete_pmic_dsm(struct acpi_device *adev)
+{
+	u64 gpio_pin_amount;
+	int ret;
+	int i;
+
+	ret = get_dsm_data_integer(adev, &pmic_dsm_guid,
+				   DISCRETE_PMIC_DSM_REV,
+				   DISCRETE_PMIC_DSM_GPIO_AMOUNT_FUNC,
+				   &gpio_pin_amount);
+	if (ret) {
+		pr_info("%s(): Couldn't get GPIO pin amount func. GUID not exist?\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): GPIO pin amount: %llu\n", __func__, gpio_pin_amount);
+
+	/* dump _DSM data for each GPIO pin */
+	for (i = 1; i <= gpio_pin_amount; i++) {
+		u64 gpio_dsm_data;
+		u16 gpio_first_byte;
+		u16 gpio_second_byte;
+		u16 gpio_pin_num;
+		u16 gpio_last_byte;
+
+		ret = get_dsm_data_integer(adev, &pmic_dsm_guid,
+					   DISCRETE_PMIC_DSM_REV,
+					   DISCRETE_PMIC_DSM_GPIO_AMOUNT_FUNC + i,
+					   &gpio_dsm_data);
+		if (ret) {
+			pr_err("%s(): Couldn't get GPIO pin %d data\n",
+			       __func__, i);
+			return -EIO;
+		}
+
+		gpio_first_byte = (gpio_dsm_data >> 24) & 0xff;
+		gpio_second_byte = (gpio_dsm_data >> 16) & 0xff;
+		gpio_pin_num = (gpio_dsm_data >> 8) & 0xff;
+		gpio_last_byte = gpio_dsm_data & 0xff;
+
+		pr_info("%s(): GPIO pin _DSM data (%d of %llu): 0x%08llx, first_byte: 0x%02x, second_byte: 0x%02x, pin_num: 0x%02x, last_byte: 0x%02x\n",
+			__func__, i, gpio_pin_amount, gpio_dsm_data,
+			gpio_first_byte, gpio_second_byte,
+			gpio_pin_num, gpio_last_byte);
+	}
+
+	return 0;
+}
+
+static int __dump_dsmb_dsm(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+
+	/* TODO: abstract this like the other get_dsm_data_{string,integer}?
+	 * but we don't know how much buffer size we should prepare.
+	 */
+	obj = acpi_evaluate_dsm_typed(handle, &dsmb_dsm_guid,
+				      DSMB_DSM_REV,
+				      DSMB_DSM_RETURN_BUF_FUNC,
+				      NULL, ACPI_TYPE_BUFFER);
+	if (!obj) {
+		pr_info("%s(): _DSM failed for getting DSMB buffer func. GUID not exist?\n",
+			__func__);
+		return 0;
+	}
+
+	pr_info("%s(): Full raw output of DSMB:\n", __func__);
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       obj->buffer.pointer, obj->buffer.length, true);
+
+	ACPI_FREE(obj);
+
+	return 0;
+}
+
+static void dump_dsm(struct acpi_device *adev)
+{
+	/* Some GUIDs for _DSM may not exist. So, not checking return
+	 * values.
+	 */
+	__dump_subsys_id_dsm(adev);
+	__dump_i2c_dev_dsm(adev);
+	__dump_discrete_pmic_dsm(adev);
+	__dump_dsmb_dsm(adev);
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -505,6 +670,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	dump_pld(adev);
 	dump_crs(adev);
 	dump_ssdb(adev, &sensor_data, ssdb_len);
+	dump_dsm(adev);
 
 	return 0;
 }
@@ -539,6 +705,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	dump_crs(adev);
 	dump_cldb(adev, &pmic_data, cldb_len);
 	print_pmic_type(adev, &pmic_data);
+	dump_dsm(adev);
 
 	return 0;
 }
