@@ -129,6 +129,16 @@ out_free_buff:
 	return ret;
 }
 
+static void print_acpi_fullpath(struct acpi_device *adev)
+{
+	struct acpi_handle *handle = adev->handle;
+	char acpi_method_name[255] = { 0 };
+	struct acpi_buffer buffer = {sizeof(acpi_method_name), acpi_method_name};
+
+	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+	pr_info("ACPI path: %s\n", acpi_method_name);
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -149,6 +159,8 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 	print_acpi_entry(adev, "_DDN");
 	print_acpi_entry(adev, "_SUB");
 	print_acpi_entry(adev, "_UID");
+
+	print_acpi_fullpath(adev);
 
 	return 0;
 }
@@ -173,6 +185,8 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	print_acpi_entry(adev, "_DDN");
 	print_acpi_entry(adev, "_SUB");
 	print_acpi_entry(adev, "_UID");
+
+	print_acpi_fullpath(adev);
 
 	return 0;
 }
