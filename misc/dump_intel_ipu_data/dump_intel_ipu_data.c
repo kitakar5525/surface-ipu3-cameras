@@ -372,6 +372,25 @@ static void dump_cldb(struct acpi_device *adev, struct intel_cldb *cldb,
 		       cldb->reserved, sizeof(cldb->reserved), true);
 }
 
+static void print_pmic_type(struct acpi_device *adev, struct intel_cldb *data)
+{
+	switch (data->control_logic_type) {
+	case PMIC_TYPE_DISCRETE:
+		pr_info("ACPI CLDB: PMIC type is %s\n",
+			control_logic_type_list[data->control_logic_type]);
+		break;
+	case PMIC_TYPE_UNKNOWN:
+	case PMIC_TYPE_TPS68470:
+	case PMIC_TYPE_UP6641:
+		pr_warn("ACPI CLDB: PMIC type is %s\n",
+			control_logic_type_list[data->control_logic_type]);
+		break;
+	default:
+		pr_warn("PMIC type %d is not known type\n",
+			data->control_logic_type);
+	}
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -434,6 +453,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 	dump_pld(adev);
 	dump_crs(adev);
 	dump_cldb(adev, &pmic_data, cldb_len);
+	print_pmic_type(adev, &pmic_data);
 
 	return 0;
 }

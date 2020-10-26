@@ -98,6 +98,13 @@ enum control_logic_type {
 	PMIC_TYPE_UP6641,
 };
 
+const char *control_logic_type_list[] = {
+	"0: UNKNOWN",
+	"1: DISCRETE(CRD-D)",
+	"2: PMIC TPS68470",
+	"3: PMIC uP6641",
+};
+
 /*
  * PLD (Physical Device Location) int to string conversion.
  * From drivers/acpi/acpica/utglobal.c
