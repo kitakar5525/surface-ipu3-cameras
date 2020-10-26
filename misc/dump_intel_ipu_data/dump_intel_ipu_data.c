@@ -85,8 +85,17 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 
 static int get_acpi_pmic_data(struct acpi_device *adev)
 {
+	struct intel_cldb pmic_data;
+	int cldb_len;
+
 	pr_info("%s(): ==================== %s (PMIC) ====================\n",
 		__func__, dev_name(&adev->dev));
+
+	cldb_len = get_acpi_buf(adev, "CLDB", &pmic_data, sizeof(pmic_data));
+	if (!cldb_len) {
+		pr_info("%s(): Reading CLDB failed\n", __func__);
+		return cldb_len;
+	}
 
 	return 0;
 }
