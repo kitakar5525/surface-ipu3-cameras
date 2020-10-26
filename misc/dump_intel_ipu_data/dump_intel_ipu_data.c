@@ -294,6 +294,68 @@ static int dump_crs(struct acpi_device *adev)
 	return print_acpi_entry(adev, path);
 }
 
+static void dump_ssdb(struct acpi_device *adev, struct intel_ssdb *ssdb,
+		      int ssdb_len)
+{
+	pr_info("ACPI SSDB: ---------- %s() ----------\n", __func__);
+
+	print_acpi_entry(adev, "SSDB");
+
+	pr_info("version:                      %d\n", ssdb->version);
+	pr_info("sensor_card_sku:              %d\n", ssdb->sensor_card_sku);
+	pr_info("csi2_data_stream_interface:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       ssdb->csi2_data_stream_interface,
+		       sizeof(ssdb->csi2_data_stream_interface), true);
+	pr_info("bdf_value:                    %d\n", ssdb->bdf_value);
+	pr_info("dphy_link_en_fuses:           %d\n", ssdb->dphy_link_en_fuses);
+	pr_info("lanes_clock_division:         %d\n", ssdb->lanes_clock_division);
+	pr_info("link_used:                    %d\n", ssdb->link_used);
+	pr_info("lanes_used:                   %d\n", ssdb->lanes_used);
+	pr_info("csi_rx_dly_cnt_termen_clane:  %d\n", ssdb->csi_rx_dly_cnt_termen_clane);
+	pr_info("csi_rx_dly_cnt_settle_clane:  %d\n", ssdb->csi_rx_dly_cnt_settle_clane);
+	pr_info("csi_rx_dly_cnt_termen_dlane0: %d\n", ssdb->csi_rx_dly_cnt_termen_dlane0);
+	pr_info("csi_rx_dly_cnt_settle_dlane0: %d\n", ssdb->csi_rx_dly_cnt_settle_dlane0);
+	pr_info("csi_rx_dly_cnt_termen_dlane1: %d\n", ssdb->csi_rx_dly_cnt_termen_dlane1);
+	pr_info("csi_rx_dly_cnt_settle_dlane1: %d\n", ssdb->csi_rx_dly_cnt_settle_dlane1);
+	pr_info("csi_rx_dly_cnt_termen_dlane2: %d\n", ssdb->csi_rx_dly_cnt_termen_dlane2);
+	pr_info("csi_rx_dly_cnt_settle_dlane2: %d\n", ssdb->csi_rx_dly_cnt_settle_dlane2);
+	pr_info("csi_rx_dly_cnt_termen_dlane3: %d\n", ssdb->csi_rx_dly_cnt_termen_dlane3);
+	pr_info("csi_rx_dly_cnt_settle_dlane3: %d\n", ssdb->csi_rx_dly_cnt_settle_dlane3);
+	pr_info("max_lane_speed:               %d\n", ssdb->max_lane_speed);
+	pr_info("sensor_cal_file_idx:          %d\n", ssdb->sensor_cal_file_idx);
+	pr_info("sensor_cal_file_idx_mbz:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       ssdb->sensor_cal_file_idx_mbz,
+		       sizeof(ssdb->sensor_cal_file_idx_mbz), true);
+	pr_info("rom_type:                     %d\n", ssdb->rom_type);
+	pr_info("vcm_type:                     %d\n", ssdb->vcm_type);
+	pr_info("platform:                     %d\n", ssdb->platform);
+	pr_info("platform_sub:                 %d\n", ssdb->platform_sub);
+	pr_info("flash_support:                %d\n", ssdb->flash_support);
+	pr_info("privacy_led:                  %d\n", ssdb->privacy_led);
+	pr_info("degree:                       %d\n", ssdb->degree);
+	pr_info("mipi_define:                  %d\n", ssdb->mipi_define);
+	pr_info("mclk_speed:                   %d\n", ssdb->mclk_speed);
+	pr_info("control_logic_id:             %d\n", ssdb->control_logic_id);
+	pr_info("mipi_data_format:             %d\n", ssdb->mipi_data_format);
+	pr_info("silicon_version:              %d\n", ssdb->silicon_version);
+	pr_info("customer_id:                  %d\n", ssdb->customer_id);
+	pr_info("mclk_port:                    %d\n", ssdb->mclk_port);
+	pr_info("reserved:\n");
+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+		       ssdb->reserved, sizeof(ssdb->reserved), true);
+
+	pr_info("----- excerpt -----\n");
+	pr_info("link_used:     %d\n", ssdb->link_used);
+	pr_info("lanes_used:    %d\n", ssdb->lanes_used);
+	pr_info("vcm_type:      %d\n", ssdb->vcm_type);
+	pr_info("flash_support: %d\n", ssdb->flash_support);
+	pr_info("degree:        %d\n", ssdb->degree);
+	pr_info("mclk_speed:    %d\n", ssdb->mclk_speed);
+	pr_info("mclk_port:     %d\n", ssdb->mclk_port);
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
@@ -322,6 +384,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 
 	dump_pld(adev);
 	dump_crs(adev);
+	dump_ssdb(adev, &sensor_data, ssdb_len);
 
 	return 0;
 }
