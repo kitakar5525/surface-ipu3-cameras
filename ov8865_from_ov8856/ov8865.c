@@ -1398,6 +1398,8 @@ static int ov8865_identify_module(struct ov8865 *ov8865)
 		return ret;
 	}
 
+	dev_info(&client->dev, "ov8865 detected at address 0x%02x\n", client->addr);
+
 	return 0;
 }
 
