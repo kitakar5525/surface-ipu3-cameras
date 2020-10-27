@@ -9,28 +9,39 @@ Scope (\_SB_.PCI0)
         Name (_UID, Zero)  // _UID: Unique ID
         Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings
         {
-            Name (SBUF, ResourceTemplate ()
+            Local0 = Buffer (0x02)
+                {
+                        0x79, 0x00                                       // y.
+                }
+            If ((C0GP > Zero))
             {
-                GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
-                    "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer, ,
-                    )
-                    {   // Pin list
-                        0x007E
-                    }
-                GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
-                    "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer, ,
-                    )
-                    {   // Pin list
-                        0x007F
-                    }
-                GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
-                    "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer, ,
-                    )
-                    {   // Pin list
-                        0x008F
-                    }
-            })
-            Return (SBUF) /* \_SB_.PCI0.DSC0._CRS.SBUF */
+                Local1 = PINR (C0P0, C0G0)
+                ConcatenateResTemplate (Local0, Local1, Local2)
+                Local0 = Local2
+            }
+
+            If ((C0GP > One))
+            {
+                Local1 = PINR (C0P1, C0G1)
+                ConcatenateResTemplate (Local0, Local1, Local2)
+                Local0 = Local2
+            }
+
+            If ((C0GP > 0x02))
+            {
+                Local1 = PINR (C0P2, C0G2)
+                ConcatenateResTemplate (Local0, Local1, Local2)
+                Local0 = Local2
+            }
+
+            If ((C0GP > 0x03))
+            {
+                Local1 = PINR (C0P3, C0G3)
+                ConcatenateResTemplate (Local0, Local1, Local2)
+                Local0 = Local2
+            }
+
+            Return (Local0)
         }
 
         Method (_STA, 0, NotSerialized)  // _STA: Status
