@@ -2,6 +2,8 @@
 
 #include <linux/acpi.h>
 
+#include "dump_intel_ipu_data.h"
+
 #define DRV_NAME	"dump_intel_ipu_data"
 #define DRV_VERSION	"0.1"
 
@@ -52,6 +54,7 @@ static bool is_supported_pmic(struct acpi_device *adev)
 static int acpi_dev_match_cb(struct device *dev, void *data)
 {
 	struct acpi_device *adev = to_acpi_device(dev);
+	struct device_count *dev_cnt = data;
 	int ret;
 
 	/* check if the device really exists */
@@ -66,11 +69,13 @@ static int acpi_dev_match_cb(struct device *dev, void *data)
 	}
 
 	if (is_supported_sensor(adev)) {
+		dev_cnt->sensor++;
 		get_acpi_sensor_data(adev);
 		pr_info("\n");
 	}
 
 	if (is_supported_pmic(adev)) {
+		dev_cnt->pmic++;
 		get_acpi_pmic_data(adev);
 		pr_info("\n");
 	}
@@ -80,6 +85,7 @@ static int acpi_dev_match_cb(struct device *dev, void *data)
 
 static int __init dump_intel_ipu_data_init(void)
 {
+	struct device_count dev_cnt;
 	int ret;
 
 	pr_info(DRV_NAME ": Version %s init\n", DRV_VERSION);
@@ -91,8 +97,11 @@ static int __init dump_intel_ipu_data_init(void)
 	}
 
 	/* iterate over all ACPI devices */
-	bus_for_each_dev(dump_intel_ipu_data_driver.drv.bus, NULL, NULL,
+	bus_for_each_dev(dump_intel_ipu_data_driver.drv.bus, NULL, &dev_cnt,
 			 acpi_dev_match_cb);
+
+	pr_info(DRV_NAME ": Found %d supported sensor(s)\n", dev_cnt.sensor);
+	pr_info(DRV_NAME ": Found %d supported PMIC(s)\n", dev_cnt.pmic);
 
 	return 0;
 }
