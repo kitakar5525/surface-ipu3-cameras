@@ -66,6 +66,69 @@ err_free_buf:
 	return ret;
 }
 
+/**
+ * print_acpi_entry - Print entry for @path
+ * @adev: ACPI device
+ * @path: ACPI object path to print
+ *
+ * The type of some entry may be vary depending on devices. For example,
+ * _UID is INTEGER or STRING. So, handle all the possible types in this
+ * function.
+ *
+ * Current supported types:
+ * - ACPI_TYPE_INTEGER
+ * - ACPI_TYPE_STRING
+ * - ACPI_TYPE_BUFFER
+ */
+static int print_acpi_entry(struct acpi_device *adev, const char *path)
+{
+	struct acpi_handle *handle = adev->handle;
+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	union acpi_object *obj;
+	acpi_status status;
+	int ret = 0;
+
+	if (!acpi_has_method(handle, (acpi_string)path)) {
+		pr_info("ACPI %s: Entry not found\n", path);
+		return 0;
+	}
+
+	status = acpi_evaluate_object(handle, (acpi_string)path, NULL,
+				      &buffer);
+	if (ACPI_FAILURE(status)) {
+		pr_err("%s: Evaluation failed\n", path);
+		return -ENODEV;
+	}
+
+	obj = buffer.pointer;
+	if (!obj) {
+		pr_err("ACPI %s: Couldn't locate ACPI buffer\n", path);
+		return -ENODEV;
+	}
+
+	switch (obj->type) {
+	case ACPI_TYPE_INTEGER:
+		pr_info("ACPI %s: %llu\n", path, obj->integer.value);
+		goto out_free_buff;
+	case ACPI_TYPE_STRING:
+		pr_info("ACPI %s: %s\n", path, obj->buffer.pointer);
+		goto out_free_buff;
+	case ACPI_TYPE_BUFFER:
+		pr_info("ACPI %s: Full raw output:\n", path);
+		print_hex_dump(KERN_INFO, "", DUMP_PREFIX_OFFSET, 16, 1,
+			       obj->buffer.pointer, obj->buffer.length, true);
+		goto out_free_buff;
+	default:
+		pr_err("ACPI %s: Couldn't read ACPI buffer\n", path);
+		ret = -ENODEV;
+		goto out_free_buff;
+	}
+
+out_free_buff:
+	kfree(buffer.pointer);
+	return ret;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
