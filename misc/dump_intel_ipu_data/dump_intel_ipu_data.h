@@ -146,3 +146,5 @@ const char *pld_shape_list[] = {
 	"CHAMFERED",
 	NULL
 };
+
+#define DSM_STR_BUF_SIZE 32
