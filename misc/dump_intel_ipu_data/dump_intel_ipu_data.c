@@ -391,6 +391,91 @@ static void print_pmic_type(struct acpi_device *adev, struct intel_cldb *data)
 	}
 }
 
+/**
+ * get_dsm_data_string - wrapper for acpi_evaluate_dsm()
+ * @adev: ACPI device
+ * @guid: GUID of requested functions, should be 16 bytes
+ * @rev: revision number of requested function
+ * @func: requested function number
+ * @out: pointer to string to point returned string from _DSM
+ * @size: buffer size of @out
+ *
+ * Return negative values for errors.
+ * Return 0 for success.
+ */
+static int get_dsm_data_string(struct acpi_device *adev, const guid_t *guid,
+			       int dsm_rev, int dsm_func,
+			       char *out, unsigned int size)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+	int ret = 0;
+
+	obj = acpi_evaluate_dsm_typed(handle, guid, dsm_rev, dsm_func,
+				      NULL, ACPI_TYPE_STRING);
+	if (!obj) {
+		pr_debug("%s(): _DSM execution failed. GUID not exist?\n",
+			 __func__);
+		return -ENODEV;
+	}
+
+	if (!obj->string.pointer) {
+		pr_err("%s(): Couldn't locate ACPI string pointer\n",
+		       __func__);
+		ret = -ENODEV;
+		goto free_obj;
+	}
+
+	/* The length string.length field does not include the terminating
+	 * NULL, add 1 for it.
+	 */
+	if (size < obj->string.length + 1)
+		pr_warn("%s(): Given buffer is too small, truncating\n",
+			__func__);
+	strlcpy(out, obj->string.pointer,
+		min(obj->string.length + 1, size));
+
+free_obj:
+	ACPI_FREE(obj);
+	return ret;
+}
+
+/**
+ * get_dsm_data_integer - wrapper for acpi_evaluate_dsm()
+ * @adev: ACPI device
+ * @guid: GUID of requested functions, should be 16 bytes
+ * @rev: revision number of requested function
+ * @func: requested function number
+ * @out: pointer to integer to point returned integer value from _DSM
+ *
+ * Return negative values for errors.
+ * Return 0 for success.
+ */
+static int get_dsm_data_integer(struct acpi_device *adev, const guid_t *guid,
+				int dsm_rev, int dsm_func, u64 *out)
+{
+	struct acpi_handle *handle = adev->handle;
+	union acpi_object *obj;
+
+	obj = acpi_evaluate_dsm_typed(handle, guid, dsm_rev, dsm_func,
+				      NULL, ACPI_TYPE_INTEGER);
+	if (!obj) {
+		pr_debug("%s(): _DSM execution failed. GUID not exist?\n",
+			 __func__);
+		return -ENODEV;
+	}
+
+	/* TODO: Even if the GUID doesn't exist, it seems that
+	 * acpi_evaluate_dsm_typed() doesn't fail and obj->integer.value
+	 * will be 0 anyway. Until we find a better way to tell if the
+	 * GUID really doesn't exist, ignore this case.
+	 */
+	*out = obj->integer.value;
+
+	ACPI_FREE(obj);
+	return 0;
+}
+
 static int get_acpi_sensor_data(struct acpi_device *adev)
 {
 	struct intel_ssdb sensor_data;
