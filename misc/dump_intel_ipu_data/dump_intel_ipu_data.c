@@ -444,8 +444,8 @@ free_obj:
  * get_dsm_data_integer - wrapper for acpi_evaluate_dsm()
  * @adev: ACPI device
  * @guid: GUID of requested functions, should be 16 bytes
- * @rev: revision number of requested function
- * @func: requested function number
+ * @dsm_rev: revision number of requested function
+ * @dsm_func: requested function number
  * @out: pointer to integer to point returned integer value from _DSM
  *
  * Return negative values for errors.
