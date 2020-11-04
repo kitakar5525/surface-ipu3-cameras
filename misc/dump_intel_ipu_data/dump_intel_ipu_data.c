@@ -6,7 +6,7 @@
 #include "dump_intel_ipu_data.h"
 
 #define DRV_NAME	"dump_intel_ipu_data"
-#define DRV_VERSION	"1.0"
+#define DRV_VERSION	"1.1"
 
 /**
  * get_acpi_buf - wrapper for acpi_evaluate_object()
