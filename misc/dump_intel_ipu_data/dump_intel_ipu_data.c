@@ -395,8 +395,8 @@ static void print_pmic_type(struct acpi_device *adev, struct intel_cldb *data)
  * get_dsm_data_string - wrapper for acpi_evaluate_dsm()
  * @adev: ACPI device
  * @guid: GUID of requested functions, should be 16 bytes
- * @rev: revision number of requested function
- * @func: requested function number
+ * @dsm_rev: revision number of requested function
+ * @dsm_func: requested function number
  * @out: pointer to string to point returned string from _DSM
  * @size: buffer size of @out
  *
