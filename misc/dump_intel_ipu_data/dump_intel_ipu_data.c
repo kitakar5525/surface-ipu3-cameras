@@ -772,7 +772,7 @@ static int acpi_dev_match_cb(struct device *dev, void *data)
 
 static int __init dump_intel_ipu_data_init(void)
 {
-	struct device_count dev_cnt;
+	struct device_count dev_cnt = { 0 };
 	int ret;
 
 	pr_info(DRV_NAME ": Version %s init\n", DRV_VERSION);
