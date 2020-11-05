@@ -651,7 +651,7 @@ static int get_acpi_sensor_data(struct acpi_device *adev)
 		__func__, dev_name(&adev->dev));
 
 	ssdb_len = get_acpi_buf(adev, "SSDB", &sensor_data, sizeof(sensor_data));
-	if (!ssdb_len) {
+	if (ssdb_len < 0) {
 		pr_info("%s(): Reading SSDB failed\n", __func__);
 		return ssdb_len;
 	}
@@ -685,7 +685,7 @@ static int get_acpi_pmic_data(struct acpi_device *adev)
 		__func__, dev_name(&adev->dev));
 
 	cldb_len = get_acpi_buf(adev, "CLDB", &pmic_data, sizeof(pmic_data));
-	if (!cldb_len) {
+	if (cldb_len < 0) {
 		pr_info("%s(): Reading CLDB failed\n", __func__);
 		return cldb_len;
 	}
