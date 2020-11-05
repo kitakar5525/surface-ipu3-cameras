@@ -91,8 +91,9 @@ static int print_acpi_entry(struct acpi_device *adev, const char *path)
 	int ret = 0;
 
 	if (!acpi_has_method(handle, (acpi_string)path)) {
+		/* Some entries may not exist, use info loglevel. */
 		pr_info("ACPI %s: Entry not found\n", path);
-		return 0;
+		return -ENODEV;
 	}
 
 	status = acpi_evaluate_object(handle, (acpi_string)path, NULL,
@@ -199,8 +200,9 @@ static int print_dep_acpi_paths(struct acpi_device *adev)
 	int i;
 
 	if (!acpi_has_method(handle, (acpi_string)path)) {
+		/* Some entries may not exist, use info loglevel. */
 		pr_info("ACPI %s: Entry not found\n", path);
-		return 0;
+		return -ENODEV;
 	}
 
 	ret = acpi_evaluate_reference(handle, (acpi_string)path, NULL,
@@ -237,8 +239,9 @@ static int dump_pld(struct acpi_device *adev)
 	pr_info("ACPI %s: ---------- %s() ----------\n", path, __func__);
 
 	if (!acpi_has_method(handle, (acpi_string)path)) {
+		/* Some entries may not exist, use info loglevel. */
 		pr_info("ACPI %s: Entry not found\n", path);
-		return 0;
+		return -ENODEV;
 	}
 
 	status = acpi_get_physical_device_location(handle, &pld);
