@@ -9,6 +9,8 @@ Copy-paste and run the following script in the same directory as the
 module you built exists.
 The log file will be saved to your home directory.
 
+Run as normal user (not as root), this script uses sudo only where it's
+needed (loading module, showing dmesg log, ...).
 ```bash
 MOD_NAME="dump_intel_ipu_data"
 mod_version=$(modinfo ${MOD_NAME}.ko | awk '/^version:.*$/ {print $2}')
