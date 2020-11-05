@@ -15,8 +15,8 @@
  * @out: pointer to point returned buffer from @path
  * @size: buffer size of @out
  *
- * Return negative values for errors.
- * Return 0 for success.
+ * Return negative values on failure.
+ * Return length of @out on success.
  */
 static int get_acpi_buf(struct acpi_device *adev, const char *path,
 			void *out, u32 size)
