@@ -28,8 +28,9 @@ static int get_acpi_buf(struct acpi_device *adev, const char *path,
 	int ret;
 
 	if (!acpi_has_method(handle, (acpi_string)path)) {
+		/* Some entries may not exist, use info loglevel. */
 		pr_info("ACPI %s: Entry not found\n", path);
-		return 0;
+		return -ENODEV;
 	}
 
 	status = acpi_evaluate_object(handle, (acpi_string)path, NULL,
