@@ -14,6 +14,7 @@
 #define OV9734_LINK_FREQ_180MHZ		180000000ULL
 #define OV9734_SCLK			36000000LL
 #define OV9734_MCLK			19200000
+/* ov9734 only support 1-lane mipi output */
 #define OV9734_DATA_LANES		1
 #define OV9734_RGB_DEPTH		10
 
@@ -447,7 +448,7 @@ static int ov9734_test_pattern(struct ov9734 *ov9734, u32 pattern)
 {
 	if (pattern)
 		pattern = (pattern - 1) << OV9734_TEST_PATTERN_BAR_SHIFT |
-			  OV9734_TEST_PATTERN_ENABLE;
+			OV9734_TEST_PATTERN_ENABLE;
 
 	return ov9734_write_reg(ov9734, OV9734_REG_TEST_PATTERN, 1, pattern);
 }
@@ -464,7 +465,7 @@ static int ov9734_set_ctrl(struct v4l2_ctrl *ctrl)
 	if (ctrl->id == V4L2_CID_VBLANK) {
 		/* Update max exposure while meeting expected vblanking */
 		exposure_max = ov9734->cur_mode->height + ctrl->val -
-			       OV9734_EXPOSURE_MAX_MARGIN;
+			OV9734_EXPOSURE_MAX_MARGIN;
 		__v4l2_ctrl_modify_range(ov9734->exposure,
 					 ov9734->exposure->minimum,
 					 exposure_max, ov9734->exposure->step,
@@ -733,7 +734,7 @@ static int ov9734_set_format(struct v4l2_subdev *sd,
 					 vblank_def);
 		__v4l2_ctrl_s_ctrl(ov9734->vblank, vblank_def);
 		h_blank = to_pixels_per_line(mode->hts, mode->link_freq_index) -
-			  mode->width;
+			mode->width;
 		__v4l2_ctrl_modify_range(ov9734->hblank, h_blank, h_blank, 1,
 					 h_blank);
 	}
@@ -878,13 +879,6 @@ static int ov9734_check_hwcfg(struct device *dev)
 	if (ret)
 		return ret;
 
-	if (bus_cfg.bus.mipi_csi2.num_data_lanes != OV9734_DATA_LANES) {
-		dev_err(dev, "number of CSI2 data lanes %d is not supported",
-			bus_cfg.bus.mipi_csi2.num_data_lanes);
-		ret = -EINVAL;
-		goto check_hwcfg_error;
-	}
-
 	if (!bus_cfg.nr_of_link_frequencies) {
 		dev_err(dev, "no link frequencies defined");
 		ret = -EINVAL;
@@ -894,7 +888,7 @@ static int ov9734_check_hwcfg(struct device *dev)
 	for (i = 0; i < ARRAY_SIZE(link_freq_menu_items); i++) {
 		for (j = 0; j < bus_cfg.nr_of_link_frequencies; j++) {
 			if (link_freq_menu_items[i] ==
-				bus_cfg.link_frequencies[j])
+			    bus_cfg.link_frequencies[j])
 				break;
 		}
 
@@ -1000,7 +994,7 @@ static const struct dev_pm_ops ov9734_pm_ops = {
 };
 
 static const struct acpi_device_id ov9734_acpi_ids[] = {
-	{"OVTI9734"},
+	{ "OVTI9734", },
 	{}
 };
 
@@ -1019,5 +1013,6 @@ static struct i2c_driver ov9734_i2c_driver = {
 module_i2c_driver(ov9734_i2c_driver);
 
 MODULE_AUTHOR("Qiu, Tianshu <tian.shu.qiu@intel.com>");
+MODULE_AUTHOR("Bingbu Cao <bingbu.cao@intel.com>");
 MODULE_DESCRIPTION("OmniVision OV9734 sensor driver");
 MODULE_LICENSE("GPL v2");
