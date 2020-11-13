@@ -2354,17 +2354,19 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 	struct i2c_client *client = sensor->i2c_client;
 	int ret = 0;
 
-	mutex_lock(&sensor->lock);
-
-	/* power_on() here before streaming for regular PCs. */
+	/* call s_power() ourselves for regular PCs. s_power() handles
+	 * mutex, so call it here.
+	 */
 	if (enable) {
-		ret = ov8865_set_power_on(sensor);
+		ret = ov8865_s_power(sd, true);
 		if (ret) {
-			dev_err(&client->dev, "sensor power-up error\n");
-			ov8865_set_power_off(sensor);
+			dev_err(&client->dev, "s_power failed\n");
+			ov8865_s_power(sd, false);
 			goto out;
 		}
 	}
+
+	mutex_lock(&sensor->lock);
 
 	if (sensor->streaming == !enable) {
 		ret = ov8865_write_reg(sensor, OV8865_SW_STANDBY_REG, enable ?
@@ -2381,12 +2383,15 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 			sensor->streaming = enable;
 	}
 
-	/* power_off() here after streaming for regular PCs. */
-	if (!enable)
-		ov8865_set_power_off(sensor);
-
 out:
 	mutex_unlock(&sensor->lock);
+
+	/* call s_power() ourselves for regular PCs. s_power() handles
+	 * mutex, so call it here.
+	 */
+	if (!enable)
+		ov8865_s_power(sd, false);
+
 	return ret;
 }
 
