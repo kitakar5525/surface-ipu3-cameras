@@ -184,10 +184,13 @@
 #define OV5693_OTP_MODE_READ		1
 
 /* link freq and pixel rate required for IPU3 */
-#define OV5693_LINK_FREQ_19MHZ 19200000
-#define OV5693_PIXEL_RATE ((OV5693_LINK_FREQ_19MHZ * 2 * 2) / 10)
+#define OV5693_LINK_FREQ_640MHZ		640000000
+/* pixel_rate = link_freq * 2 * nr_of_lanes / bits_per_sample
+ * To avoid integer overflow, dividing by bits_per_sample first.
+ */
+#define OV5693_PIXEL_RATE		(OV5693_LINK_FREQ_640MHZ / 10) * 2 * 2
 static const s64 link_freq_menu_items[] = {
-	OV5693_LINK_FREQ_19MHZ
+	OV5693_LINK_FREQ_640MHZ
 };
 
 struct regval_list {
