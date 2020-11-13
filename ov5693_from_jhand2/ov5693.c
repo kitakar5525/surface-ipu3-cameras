@@ -498,10 +498,13 @@ static int ov5693_remove(struct i2c_client *client)
 }
 
 // TODO: Put these in header?
-#define OV5693_LINK_FREQ_19MHZ		19200000
-#define OV5693_PIXEL_RATE			(OV5693_LINK_FREQ_19MHZ * 2 * 2) / 10
+#define OV5693_LINK_FREQ_640MHZ		640000000
+/* pixel_rate = link_freq * 2 * nr_of_lanes / bits_per_sample
+ * To avoid integer overflow, dividing by bits_per_sample first.
+ */
+#define OV5693_PIXEL_RATE		(OV5693_LINK_FREQ_640MHZ / 10) * 2 * 2
 static const s64 link_freq_menu_items[] = {
-	OV5693_LINK_FREQ_19MHZ
+	OV5693_LINK_FREQ_640MHZ
 };
 
 /**
