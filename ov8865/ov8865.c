@@ -1731,10 +1731,8 @@ static void gpio_crs_put(struct ov8865_dev *sensor)
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
-static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+static int gpio_crs_ctrl(struct ov8865_dev *sensor, bool flag)
 {
-	struct ov8865_dev *sensor = to_ov8865_dev(sd);
-
 	gpiod_set_value_cansleep(sensor->xshutdn, flag);
 	gpiod_set_value_cansleep(sensor->pwdnb, flag);
 	if (!IS_ERR(sensor->led_gpio))
@@ -1775,7 +1773,7 @@ static int ov8865_set_power_on(struct ov8865_dev *sensor)
 
 	/* For ACPI-based systems */
 	if (sensor->is_acpi_based) {
-		gpio_crs_ctrl(&sensor->sd, true);
+		gpio_crs_ctrl(sensor, true);
 
 		/* Add some delay. This is required or check_chip_id() will fail. */
 		usleep_range(10000, 12000);
@@ -1803,7 +1801,7 @@ static void ov8865_set_power_off(struct ov8865_dev *sensor)
 
 	/* For ACPI-based systems */
 	if (sensor->is_acpi_based)
-		gpio_crs_ctrl(&sensor->sd, false);
+		gpio_crs_ctrl(sensor, false);
 }
 
 static int ov8865_set_power(struct ov8865_dev *sensor, bool on)
