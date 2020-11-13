@@ -19,6 +19,8 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
+#define OV8865_XCLK_FREQ		24000000
+
 /* System */
 
 #define OV8865_SW_STANDBY_REG		0x0100
@@ -307,7 +309,6 @@ struct ov8865_dev {
 	struct media_pad pad;
 	struct v4l2_fwnode_endpoint ep;
 	struct clk *xclk;
-	u32 xclk_freq;
 
 	struct regulator_bulk_data supplies[OV8865_NUM_SUPPLIES];
 	struct gpio_desc *reset_gpio;
@@ -1520,7 +1521,7 @@ static int ov8865_get_pclk(struct ov8865_dev *sensor)
 {
 	int ret;
 	u8 pll1_mult, m_div, mipi_div_r, mipi_div, pclk_div_r, pclk_div;
-	int ref_clk = sensor->xclk_freq / 1000000;
+	int ref_clk = OV8865_XCLK_FREQ / 1000000;
 
 	ret = ov8865_read_reg(sensor, OV8865_PLL_CTRL2_REG, &pll1_mult);
 	if (ret)
@@ -2442,12 +2443,12 @@ static int ov8865_probe(struct i2c_client *client)
 		return PTR_ERR(sensor->xclk);
 	}
 
-	sensor->xclk_freq = clk_get_rate(sensor->xclk);
-	if (sensor->xclk_freq != 24000000) {
-		dev_err(dev, "xclk frequency out of range: %d Hz, it should be 24000000 Hz\n",
-			sensor->xclk_freq);
-		return -EINVAL;
+	ret = clk_set_rate(sensor->xclk, OV8865_XCLK_FREQ);
+	if (ret < 0) {
+		dev_err(dev, "Failed to set xclk rate (24MHz)\n");
+		return ret;
 	}
+
 	/* Request optional power down pin. */
 	sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
 						    GPIOD_OUT_HIGH);
