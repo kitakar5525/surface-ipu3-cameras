@@ -2202,9 +2202,9 @@ static int ov8865_init_controls(struct ov8865_dev *sensor)
 					      0, INT_MAX, 1,
 					      ov8865_calc_pixel_rate(sensor));
 	ctrls->exposure = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_EXPOSURE, 1,
-					    2000, 1, 1);
+					    2000, 1, 2000);
 	ctrls->gain = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_GAIN, 1*16, 64*16 - 1,
-					1, 1*16);
+					1, 64*16 - 1);
 	ctrls->hflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HFLIP, 0, 1, 1, 0);
 	ctrls->vflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_VFLIP, 0, 1, 1, 0);
 	if (hdl->error) {
