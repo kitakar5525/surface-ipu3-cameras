@@ -1221,12 +1221,12 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 
 	mutex_lock(&dev->input_lock);
 
-	/* power_on() here before streaming for regular PCs. */
+	/* call s_power() ourselves for regular PCs. */
 	if (enable) {
-		ret = power_up(sd);
+		ret = __ov8865_s_power(sd, true);
 		if (ret) {
-			dev_err(&client->dev, "sensor power-up error\n");
-			power_down(sd);
+			dev_err(&client->dev, "s_power failed\n");
+			__ov8865_s_power(sd, false);
 			goto out;
 		}
 	}
@@ -1249,9 +1249,9 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 
 	dev->streaming = enable;
 
-	/* power_off() here after streaming for regular PCs. */
+	/* call s_power() ourselves for regular PCs. */
 	if (!enable)
-		power_down(sd);
+		__ov8865_s_power(sd, false);
 
 out:
 	mutex_unlock(&dev->input_lock);
