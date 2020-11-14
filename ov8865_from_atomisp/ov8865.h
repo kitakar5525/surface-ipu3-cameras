@@ -520,6 +520,113 @@ struct ov8865_write_ctrl {
 #define OV8865_ISP_MAX_WIDTH	(OV8865_RES_WIDTH_MAX - ISP_PADDING_W)
 #define OV8865_ISP_MAX_HEIGHT	(OV8865_RES_HEIGHT_MAX - ISP_PADDING_H)
 
+struct ov8865_reg_list {
+	u32 num_of_regs;
+	const struct ov8865_reg *regs;
+};
+
+struct ov8865_link_freq_config {
+	u32 pixel_rate;
+	const struct ov8865_reg_list reg_list;
+};
+
+/* PLL1 generates PCLK and MIPI_PHY_CLK */
+#define OV13858_REG_PLL1_CTRL_0		0x0300
+#define OV13858_REG_PLL1_CTRL_1		0x0301
+#define OV13858_REG_PLL1_CTRL_2		0x0302
+#define OV13858_REG_PLL1_CTRL_3		0x0303
+#define OV13858_REG_PLL1_CTRL_4		0x0304
+#define OV13858_REG_PLL1_CTRL_5		0x0305
+
+/* PLL2 generates DAC_CLK, SCLK and SRAM_CLK */
+#define OV13858_REG_PLL2_CTRL_B		0x030b
+#define OV13858_REG_PLL2_CTRL_C		0x030c
+#define OV13858_REG_PLL2_CTRL_D		0x030d
+#define OV13858_REG_PLL2_CTRL_E		0x030e
+#define OV13858_REG_PLL2_CTRL_F		0x030f
+#define OV13858_REG_PLL2_CTRL_12	0x0312
+#define OV13858_REG_MIPI_SC_CTRL0	0x3016
+#define OV13858_REG_MIPI_SC_CTRL1	0x3022
+
+static const struct ov8865_reg mipi_data_rate_1080mbps[] = {
+	/* PLL1 registers */
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_0}, 0x07},
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_1}, 0x01},
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_2}, 0xc2},
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_3}, 0x00},
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_4}, 0x00},
+	{OV8865_8BIT, {OV13858_REG_PLL1_CTRL_5}, 0x01},
+
+	/* PLL2 registers */
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_B}, 0x05},
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_C}, 0x01},
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_D}, 0x0e},
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_E}, 0x05},
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_F}, 0x01},
+	{OV8865_8BIT, {OV13858_REG_PLL2_CTRL_12}, 0x01},
+	{OV8865_8BIT, {OV13858_REG_MIPI_SC_CTRL0}, 0x72},
+	{OV8865_8BIT, {OV13858_REG_MIPI_SC_CTRL1}, 0x01},
+
+	{OV8865_TOK_TERM, {0}, 0}
+};
+
+static const struct ov8865_reg mipi_data_rate_900mbps[] = {
+	{OV8865_8BIT, {0x0103}, 0x01},
+	{OV8865_8BIT, {0x0100}, 0x00},
+	{OV8865_8BIT, {0x0300}, 0x04},
+	{OV8865_8BIT, {0x0302}, 0x8d},
+	{OV8865_8BIT, {0x0303}, 0x00},
+	{OV8865_8BIT, {0x030d}, 0x26},
+	{OV8865_TOK_TERM, {0}, 0}
+};
+
+static struct ov8865_reg const ov5693_pll_config[] = {
+	{OV8865_8BIT, {0x30b2}, 0x00},
+	{OV8865_8BIT, {0x30b3}, 0x64},
+	{OV8865_8BIT, {0x30b4}, 0x03},
+	{OV8865_8BIT, {0x30b5}, 0x04},
+	{OV8865_8BIT, {0x30b6}, 0x01},
+	{OV8865_8BIT, {0x3080}, 0x01},
+	{OV8865_8BIT, {0x3098}, 0x03},
+	{OV8865_8BIT, {0x3099}, 0x1e},
+	{OV8865_8BIT, {0x309c}, 0x00},
+	{OV8865_8BIT, {0x309a}, 0x02},
+	{OV8865_8BIT, {0x309b}, 0x01},
+	{OV8865_8BIT, {0x380c}, 0x0a},
+	{OV8865_8BIT, {0x380d}, 0x80},
+	{OV8865_8BIT, {0x380e}, 0x07},
+	{OV8865_8BIT, {0x380f}, 0xc0},
+	{OV8865_TOK_TERM, {0}, 0}
+};
+
+static const struct ov8865_reg ov8865_pll_config[] = {
+	{OV8865_8BIT, {0x030A}, 0x00},
+	{OV8865_8BIT, {0x0300}, 0x00},
+	{OV8865_8BIT, {0x0301}, 0x19},
+	{OV8865_8BIT, {0x0302}, 0x19},
+	{OV8865_8BIT, {0x0304}, 0x03},
+	{OV8865_8BIT, {0x0303}, 0x00},
+	{OV8865_8BIT, {0x0305}, 0x01},
+	{OV8865_8BIT, {0x0311}, 0x00},
+	{OV8865_8BIT, {0x030B}, 0x00},
+	{OV8865_8BIT, {0x030C}, 0x1E},
+	{OV8865_8BIT, {0x030D}, 0x1E},
+	{OV8865_8BIT, {0x030F}, 0x02},
+	{OV8865_8BIT, {0x030E}, 0x02},
+	{ OV8865_TOK_TERM, {0}, 0}
+};
+
+/* link freq and pixel rate required for IPU3 */
+#define OV8865_LINK_FREQ_19MHZ		19200000
+#define OV8865_LINK_FREQ_24MHZ		24000000
+#define OV13858_LINK_FREQ_540MHZ	540000000ULL
+#define OV13858_LINK_FREQ_270MHZ	270000000ULL
+#define OV5675_LINK_FREQ_450MHZ		450000000ULL
+#define OV8865_PIXEL_RATE		(OV5675_LINK_FREQ_450MHZ * 2 * 2) / 10
+static const s64 link_freq_menu_items[] = {
+	OV5675_LINK_FREQ_450MHZ
+};
+
 static const struct ov8865_reg ov8865_BasicSettings[] = {
 	{OV8865_8BIT, {0x0103}, 0x01},
 	/* delay 10ms*/

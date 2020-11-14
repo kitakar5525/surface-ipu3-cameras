@@ -1240,6 +1240,13 @@ static int ov8865_s_stream(struct v4l2_subdev *sd, int enable)
 		return ret;
 	}
 
+	/* Setup PLL */
+	ret = ov8865_write_reg_array(client, ov8865_pll_config);
+	if (ret) {
+		dev_err(&client->dev, "%s failed to set pll config\n", __func__);
+		// return ret;
+	}
+
 	dev->streaming = enable;
 
 	/* power_off() here after streaming for regular PCs. */
@@ -1706,6 +1713,7 @@ static const struct v4l2_ctrl_config ctrls[] = {
 static int ov8865_init_controls(struct ov8865_device *ov8865)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ov8865->sd);
+	struct v4l2_ctrl *ctrl;
 	unsigned int i;
 	int ret;
 
@@ -1722,6 +1730,17 @@ static int ov8865_init_controls(struct ov8865_device *ov8865)
 
 	for (i = 0; i < ARRAY_SIZE(ctrls); i++)
 		v4l2_ctrl_new_custom(&ov8865->ctrl_handler, &ctrls[i], NULL);
+
+	/* link freq */
+	ctrl = v4l2_ctrl_new_int_menu(&ov8865->ctrl_handler, NULL,
+				      V4L2_CID_LINK_FREQ,
+				      0, 0, link_freq_menu_items);
+	if (ctrl)
+		ctrl->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+
+	/* pixel rate */
+	v4l2_ctrl_new_std(&ov8865->ctrl_handler, NULL, V4L2_CID_PIXEL_RATE,
+			  0, OV8865_PIXEL_RATE, 1, OV8865_PIXEL_RATE);
 
 	if (ov8865->ctrl_handler.error) {
 		ov8865_remove(client);
