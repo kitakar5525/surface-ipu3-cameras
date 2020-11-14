@@ -982,10 +982,8 @@ static void gpio_crs_put(struct ov8865 *sensor)
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
-static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+static int gpio_crs_ctrl(struct ov8865 *sensor, bool flag)
 {
-	struct ov8865 *sensor = to_ov8865(sd);
-
 	gpiod_set_value_cansleep(sensor->xshutdn, flag);
 	gpiod_set_value_cansleep(sensor->pwdnb, flag);
 	if (!IS_ERR(sensor->led_gpio))
@@ -1000,7 +998,7 @@ static int __ov8865_power_on(struct ov8865 *ov8865)
 	int ret;
 
 	if (ov8865->is_acpi_based) {
-		ret = gpio_crs_ctrl(&ov8865->sd, true);
+		ret = gpio_crs_ctrl(ov8865, true);
 		if (ret)
 			goto fail_power;
 		usleep_range(1500, 1800);
@@ -1035,7 +1033,7 @@ disable_clk:
 	clk_disable_unprepare(ov8865->xvclk);
 fail_power:
 	if (ov8865->is_acpi_based)
-		gpio_crs_ctrl(&ov8865->sd, false);
+		gpio_crs_ctrl(ov8865, false);
 
 	return ret;
 }
@@ -1043,7 +1041,7 @@ fail_power:
 static void __ov8865_power_off(struct ov8865 *ov8865)
 {
 	if (ov8865->is_acpi_based) {
-		gpio_crs_ctrl(&ov8865->sd, false);
+		gpio_crs_ctrl(ov8865, false);
 		return;
 	}
 
