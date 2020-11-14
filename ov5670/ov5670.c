@@ -2117,8 +2117,9 @@ static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
 	return 0;
 }
 
-static int __power_down(struct v4l2_subdev *sd)
+static int __power_off(struct ov5670 *sensor)
 {
+	struct v4l2_subdev *sd = &sensor->sd;
 	int ret = 0;
 
 	ret = gpio_crs_ctrl(sd, false);
@@ -2126,8 +2127,9 @@ static int __power_down(struct v4l2_subdev *sd)
 	return ret;
 }
 
-static int __power_up(struct v4l2_subdev *sd)
+static int __power_on(struct ov5670 *sensor)
 {
+	struct v4l2_subdev *sd = &sensor->sd;
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret;
 
@@ -2151,11 +2153,13 @@ fail_power:
 
 static int ov5670_s_power(struct v4l2_subdev *sd, int on)
 {
+	struct ov5670 *ov5670 = to_ov5670(sd);
+
 	if (!on)
-		return __power_down(sd);
+		return __power_off(ov5670);
 
 	/* on is true */
-	return __power_up(sd);
+	return __power_on(ov5670);
 }
 
 /* Initialize control handlers */
@@ -2446,9 +2450,9 @@ static int __ov5670_set_stream_no_rpm(struct v4l2_subdev *sd, int enable)
 		goto unlock_and_return;
 
 	if (enable) {
-		ret = __power_up(sd);
+		ret = __power_on(ov5670);
 		if (ret < 0) {
-			__power_down(sd);
+			__power_off(ov5670);
 			goto unlock_and_return;
 		}
 
@@ -2457,7 +2461,7 @@ static int __ov5670_set_stream_no_rpm(struct v4l2_subdev *sd, int enable)
 			goto error;
 	} else {
 		ret = ov5670_stop_streaming(ov5670);
-		__power_down(sd);
+		__power_off(ov5670);
 	}
 	ov5670->streaming = enable;
 	goto unlock_and_return;
@@ -2465,7 +2469,7 @@ static int __ov5670_set_stream_no_rpm(struct v4l2_subdev *sd, int enable)
 	return 0;
 
 error:
-	__power_down(sd);
+	__power_off(ov5670);
 
 unlock_and_return:
 	mutex_unlock(&ov5670->mutex);
@@ -2755,10 +2759,10 @@ static int ov5670_probe(struct i2c_client *client)
 		return ret;
 	}
 
-	ret = __power_up(&ov5670->sd);
+	ret = __power_on(ov5670);
 	if (ret) {
 		err_msg = "ov5670 power-up error";
-		__power_down(&ov5670->sd);
+		__power_off(ov5670);
 		goto error_gpio_crs_put;
 	}
 
@@ -2819,7 +2823,7 @@ static int ov5670_probe(struct i2c_client *client)
 	if (!ov5670->is_rpm_supported) {
 		dev_info(&client->dev,
 			 "Couldn't enable runtime PM, will handle it ourselves.\n");
-		__power_down(&ov5670->sd);
+		__power_off(ov5670);
 	}
 
 	return 0;
