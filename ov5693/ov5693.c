@@ -993,10 +993,8 @@ static void gpio_crs_put(struct ov5693_device *sensor)
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
-static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+static int gpio_crs_ctrl(struct ov5693_device *sensor, bool flag)
 {
-	struct ov5693_device *sensor = to_ov5693_sensor(sd);
-
 	gpiod_set_value_cansleep(sensor->xshutdn, flag);
 	gpiod_set_value_cansleep(sensor->pwdnb, flag);
 	if (!IS_ERR(sensor->led_gpio))
@@ -1008,9 +1006,10 @@ static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
 static int __power_up(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct ov5693_device *sensor = to_ov5693_sensor(sd);
 	int ret;
 
-	ret = gpio_crs_ctrl(sd, true);
+	ret = gpio_crs_ctrl(sensor, true);
 	if (ret)
 		goto fail_power;
 
@@ -1019,7 +1018,7 @@ static int __power_up(struct v4l2_subdev *sd)
 	return 0;
 
 fail_power:
-	gpio_crs_ctrl(sd, false);
+	gpio_crs_ctrl(sensor, false);
 	dev_err(&client->dev, "sensor power-up failed\n");
 
 	return ret;
@@ -1031,7 +1030,7 @@ static int power_down(struct v4l2_subdev *sd)
 
 	dev->focus = OV5693_INVALID_CONFIG;
 
-	return gpio_crs_ctrl(sd, false);
+	return gpio_crs_ctrl(dev, false);
 }
 
 static int power_up(struct v4l2_subdev *sd)
