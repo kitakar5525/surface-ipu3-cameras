@@ -796,10 +796,8 @@ static void gpio_crs_put(struct ov7251 *sensor)
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
-static int gpio_crs_ctrl(struct v4l2_subdev *sd, bool flag)
+static int gpio_crs_ctrl(struct ov7251 *sensor, bool flag)
 {
-	struct ov7251 *sensor = to_ov7251(sd);
-
 	gpiod_set_value_cansleep(sensor->xshutdn, flag);
 	gpiod_set_value_cansleep(sensor->pwdnb, flag);
 	if (!IS_ERR(sensor->led_gpio))
@@ -831,7 +829,7 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 
 	/* For ACPI-based systems */
 	if (ov7251->is_acpi_based)
-		gpio_crs_ctrl(&ov7251->sd, true);
+		gpio_crs_ctrl(ov7251, true);
 
 	/* wait at least 65536 external clock cycles */
 	wait_us = DIV_ROUND_UP(65536 * 1000,
@@ -852,7 +850,7 @@ static void ov7251_set_power_off(struct ov7251 *ov7251)
 
 	/* For ACPI-based systems */
 	if (ov7251->is_acpi_based)
-		gpio_crs_ctrl(&ov7251->sd, false);
+		gpio_crs_ctrl(ov7251, false);
 }
 
 static int ov7251_s_power(struct v4l2_subdev *sd, int on)
