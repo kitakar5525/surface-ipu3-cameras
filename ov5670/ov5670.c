@@ -1839,7 +1839,8 @@ struct ov5670 {
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
 
-	struct gpio_desc **gpiod_gpio;
+	/* GPIOs defined in dep_dev _CRS */
+	struct gpio_descs *dep_gpios;
 
 	bool is_rpm_supported;
 };
@@ -2070,18 +2071,10 @@ static const struct v4l2_ctrl_ops ov5670_ctrl_ops = {
 /* Get GPIOs defined in dep_dev _CRS */
 static int gpio_crs_get(struct ov5670 *sensor, struct device *dep_dev)
 {
-	int amount = gpiod_count(dep_dev, NULL);
-	int idx;
-
-	dev_info(dep_dev, "GPIO pin amount: %d\n", amount);
-
-	sensor->gpiod_gpio = kmalloc_array(amount, sizeof(u32), GFP_KERNEL);
-	for (idx = 0; idx < amount; idx++) {
-		sensor->gpiod_gpio[idx] = devm_gpiod_get_index(dep_dev, NULL, idx, GPIOD_ASIS);
-		if (IS_ERR(sensor->gpiod_gpio[idx])) {
-			dev_err(dep_dev, "No gpio from index %d\n", idx);
-			return -ENODEV;
-		}
+	sensor->dep_gpios = devm_gpiod_get_array(dep_dev, NULL, GPIOD_ASIS);
+	if (IS_ERR(sensor->dep_gpios)) {
+		dev_err(dep_dev, "Failed to get GPIOs\n");
+		return -ENODEV;
 	}
 
 	return 0;
@@ -2090,25 +2083,26 @@ static int gpio_crs_get(struct ov5670 *sensor, struct device *dep_dev)
 /* Put GPIOs defined in dep_dev _CRS */
 static void gpio_crs_put(struct ov5670 *sensor)
 {
-	struct device *dep_dev = sensor->dep_dev;
-	int amount = gpiod_count(dep_dev, NULL);
-	int idx;
-
-	for (idx = 0; idx < amount; idx++) {
-		gpiod_put(sensor->gpiod_gpio[idx]);
-	}
+	gpiod_put_array(sensor->dep_gpios);
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
 static int gpio_crs_ctrl(struct ov5670 *sensor, bool flag)
 {
-	struct device *dep_dev = sensor->dep_dev;
-	int amount = gpiod_count(dep_dev, NULL);
-	int idx;
+	struct gpio_descs *d = sensor->dep_gpios;
+	unsigned long *values;
 
-	for (idx = 0; idx < amount; idx++) {
-		gpiod_set_value_cansleep(sensor->gpiod_gpio[idx], flag);
-	}
+	values = bitmap_alloc(d->ndescs, GFP_KERNEL);
+	if (!values)
+		return -ENOMEM;
+
+	if (flag)
+		bitmap_fill(values, d->ndescs);
+	else
+		bitmap_zero(values, d->ndescs);
+
+	gpiod_set_array_value_cansleep(d->ndescs, d->desc,
+				       d->info, values);
 
 	return 0;
 }
