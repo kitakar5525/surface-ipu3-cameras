@@ -963,22 +963,19 @@ static int ov5693_init(struct v4l2_subdev *sd)
 /* Get GPIOs defined in dep_dev _CRS */
 static int gpio_crs_get(struct ov5693_device *sensor, struct device *dep_dev)
 {
-	sensor->xshutdn = devm_gpiod_get_index(dep_dev, NULL, 0, GPIOD_ASIS);
-	if (IS_ERR(sensor->xshutdn)) {
-		dev_err(dep_dev, "Couldn't get GPIO XSHUTDN\n");
-		return -EINVAL;
-	}
+	int amount = gpiod_count(dep_dev, NULL);
+	int idx;
 
-	sensor->pwdnb = devm_gpiod_get_index(dep_dev, NULL, 1, GPIOD_ASIS);
-	if (IS_ERR(sensor->pwdnb)) {
-		dev_err(dep_dev, "Couldn't get GPIO PWDNB\n");
-		return -EINVAL;
-	}
+	dev_info(dep_dev, "GPIO pin amount: %d\n", amount);
 
-	sensor->led_gpio = devm_gpiod_get_index(dep_dev, NULL, 2, GPIOD_ASIS);
-	if (IS_ERR(sensor->led_gpio))
-		dev_info(dep_dev,
-			 "Couldn't get GPIO LED. Maybe not exist, continue anyway.\n");
+	sensor->gpiod_gpio = kmalloc_array(amount, sizeof(u32), GFP_KERNEL);
+	for (idx = 0; idx < amount; idx++) {
+		sensor->gpiod_gpio[idx] = devm_gpiod_get_index(dep_dev, NULL, idx, GPIOD_ASIS);
+		if (IS_ERR(sensor->gpiod_gpio[idx])) {
+			dev_err(dep_dev, "No gpio from index %d\n", idx);
+			return -ENODEV;
+		}
+	}
 
 	return 0;
 }
@@ -986,19 +983,25 @@ static int gpio_crs_get(struct ov5693_device *sensor, struct device *dep_dev)
 /* Put GPIOs defined in dep_dev _CRS */
 static void gpio_crs_put(struct ov5693_device *sensor)
 {
-	gpiod_put(sensor->xshutdn);
-	gpiod_put(sensor->pwdnb);
-	if (!IS_ERR(sensor->led_gpio))
-		gpiod_put(sensor->led_gpio);
+	struct device *dep_dev = sensor->dep_dev;
+	int amount = gpiod_count(dep_dev, NULL);
+	int idx;
+
+	for (idx = 0; idx < amount; idx++) {
+		gpiod_put(sensor->gpiod_gpio[idx]);
+	}
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
 static int gpio_crs_ctrl(struct ov5693_device *sensor, bool flag)
 {
-	gpiod_set_value_cansleep(sensor->xshutdn, flag);
-	gpiod_set_value_cansleep(sensor->pwdnb, flag);
-	if (!IS_ERR(sensor->led_gpio))
-		gpiod_set_value_cansleep(sensor->led_gpio, flag);
+	struct device *dep_dev = sensor->dep_dev;
+	int amount = gpiod_count(dep_dev, NULL);
+	int idx;
+
+	for (idx = 0; idx < amount; idx++) {
+		gpiod_set_value_cansleep(sensor->gpiod_gpio[idx], flag);
+	}
 
 	return 0;
 }
