@@ -253,7 +253,8 @@ struct ov5693_device {
 	/* dependent device (PMIC) */
 	struct device *dep_dev;
 
-	struct gpio_desc **gpiod_gpio;
+	/* GPIOs defined in dep_dev _CRS */
+	struct gpio_descs *dep_gpios;
 
 	bool has_vcm;
 };
