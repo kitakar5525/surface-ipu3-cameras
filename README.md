@@ -52,7 +52,7 @@ First, build kernel with the following changes:
 
    Both software node and bridge driver patches are available in djrscally's repo: https://github.com/djrscally/miix-510-cameras/tree/master/patches
 
-   Note that if the RFC v3 version isn't working on your machine, try my patch that partially reverts to RFC v2: https://github.com/kitakar5525/linux-kernel/commit/70664c3125fc. It can be applied on top of RFC v3.
+   Note that if the RFC v4/non-RFC v1 version isn't working on your machine, try my patches that partially reverts software_node to RFC v3: [this](https://github.com/kitakar5525/linux-kernel/commit/dcc77cc5af73a5504cecf4e1df61fb6dcab5e5f1) and [this](https://github.com/kitakar5525/linux-kernel/commit/c6fb0d60600231fb39007574924b2115981b8098). It can be applied on top of RFC v4/non-RFC v1.
 
 Then, build sensor drivers:
 
