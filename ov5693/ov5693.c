@@ -963,7 +963,7 @@ static int ov5693_init(struct v4l2_subdev *sd)
 /* Get GPIOs defined in dep_dev _CRS */
 static int gpio_crs_get(struct ov5693_device *sensor, struct device *dep_dev)
 {
-	sensor->dep_gpios = devm_gpiod_get_array(dep_dev, NULL, GPIOD_ASIS);
+	sensor->dep_gpios = devm_gpiod_get_array_optional(dep_dev, NULL, GPIOD_ASIS);
 	if (IS_ERR(sensor->dep_gpios)) {
 		dev_err(dep_dev, "Failed to get GPIOs\n");
 		return -ENODEV;
@@ -975,7 +975,12 @@ static int gpio_crs_get(struct ov5693_device *sensor, struct device *dep_dev)
 /* Put GPIOs defined in dep_dev _CRS */
 static void gpio_crs_put(struct ov5693_device *sensor)
 {
-	gpiod_put_array(sensor->dep_gpios);
+	struct gpio_descs *d = sensor->dep_gpios;
+
+	if (!d)
+		return;
+
+	gpiod_put_array(d);
 }
 
 /* Control GPIOs defined in dep_dev _CRS */
@@ -983,6 +988,9 @@ static int gpio_crs_ctrl(struct ov5693_device *sensor, bool flag)
 {
 	struct gpio_descs *d = sensor->dep_gpios;
 	unsigned long *values;
+
+	if (!d)
+		return 0;
 
 	values = bitmap_alloc(d->ndescs, GFP_KERNEL);
 	if (!values)
