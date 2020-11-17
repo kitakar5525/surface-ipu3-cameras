@@ -1697,7 +1697,7 @@ static int ov5693_probe(struct i2c_client *client)
 media_entity_cleanup:
 	media_entity_cleanup(&ov5693->sd.entity);
 out_free:
-	v4l2_async_unregister_subdev(&ov5693->sd);
+	v4l2_device_unregister_subdev(&ov5693->sd);
 	kfree(ov5693);
 	return ret;
 }
