@@ -1490,9 +1490,6 @@ static int ov8865_remove(struct i2c_client *client)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov8865 *ov8865 = to_ov8865(sd);
 
-	if (ov8865->is_acpi_based)
-		gpio_crs_put(ov8865);
-
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);
 	v4l2_ctrl_handler_free(sd->ctrl_handler);
@@ -1500,6 +1497,9 @@ static int ov8865_remove(struct i2c_client *client)
 	mutex_destroy(&ov8865->mutex);
 
 	__ov8865_power_off(ov8865);
+
+	if (ov8865->is_acpi_based)
+		gpio_crs_put(ov8865);
 
 	return 0;
 }
