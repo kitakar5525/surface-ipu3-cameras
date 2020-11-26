@@ -85,6 +85,7 @@ qcam
 Note:
 
 - About the `dsdt-mods` dir: DSDT overriding was needed before because the bridge driver didn't exist then. Now that the bridge driver is stable enough, it's not needed anymore. I'll leave it there for reference.
+- For the SGO series: the sensors (ov7251 and ov8865) other than ov5693 are not supported on the SGO series yet. We don't know how to handle the PMIC used for the sensors...
 
 #### how to reload camera drivers?
 Sensor drivers are used by ipu3 drivers. So, we need to unload ipu3 drivers first like this:
