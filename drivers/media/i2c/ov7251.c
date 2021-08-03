@@ -1495,10 +1495,12 @@ static int ov7251_configure_regulators(struct ov7251 *ov7251)
 
 static int ov7251_init_controls(struct ov7251 *ov7251)
 {
+	struct v4l2_fwnode_device_properties props;
 	int vblank_max, vblank_def;
 	int hblank;
+	int ret;
 
-	v4l2_ctrl_handler_init(&ov7251->ctrls, 7);
+	v4l2_ctrl_handler_init(&ov7251->ctrls, 9);
 	ov7251->ctrls.lock = &ov7251->lock;
 
 	v4l2_ctrl_new_std(&ov7251->ctrls, &ov7251_ctrl_ops,
@@ -1548,7 +1550,20 @@ static int ov7251_init_controls(struct ov7251 *ov7251)
 		return ov7251->ctrls.error;
 	}
 
+	ret = v4l2_fwnode_device_parse(ov7251->dev, &props);
+	if (ret)
+		goto free_ctrl;
+
+	ret = v4l2_ctrl_new_fwnode_properties(&ov7251->ctrls, &ov7251_ctrl_ops,
+					      &props);
+	if (ret)
+		goto free_ctrl;
+
 	return 0;
+
+free_ctrl:
+	v4l2_ctrl_handler_free(&ov7251->ctrls);
+	return ret;
 }
 
 static int ov7251_configure_gpios(struct ov7251 *ov7251)
