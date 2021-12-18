@@ -924,11 +924,9 @@ static int ov7251_sensor_resume(struct device *dev)
 	struct ov7251 *ov7251 = to_ov7251(sd);
 	int ret;
 
-	mutex_lock(&ov7251->lock);
-
 	ret = ov7251_set_power_on(ov7251);
 	if (ret < 0)
-		goto out_unlock;
+		goto out;
 
 	ret = ov7251_set_register_array(ov7251,
 					ov7251_global_init_setting,
@@ -963,8 +961,7 @@ static int ov7251_sensor_resume(struct device *dev)
 
 err_power:
 	ov7251_set_power_off(ov7251);
-out_unlock:
-	mutex_unlock(&ov7251->lock);
+out:
 	return ret;
 }
 
@@ -975,19 +972,16 @@ static int ov7251_sensor_suspend(struct device *dev)
 	struct ov7251 *ov7251 = to_ov7251(sd);
 	int ret;
 
-	mutex_lock(&ov7251->lock);
-
 	if (ov7251->streaming) {
 		ret = ov7251_write_reg(ov7251, OV7251_SC_MODE_SELECT,
 				       OV7251_SC_MODE_SELECT_SW_STANDBY);
 		if (ret)
-			goto out_unlock;
+			goto out;
 	}
 
 	ov7251_set_power_off(ov7251);
 
-out_unlock:
-	mutex_unlock(&ov7251->lock);
+out:
 	return ret;
 }
 
