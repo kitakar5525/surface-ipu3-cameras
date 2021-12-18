@@ -4,6 +4,15 @@ Link to issue: https://github.com/linux-surface/linux-surface/issues/91
 
 
 
+#### Build
+
+in the root of this repository, run
+```bash
+make
+```
+
+
+
 #### links
 
 Intel maintains IPU4 (not IPU3) drivers (crlmodule, ipu4-acpi, and ipu4) at linux-intel-lts repo (up to v4.19):
