@@ -990,6 +990,7 @@ static int ov7251_sensor_suspend(struct device *dev)
 	}
 
 	ov7251_set_power_off(ov7251);
+	ov7251->power_on = false;
 
 	return 0;
 
