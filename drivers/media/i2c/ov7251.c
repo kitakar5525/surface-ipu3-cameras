@@ -1342,13 +1342,29 @@ static int ov7251_get_selection(struct v4l2_subdev *sd,
 {
 	struct ov7251 *ov7251 = to_ov7251(sd);
 
-	if (sel->target != V4L2_SEL_TGT_CROP)
+	switch (sel->target) {
+	case V4L2_SEL_TGT_CROP:
+		mutex_lock(&ov7251->lock);
+		sel->r = *__ov7251_get_pad_crop(ov7251, sd_state, sel->pad,
+						sel->which);
+		mutex_unlock(&ov7251->lock);
+		break;
+	case V4L2_SEL_TGT_NATIVE_SIZE:
+		sel->r.top = 0;
+		sel->r.left = 0;
+		sel->r.width = 640;
+		sel->r.height = 480;
+		break;
+	case V4L2_SEL_TGT_CROP_BOUNDS:
+	case V4L2_SEL_TGT_CROP_DEFAULT:
+		sel->r.top = 0;
+		sel->r.left = 0;
+		sel->r.width = 640;
+		sel->r.height = 480;
+		break;
+	default:
 		return -EINVAL;
-
-	mutex_lock(&ov7251->lock);
-	sel->r = *__ov7251_get_pad_crop(ov7251, sd_state, sel->pad,
-					sel->which);
-	mutex_unlock(&ov7251->lock);
+	}
 
 	return 0;
 }
