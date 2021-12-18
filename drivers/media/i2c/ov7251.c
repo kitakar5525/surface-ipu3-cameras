@@ -924,6 +924,8 @@ static int ov7251_sensor_resume(struct device *dev)
 	struct ov7251 *ov7251 = to_ov7251(sd);
 	int ret;
 
+	dev_info(dev, "%s() called\n", __func__);
+
 	ret = ov7251_set_power_on(ov7251);
 	if (ret < 0)
 		goto out;
@@ -971,6 +973,8 @@ static int ov7251_sensor_suspend(struct device *dev)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov7251 *ov7251 = to_ov7251(sd);
 	int ret;
+
+	dev_info(dev, "%s() called\n", __func__);
 
 	if (ov7251->streaming) {
 		ret = ov7251_write_reg(ov7251, OV7251_SC_MODE_SELECT,
