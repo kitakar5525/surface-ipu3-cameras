@@ -965,6 +965,8 @@ static int ov7251_sensor_resume(struct device *dev)
 		}
 	}
 
+	return 0;
+
 err_power:
 	ov7251_set_power_off(ov7251);
 out:
@@ -988,6 +990,8 @@ static int ov7251_sensor_suspend(struct device *dev)
 	}
 
 	ov7251_set_power_off(ov7251);
+
+	return 0;
 
 out:
 	return ret;
