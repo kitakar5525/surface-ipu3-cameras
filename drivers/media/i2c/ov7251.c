@@ -213,7 +213,7 @@ static const struct reg_value ov7251_global_init_setting[] = {
 };
 
 static const struct reg_value ov7251_setting_vga_30fps[] = {
-	{ 0x3005, 0x00 },
+	{ 0x3005, 0x08 }, /* strobe output enabled */
 	{ 0x3012, 0xc0 },
 	{ 0x3013, 0xd2 },
 	{ 0x3014, 0x04 },
@@ -341,7 +341,7 @@ static const struct reg_value ov7251_setting_vga_30fps[] = {
 };
 
 static const struct reg_value ov7251_setting_vga_60fps[] = {
-	{ 0x3005, 0x00 },
+	{ 0x3005, 0x08 }, /* strobe output enabled */
 	{ 0x3012, 0xc0 },
 	{ 0x3013, 0xd2 },
 	{ 0x3014, 0x04 },
@@ -469,7 +469,7 @@ static const struct reg_value ov7251_setting_vga_60fps[] = {
 };
 
 static const struct reg_value ov7251_setting_vga_90fps[] = {
-	{ 0x3005, 0x00 },
+	{ 0x3005, 0x08 }, /* strobe output enabled */
 	{ 0x3012, 0xc0 },
 	{ 0x3013, 0xd2 },
 	{ 0x3014, 0x04 },
