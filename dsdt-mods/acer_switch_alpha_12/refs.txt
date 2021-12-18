@@ -1,1 +1,0 @@
-External(_SB.PCI0.SAT0.SDSM, MethodObj, 4)
