@@ -1358,7 +1358,7 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 		ret = pm_runtime_get_sync(ov7251->dev);
 		if (ret < 0) {
 			pm_runtime_put_noidle(ov7251->dev);
-			return ret;
+			goto exit;
 		}
 
 		ret = ov7251_set_register_array(ov7251,
