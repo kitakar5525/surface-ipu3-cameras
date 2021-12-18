@@ -887,6 +887,8 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 	int ret;
 	u32 wait_us;
 
+	dev_info(ov7251->dev, "%s() called\n", __func__);
+
 	ret = ov7251_regulators_enable(ov7251);
 	if (ret < 0)
 		return ret;
@@ -911,6 +913,8 @@ static int ov7251_set_power_on(struct ov7251 *ov7251)
 
 static void ov7251_set_power_off(struct ov7251 *ov7251)
 {
+	dev_info(ov7251->dev, "%s() called\n", __func__);
+
 	clk_disable_unprepare(ov7251->xclk);
 	gpiod_set_value_cansleep(ov7251->enable_gpio, 0);
 	gpiod_set_value_cansleep(ov7251->reset, 1);
