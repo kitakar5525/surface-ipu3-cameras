@@ -1377,10 +1377,10 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 	mutex_lock(&ov7251->lock);
 
 	if (enable) {
-
-		ret = pm_runtime_get_sync(ov7251->dev);
+		ret = ov7251_sensor_resume(ov7251->dev);
 		if (ret < 0) {
-			pm_runtime_put_noidle(ov7251->dev);
+			dev_err(ov7251->dev, "could not power up OV7251\n");
+			ov7251_sensor_suspend(ov7251->dev);
 			goto exit;
 		}
 
@@ -1404,7 +1404,7 @@ static int ov7251_s_stream(struct v4l2_subdev *subdev, int enable)
 		ret = ov7251_write_reg(ov7251, OV7251_SC_MODE_SELECT,
 				       OV7251_SC_MODE_SELECT_SW_STANDBY);
 
-		pm_runtime_put(ov7251->dev);
+		ov7251_sensor_suspend(ov7251->dev);
 	}
 
 exit:
